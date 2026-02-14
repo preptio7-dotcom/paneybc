@@ -18,12 +18,12 @@ import {
 import { Button } from '@/components/ui/button'
 
 const navItems = [
-    { name: 'Overview', href: '/sKy9108-3~620_admin!/dashboard', icon: LayoutDashboard },
-    { name: 'Analytics', href: '/sKy9108-3~620_admin!/dashboard/analytics', icon: BarChart3 },
-    { name: 'Messages', href: '/sKy9108-3~620_admin!/dashboard/messages', icon: MessageSquare },
-    { name: 'Users', href: '/sKy9108-3~620_admin!/dashboard/users', icon: User },
-    { name: 'Create Admin', href: '/sKy9108-3~620_admin!/dashboard/admins', icon: ShieldCheck },
-    { name: 'Settings', href: '/sKy9108-3~620_admin!/dashboard/settings', icon: Settings },
+    { name: 'Overview', href: '/sKy9108-3~620_admin/dashboard', icon: LayoutDashboard },
+    { name: 'Analytics', href: '/sKy9108-3~620_admin/dashboard/analytics', icon: BarChart3 },
+    { name: 'Messages', href: '/sKy9108-3~620_admin/dashboard/messages', icon: MessageSquare },
+    { name: 'Users', href: '/sKy9108-3~620_admin/dashboard/users', icon: User },
+    { name: 'Create Admin', href: '/sKy9108-3~620_admin/dashboard/admins', icon: ShieldCheck },
+    { name: 'Settings', href: '/sKy9108-3~620_admin/dashboard/settings', icon: Settings },
 ]
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,13 +39,13 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 const response = await fetch('/api/admin/super-stats')
                 if (!response.ok) {
                     setIsAuthorized(false)
-                    router.replace('/sKy9108-3~620_admin!/login')
+                    router.replace('/sKy9108-3~620_admin/login')
                     return
                 }
                 setIsAuthorized(true)
             } catch (error) {
                 setIsAuthorized(false)
-                router.replace('/sKy9108-3~620_admin!/login')
+                router.replace('/sKy9108-3~620_admin/login')
             } finally {
                 setIsCheckingAuth(false)
             }
@@ -80,7 +80,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             // ignore service worker errors
         }
 
-        window.location.assign('/sKy9108-3~620_admin!/logout')
+        window.location.assign('/sKy9108-3~620_admin/logout')
     }
 
     if (isCheckingAuth || !isAuthorized) {

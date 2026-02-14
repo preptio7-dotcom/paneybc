@@ -88,7 +88,7 @@ export default function SuperAdminLoginPage() {
                 toast.success('Verified!', {
                     description: 'Welcome to the Super Admin Dashboard.',
                 })
-                router.push('/sKy9108-3~620_admin!/dashboard')
+                router.push('/sKy9108-3~620_admin/dashboard')
             } else {
                 const errorData = await response.json()
                 throw new Error(errorData.error || 'Verification failed')

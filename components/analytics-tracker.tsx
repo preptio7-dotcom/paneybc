@@ -10,7 +10,7 @@ export function AnalyticsTracker() {
     useEffect(() => {
         const logVisit = async () => {
             // Don't track admin pages or local dev if desired (uncomment if needed)
-            // if (pathname.startsWith('/sKy9108-3~620_admin!')) return
+            // if (pathname.startsWith('/sKy9108-3~620_admin')) return
 
             try {
                 const body = {

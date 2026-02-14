@@ -11,9 +11,9 @@ export default async function proxy(request: NextRequest) {
     const isAdminLoginPage = pathname === '/admin/login'
     const isAdminForgotPasswordPage = pathname === '/admin/forgot-password'
     const isProtectedRoute = pathname.startsWith('/dashboard') || (pathname.startsWith('/admin') && !isAdminLoginPage && !isAdminForgotPasswordPage)
-    const isSecretAdminRoute = pathname.startsWith('/sKy9108-3~620_admin!')
-    const isSecretAdminLoginPage = pathname === '/sKy9108-3~620_admin!/login'
-    const isSecretAdminLogoutPage = pathname === '/sKy9108-3~620_admin!/logout'
+    const isSecretAdminRoute = pathname.startsWith('/sKy9108-3~620_admin')
+    const isSecretAdminLoginPage = pathname === '/sKy9108-3~620_admin/login'
+    const isSecretAdminLogoutPage = pathname === '/sKy9108-3~620_admin/logout'
 
     const userAgent = request.headers.get('user-agent') || ''
     const isMobile = /Mobile|Android|iPhone|iPad/i.test(userAgent)
@@ -68,12 +68,12 @@ export default async function proxy(request: NextRequest) {
 
     // Super Admin Protection
     if (isSecretAdminRoute && !isSecretAdminLoginPage && !isSecretAdminLogoutPage && !superAdminToken) {
-        return NextResponse.redirect(new URL('/sKy9108-3~620_admin!/login', request.url))
+        return NextResponse.redirect(new URL('/sKy9108-3~620_admin/login', request.url))
     }
 
     // Redirect Super Admin if already logged in and visiting login page
     if (isSecretAdminLoginPage && superAdminToken) {
-        return NextResponse.redirect(new URL('/sKy9108-3~620_admin!/dashboard', request.url))
+        return NextResponse.redirect(new URL('/sKy9108-3~620_admin/dashboard', request.url))
     }
 
     return NextResponse.next()

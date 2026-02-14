@@ -26,7 +26,7 @@ export default function robots(): MetadataRoute.Robots {
           '/analytics',
           '/weak-area',
           '/exam-simulator',
-          '/sKy9108-3~620_admin!',
+          '/sKy9108-3~620_admin',
         ],
       },
     ],
