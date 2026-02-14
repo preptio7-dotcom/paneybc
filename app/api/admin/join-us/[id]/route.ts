@@ -13,8 +13,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const { id } = params
     const { message, status } = await req.json()
-    if (!id || !message) {
-      return NextResponse.json({ error: 'Submission ID and message are required' }, { status: 400 })
+    if (!id) {
+      return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 })
+    }
+    const trimmedMessage = typeof message === 'string' ? message.trim() : ''
+    const normalizedStatus = status === 'reviewed' ? 'reviewed' : 'replied'
+    if (normalizedStatus === 'replied' && !trimmedMessage) {
+      return NextResponse.json({ error: 'Reply message is required' }, { status: 400 })
     }
 
     const submission = await prisma.joinUsRequest.findUnique({ where: { id } })
@@ -22,19 +27,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
+    const updateData: any = {
+      status: normalizedStatus,
+    }
+    if (normalizedStatus === 'replied') {
+      updateData.adminReply = trimmedMessage
+      updateData.repliedAt = new Date()
+    }
+
     const updated = await prisma.joinUsRequest.update({
       where: { id },
-      data: {
-        adminReply: message,
-        repliedAt: new Date(),
-        status: status || 'replied',
-      },
+      data: updateData,
     })
 
-    try {
-      await sendJoinUsReplyEmail(updated.email, updated.name, updated.type, message)
-    } catch (emailError) {
-      console.error('[EMAIL] Join Us reply failed:', emailError)
+    if (normalizedStatus === 'replied') {
+      try {
+        await sendJoinUsReplyEmail(updated.email, updated.name, updated.type, trimmedMessage)
+      } catch (emailError) {
+        console.error('[EMAIL] Join Us reply failed:', emailError)
+      }
     }
 
     return NextResponse.json({ success: true, submission: updated })

@@ -46,7 +46,11 @@ export default function JoinUsAdminPage() {
   }
 
   const handleSend = async () => {
-    if (!active || !replyMessage.trim()) return
+    if (!active) return
+    if (replyStatus === 'replied' && !replyMessage.trim()) {
+      toast({ title: 'Reply required', description: 'Please enter a reply message.', variant: 'destructive' })
+      return
+    }
     setIsSending(true)
     try {
       const targetId = active.id ?? active._id
@@ -59,7 +63,10 @@ export default function JoinUsAdminPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to reply')
       setSubmissions((prev) => prev.map((s) => ((s.id ?? s._id) === targetId ? data.submission : s)))
       setActive(null)
-      toast({ title: 'Reply sent', description: 'Email sent to the user.' })
+      toast({
+        title: replyStatus === 'replied' ? 'Reply sent' : 'Marked as reviewed',
+        description: replyStatus === 'replied' ? 'Email sent to the user.' : 'Submission updated.',
+      })
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'Failed to send reply.', variant: 'destructive' })
     } finally {
