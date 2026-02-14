@@ -58,7 +58,7 @@ export function PdfViewer({ url }: PdfViewerProps) {
       try {
         const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf')
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/legacy/build/pdf.worker.min.js',
+          'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
           import.meta.url
         ).toString()
 
