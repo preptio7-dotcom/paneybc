@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useState } from "react"
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +10,6 @@ import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
 
 export default function LoginPage() {
-  const router = useRouter()
   const { toast } = useToast()
   const { login, user, loading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
@@ -22,14 +20,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (loading) return
-    if (user?.role === 'admin') {
-      router.replace('/admin')
-      return
-    }
-    if (user) {
-      router.replace('/dashboard')
-    }
-  }, [loading, router, user])
+    if (!user) return
+    const target = user.role === 'admin' ? '/admin' : '/dashboard'
+    // Use a hard redirect to avoid client router getting stuck on auth pages.
+    window.location.replace(target)
+  }, [loading, user])
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,15 +57,8 @@ export default function LoginPage() {
         description: "Logged in successfully. Redirecting...",
       })
 
-      // Fetch user info to check role
-      const meResponse = await fetch('/api/auth/me', { credentials: 'include' })
-      const meData = await meResponse.json()
-
-      if (meData.user?.role === 'admin') {
-        router.push('/admin')
-      } else {
-        router.push('/dashboard')
-      }
+      // Hard redirect to ensure navigation even if router state is stale.
+      window.location.assign('/dashboard')
     } catch (error: any) {
       console.log("[v0] Login error:", error)
       toast({

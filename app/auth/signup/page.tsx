@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useState } from "react"
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +17,6 @@ import {
 } from '@/components/ui/select'
 
 export default function SignupPage() {
-  const router = useRouter()
   const { toast } = useToast()
   const { register, user, loading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
@@ -35,14 +33,11 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (loading) return
-    if (user?.role === 'admin') {
-      router.replace('/admin')
-      return
-    }
-    if (user) {
-      router.replace('/dashboard')
-    }
-  }, [loading, router, user])
+    if (!user) return
+    const target = user.role === 'admin' ? '/admin' : '/dashboard'
+    // Use a hard redirect to avoid client router getting stuck on auth pages.
+    window.location.replace(target)
+  }, [loading, user])
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,7 +184,8 @@ export default function SignupPage() {
         description: "Account created successfully. Redirecting...",
       })
 
-      router.push('/dashboard')
+      // Hard redirect to ensure navigation even if router state is stale.
+      window.location.assign('/dashboard')
     } catch (error: any) {
       console.log("[v0] Signup error:", error)
       toast({

@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
+const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, email: true, name: true, avatar: true, role: true },
     })
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         message: 'User registered successfully',
         user: {
@@ -59,6 +60,23 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     )
+
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, SESSION_JWT_SECRET, {
+      expiresIn: '7d',
+    })
+
+    const cookieDomain = process.env.COOKIE_DOMAIN
+    const isProd = process.env.NODE_ENV === 'production'
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      ...(isProd && cookieDomain ? { domain: cookieDomain } : {}),
+    })
+
+    return response
   } catch (error: any) {
     console.error('Registration error:', error)
 
