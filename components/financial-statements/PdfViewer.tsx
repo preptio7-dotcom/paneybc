@@ -57,8 +57,10 @@ export function PdfViewer({ url }: PdfViewerProps) {
 
       try {
         const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf')
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/legacy/build/pdf.worker.min.js',
+          import.meta.url
+        ).toString()
 
         const loadingTask = pdfjsLib.getDocument({ url: mobilePdfUrl })
         const pdf = await loadingTask.promise

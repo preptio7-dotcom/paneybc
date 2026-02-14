@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,46 @@ export default function StudySessionPage() {
     }
   }, [authLoading, user, authToastShown, toast])
 
+  const handleComplete = useCallback(async () => {
+    if (!user) return
+    try {
+      const response = await fetch('/api/study-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ minutes, focusMode: 'pomodoro' }),
+      })
+      if (response.ok) {
+        toast({ title: 'Session saved', description: `Logged ${minutes} minutes.` })
+        const data = await response.json()
+        setSessions((prev) => [data.session, ...prev])
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to save session', variant: 'destructive' })
+    }
+  }, [minutes, toast, user])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setIsRunning(false)
+          handleComplete()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [handleComplete, isRunning])
+
+  const formatTime = (totalSeconds: number) => {
+    const m = Math.floor(totalSeconds / 60)
+    const s = totalSeconds % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background-light flex items-center justify-center">
@@ -69,45 +109,6 @@ export default function StudySessionPage() {
         </Card>
       </div>
     )
-  }
-
-  useEffect(() => {
-    if (!isRunning) return
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          setIsRunning(false)
-          handleComplete()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [isRunning])
-
-  const handleComplete = async () => {
-    try {
-      const response = await fetch('/api/study-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ minutes, focusMode: 'pomodoro' }),
-      })
-      if (response.ok) {
-        toast({ title: 'Session saved', description: `Logged ${minutes} minutes.` })
-        const data = await response.json()
-        setSessions((prev) => [data.session, ...prev])
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to save session', variant: 'destructive' })
-    }
-  }
-
-  const formatTime = (totalSeconds: number) => {
-    const m = Math.floor(totalSeconds / 60)
-    const s = totalSeconds % 60
-    return `${m}:${s.toString().padStart(2, '0')}`
   }
 
   return (
