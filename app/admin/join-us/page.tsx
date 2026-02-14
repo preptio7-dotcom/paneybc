@@ -47,17 +47,21 @@ export default function JoinUsAdminPage() {
 
   const handleSend = async () => {
     if (!active) return
+    const targetId = active.id ?? active._id
+    if (!targetId) {
+      toast({ title: 'Error', description: 'Submission ID missing.', variant: 'destructive' })
+      return
+    }
     if (replyStatus === 'replied' && !replyMessage.trim()) {
       toast({ title: 'Reply required', description: 'Please enter a reply message.', variant: 'destructive' })
       return
     }
     setIsSending(true)
     try {
-      const targetId = active.id ?? active._id
       const res = await fetch(`/api/admin/join-us/${targetId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: replyMessage, status: replyStatus }),
+        body: JSON.stringify({ id: targetId, message: replyMessage, status: replyStatus }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to reply')

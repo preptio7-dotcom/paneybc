@@ -11,8 +11,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { id } = params
-    const { message, status } = await req.json()
+    const body = await req.json()
+    const id = params?.id || body?.id
+    const { message, status } = body || {}
     if (!id) {
       return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 })
     }
