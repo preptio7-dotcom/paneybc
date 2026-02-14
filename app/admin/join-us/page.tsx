@@ -67,10 +67,18 @@ export default function JoinUsAdminPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to reply')
       setSubmissions((prev) => prev.map((s) => ((s.id ?? s._id) === targetId ? data.submission : s)))
       setActive(null)
-      toast({
-        title: replyStatus === 'replied' ? 'Reply sent' : 'Marked as reviewed',
-        description: replyStatus === 'replied' ? 'Email sent to the user.' : 'Submission updated.',
-      })
+      if (replyStatus === 'replied' && data.emailSent === false) {
+        toast({
+          title: 'Reply saved, email failed',
+          description: data.emailError || 'Check SMTP settings in production.',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: replyStatus === 'replied' ? 'Reply sent' : 'Marked as reviewed',
+          description: replyStatus === 'replied' ? 'Email sent to the user.' : 'Submission updated.',
+        })
+      }
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'Failed to send reply.', variant: 'destructive' })
     } finally {

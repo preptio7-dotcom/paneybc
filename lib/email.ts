@@ -1,12 +1,22 @@
 import nodemailer from 'nodemailer'
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+const smtpUser = process.env.SMTP_USER
+const smtpPass = process.env.SMTP_PASS
+const smtpHost = process.env.SMTP_HOST
+const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined
+const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
+
+const transporter = smtpHost
+  ? nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort || (smtpSecure ? 465 : 587),
+      secure: smtpSecure,
+      auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+    })
+  : nodemailer.createTransport({
+      service: 'gmail',
+      auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+    })
 
 export async function sendOTPEmail(email: string, code: string) {
   const mailOptions = {

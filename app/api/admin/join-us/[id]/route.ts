@@ -41,15 +41,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       data: updateData,
     })
 
+    let emailSent = false
+    let emailError: string | null = null
     if (normalizedStatus === 'replied') {
       try {
         await sendJoinUsReplyEmail(updated.email, updated.name, updated.type, trimmedMessage)
-      } catch (emailError) {
-        console.error('[EMAIL] Join Us reply failed:', emailError)
+        emailSent = true
+      } catch (emailErr: any) {
+        emailError = emailErr?.message || 'Failed to send email'
+        console.error('[EMAIL] Join Us reply failed:', emailErr)
       }
     }
 
-    return NextResponse.json({ success: true, submission: updated })
+    return NextResponse.json({ success: true, submission: updated, emailSent, emailError })
   } catch (error: any) {
     console.error('Join Us admin reply error:', error)
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 })
