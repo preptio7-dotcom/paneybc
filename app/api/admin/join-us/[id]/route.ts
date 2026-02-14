@@ -44,3 +44,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const user = getCurrentUser(req)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+
+    const { id } = params
+    if (!id) {
+      return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 })
+    }
+
+    await prisma.joinUsRequest.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Join Us admin delete error:', error)
+    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 })
+  }
+}
+
