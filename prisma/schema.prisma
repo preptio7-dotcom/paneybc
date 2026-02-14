@@ -1,0 +1,446 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  student
+  admin
+  super_admin
+}
+
+enum QuestionDifficulty {
+  easy
+  medium
+  hard
+}
+
+enum ContactStatus {
+  new
+  read
+  replied
+}
+
+enum EmailTemplateCategory {
+  onboarding
+  engagement
+  reengagement
+  exam_prep
+  general
+}
+
+enum EmailTemplateStatus {
+  draft
+  active
+}
+
+enum EmailSegment {
+  new_users
+  active_users
+  inactive_users
+  exam_prep
+  all_users
+}
+
+enum EmailScheduleStatus {
+  scheduled
+  sent
+  cancelled
+}
+
+enum JoinUsStatus {
+  new
+  reviewed
+  replied
+}
+
+enum UploadStatus {
+  completed
+  processing
+  failed
+}
+
+enum QuestionReportStatus {
+  open
+  reviewed
+  resolved
+}
+
+enum FinancialStatementInputType {
+  dropdown
+  manual
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  password             String
+  name                 String
+  role                 UserRole @default(student)
+  avatar               String   @default("/avatars/boy_1.png")
+  isBanned             Boolean  @default(false)
+  adminOtpFailedAttempts Int    @default(0)
+  degree               String   @default("")
+  level                String   @default("")
+  examName             String   @default("")
+  examDate             DateTime?
+  dailyQuestionGoal    Int      @default(0)
+  prepChecklist        Json?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  financialStatementAttempts FinancialStatementAttempt[]
+  userFsProgress            UserFsProgress?
+  financialStatementReports FinancialStatementReport[]
+}
+
+model Subject {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  code           String   @unique
+  description    String?
+  chapters       Json?
+  totalQuestions Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Upload {
+  id        String       @id @default(cuid())
+  filename  String
+  subject   String
+  status    UploadStatus @default(processing)
+  count     Int          @default(0)
+  error     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Question {
+  id            String             @id @default(cuid())
+  subject       String
+  chapter       String?
+  questionNumber Int
+  question      String
+  imageUrl      String?
+  options       String[]
+  correctAnswer Int?
+  correctAnswers Int[] @default([])
+  allowMultiple Boolean            @default(false)
+  maxSelections Int                @default(2)
+  explanation   String
+  difficulty    QuestionDifficulty @default(medium)
+  uploadId      String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model TestResult {
+  id            String   @id @default(cuid())
+  userId        String?
+  subject       String
+  totalQuestions Int
+  correctAnswers Int      @default(0)
+  wrongAnswers   Int      @default(0)
+  notAttempted   Int      @default(0)
+  score          Int      @default(0)
+  weightedScore  Float?
+  weightedTotal  Float?
+  weightedPercent Float?
+  passed         Boolean  @default(false)
+  answers        Json?
+  duration       Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Analytics {
+  id               String   @id @default(cuid())
+  path             String
+  referrer         String?
+  userAgent        String?
+  screenResolution String?
+  ip               String?
+  userId           String?
+  createdAt        DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    ContactStatus @default(new)
+  reply     String?
+  replyAt   DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model EmailTemplate {
+  id        String               @id @default(cuid())
+  name      String
+  category  EmailTemplateCategory @default(general)
+  subject   String
+  body      String
+  status    EmailTemplateStatus  @default(draft)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  schedules EmailSchedule[]
+}
+
+model EmailSchedule {
+  id              String             @id @default(cuid())
+  name            String
+  templateId      String
+  template        EmailTemplate      @relation(fields: [templateId], references: [id])
+  segment         EmailSegment
+  sendAt          DateTime
+  status          EmailScheduleStatus @default(scheduled)
+  sentAt          DateTime?
+  sentCount       Int                @default(0)
+  newWithinDays   Int                @default(1)
+  activeWithinDays Int               @default(7)
+  inactiveDays    Int                @default(14)
+  examDaysBefore  Int                @default(30)
+  lastError       String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model Flashcard {
+  id        String   @id @default(cuid())
+  userId    String
+  subject   String?
+  chapter   String?
+  front     String
+  back      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  subject   String?
+  chapter   String?
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  purpose   String   @default("super_admin")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String?
+  endpoint     String   @unique
+  subscription Json
+  createdAt    DateTime @default(now())
+}
+
+model JoinUsRequest {
+  id         String      @id @default(cuid())
+  type       String
+  name       String
+  email      String
+  phone      String?
+  institute  String?
+  role       String?
+  experience String?
+  message    String?
+  status     JoinUsStatus @default(new)
+  adminReply String?
+  repliedAt  DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model ReviewSchedule {
+  id             String   @id @default(cuid())
+  userId         String
+  questionId     String
+  stageIndex     Int      @default(0)
+  correctStreak  Int      @default(0)
+  totalReviews   Int      @default(0)
+  nextReviewAt   DateTime
+  lastReviewedAt DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, questionId])
+}
+
+model ReviewNotificationLog {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  lastSentAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestionReport {
+  id            String              @id @default(cuid())
+  questionId    String
+  questionText  String              @default("")
+  userId        String
+  email         String
+  subject       String?
+  questionNumber Int?
+  reason        String
+  status        QuestionReportStatus @default(open)
+  adminReply    String?
+  repliedAt     DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+}
+
+model StudySession {
+  id        String   @id @default(cuid())
+  userId    String
+  minutes   Int
+  focusMode String   @default("pomodoro")
+  createdAt DateTime @default(now())
+}
+
+model SystemSettings {
+  id                     String   @id @default(cuid())
+  isMaintenanceMode      Boolean  @default(false)
+  adsEnabled             Boolean  @default(true)
+  welcomeMessageTemplate String   @default("Welcome back, {{name}}!")
+  adContent              Json?
+  testSettings           Json?
+  toggledBy              String?
+  updatedAt              DateTime @updatedAt
+}
+
+model FinancialStatementCase {
+  id                 Int      @id @default(autoincrement())
+  caseNumber         String   @unique
+  title              String
+  trialBalancePdfUrl String
+  additionalInfo     String?
+  defaultTimeLimit   Int      @default(45)
+  isActive           Boolean  @default(true)
+  showThousandsNote  Boolean  @default(false)
+  totalMarks         Decimal  @default(20.00) @db.Decimal(5, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  sociLineItems SociLineItem[]
+  sofpLineItems SofpLineItem[]
+  attempts     FinancialStatementAttempt[]
+  reports      FinancialStatementReport[]
+}
+
+model SociLineItem {
+  id             Int      @id @default(autoincrement())
+  caseId         Int
+  heading        String
+  inputType      FinancialStatementInputType @default(dropdown)
+  dropdownOptions Json
+  correctValue   String
+  marks          Decimal  @db.Decimal(5, 2)
+  displayOrder   Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  case FinancialStatementCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([displayOrder])
+}
+
+model SofpLineItem {
+  id             Int      @id @default(autoincrement())
+  caseId         Int
+  heading        String
+  inputType      FinancialStatementInputType @default(dropdown)
+  groupLabel     String?
+  dropdownOptions Json
+  correctValue   String
+  marks          Decimal  @db.Decimal(5, 2)
+  displayOrder   Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  case FinancialStatementCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([displayOrder])
+}
+
+model FinancialStatementAttempt {
+  id                  Int      @id @default(autoincrement())
+  userId              String
+  caseId              Int
+  caseNumber          String
+  sociAnswers         Json
+  sofpAnswers         Json
+  totalMarksObtained  Decimal  @db.Decimal(5, 2)
+  totalMarks          Decimal  @default(20.00) @db.Decimal(5, 2)
+  percentageScore     Decimal  @db.Decimal(5, 2)
+  timeSpent           Int
+  timeLimitSet        Int
+  startedAt           DateTime
+  submittedAt         DateTime
+  status              String   @default("completed")
+  createdAt           DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  case FinancialStatementCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([caseId])
+  @@index([submittedAt])
+}
+
+model UserFsProgress {
+  id            Int      @id @default(autoincrement())
+  userId        String   @unique
+  totalAttempts Int      @default(0)
+  averageScore  Decimal  @default(0.00) @db.Decimal(5, 2)
+  bestScore     Decimal  @default(0.00) @db.Decimal(5, 2)
+  casesCompleted Json    @default("[]")
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FinancialStatementReport {
+  id          String              @id @default(cuid())
+  caseId      Int
+  lineItemId  Int?
+  section     String
+  heading     String?
+  caseNumber  String?
+  caseTitle   String?
+  userId      String
+  email       String
+  reason      String
+  status      QuestionReportStatus @default(open)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  case FinancialStatementCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([status])
+  @@index([userId])
+}
