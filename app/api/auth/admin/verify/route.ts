@@ -89,13 +89,18 @@ export async function POST(request: NextRequest) {
 
     const cookieDomain = process.env.COOKIE_DOMAIN
     const isProd = process.env.NODE_ENV === 'production'
+    const host = request.nextUrl.hostname
+    const normalizedCookieDomain = cookieDomain?.replace(/^\./, '')
+    const shouldSetDomain = Boolean(
+      isProd && normalizedCookieDomain && host && host.endsWith(normalizedCookieDomain)
+    )
     response.cookies.set('token', token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60,
       sameSite: 'lax',
       secure: isProd,
       path: '/',
-      ...(isProd && cookieDomain ? { domain: cookieDomain } : {}),
+      ...(shouldSetDomain ? { domain: `.${normalizedCookieDomain}` } : {}),
     })
 
     return response
