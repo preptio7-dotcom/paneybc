@@ -6,12 +6,15 @@ import { CTABanner } from '@/components/cta-banner'
 import { Footer } from '@/components/footer'
 import { HomeAdBanner } from '@/components/home-ad-banner'
 import { LogoutToast } from '@/components/logout-toast'
+import { Suspense } from 'react'
 
 export default function Home() {
   return (
     <main className="w-full">
       <Navigation />
-      <LogoutToast />
+      <Suspense fallback={null}>
+        <LogoutToast />
+      </Suspense>
       <HeroSection />
       <HomeAdBanner />
       <FeaturesSection />
