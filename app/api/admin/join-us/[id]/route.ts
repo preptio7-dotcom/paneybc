@@ -67,7 +67,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { id } = params
+    let body: any = null
+    try {
+      body = await req.json()
+    } catch {
+      body = null
+    }
+
+    const url = new URL(req.url)
+    const id = params?.id || body?.id || url.searchParams.get('id') || ''
     if (!id) {
       return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 })
     }
