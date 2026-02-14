@@ -7,7 +7,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const limitParam = searchParams.get('limit') || '10'
-    const settings = await prisma.systemSettings.findFirst()
+    let settings: any = null
+    try {
+      settings = await prisma.systemSettings.findFirst()
+    } catch {
+      settings = null
+    }
     const testSettings = {
       demoEnabled: true,
       demoMaxQuestions: 10,
@@ -24,42 +29,47 @@ export async function GET(request: NextRequest) {
       ? testSettings.demoSubjects.map((code: string) => String(code).trim().toUpperCase()).filter(Boolean)
       : []
 
-    const reports = await prisma.questionReport.findMany({
-      where: { status: { not: 'resolved' } },
-      select: { questionId: true },
-    })
-    const reportedIds = Array.from(new Set(reports.map((r) => r.questionId).filter(Boolean)))
+    let reportedIds: string[] = []
+    try {
+      const reports = await prisma.questionReport.findMany({
+        where: { status: { not: 'resolved' } },
+        select: { questionId: true },
+      })
+      reportedIds = Array.from(new Set(reports.map((r) => r.questionId).filter(Boolean)))
+    } catch {
+      reportedIds = []
+    }
 
-    const conditions: Prisma.Sql[] = []
+    const where: Prisma.QuestionWhereInput = {}
     if (reportedIds.length > 0) {
-      conditions.push(Prisma.sql`"id" NOT IN (${Prisma.join(reportedIds)})`)
+      where.id = { notIn: reportedIds }
     }
     if (allowedSubjects.length > 0) {
-      conditions.push(Prisma.sql`"subject" IN (${Prisma.join(allowedSubjects)})`)
+      where.subject = { in: allowedSubjects }
     }
 
-    const whereClause = conditions.length > 0
-      ? Prisma.sql`WHERE ${Prisma.join(conditions, Prisma.sql` AND `)}`
-      : Prisma.sql``
+    let rows = await prisma.question.findMany({
+      where,
+      select: {
+        id: true,
+        subject: true,
+        chapter: true,
+        questionNumber: true,
+        question: true,
+        imageUrl: true,
+        options: true,
+        correctAnswer: true,
+        correctAnswers: true,
+        allowMultiple: true,
+        maxSelections: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(limit * 3, 50),
+    })
 
-    const rows = await prisma.$queryRaw<any[]>`
-      SELECT
-        "id",
-        "subject",
-        "chapter",
-        "questionNumber",
-        "question",
-        "imageUrl",
-        "options",
-        "correctAnswer",
-        "correctAnswers",
-        "allowMultiple",
-        "maxSelections"
-      FROM "Question"
-      ${whereClause}
-      ORDER BY RANDOM()
-      LIMIT ${limit};
-    `
+    if (rows.length > limit) {
+      rows = rows.sort(() => Math.random() - 0.5).slice(0, limit)
+    }
 
     return NextResponse.json({ questions: rows })
   } catch (error: any) {
