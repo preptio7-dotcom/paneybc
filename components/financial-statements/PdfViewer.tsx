@@ -70,22 +70,25 @@ export function PdfViewer({ url }: PdfViewerProps) {
         if (!container) return
         container.innerHTML = ''
 
-        const containerWidth = container.clientWidth || window.innerWidth
+        const containerWidth = container.clientWidth || Math.max(window.innerWidth - 32, 320)
+        const deviceScale = window.devicePixelRatio || 1
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
           const page = await pdf.getPage(pageNum)
           if (cancelled) return
 
           const unscaled = page.getViewport({ scale: 1 })
-          const scale = containerWidth / unscaled.width
+          const scale = (containerWidth / unscaled.width) * deviceScale
           const viewport = page.getViewport({ scale })
 
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
           if (!context) continue
 
-          canvas.width = viewport.width
-          canvas.height = viewport.height
+          canvas.width = Math.floor(viewport.width)
+          canvas.height = Math.floor(viewport.height)
+          canvas.style.width = `${Math.floor(viewport.width / deviceScale)}px`
+          canvas.style.height = `${Math.floor(viewport.height / deviceScale)}px`
           canvas.className = 'w-full rounded-lg border border-slate-200 bg-white shadow-sm'
           container.appendChild(canvas)
 

@@ -16,14 +16,17 @@ export async function POST(request: NextRequest) {
     const tokenUser = getCurrentUser(request)
     const resolvedUserId = userId || tokenUser?.userId
 
-    const totalQuestions = answers.length
-    const correctAnswers = answers.filter((a: any) => a.isCorrect).length
-    const wrongAnswers = answers.filter((a: any) => {
+    const rawAnswers = Array.isArray(answers) ? answers : []
+    let normalizedAnswers = rawAnswers
+
+    const totalQuestions = rawAnswers.length
+    const correctAnswers = rawAnswers.filter((a: any) => a.isCorrect).length
+    const wrongAnswers = rawAnswers.filter((a: any) => {
       const selected = a.selectedAnswer
       const hasSelection = Array.isArray(selected) ? selected.length > 0 : selected !== -1
       return !a.isCorrect && hasSelection
     }).length
-    const notAttempted = answers.filter((a: any) => {
+    const notAttempted = rawAnswers.filter((a: any) => {
       const selected = a.selectedAnswer
       return Array.isArray(selected) ? selected.length === 0 : selected === -1
     }).length
@@ -33,8 +36,8 @@ export async function POST(request: NextRequest) {
     let weightedTotal = 0
     let weightedPercent = score
 
-    if (subject && answers.length > 0) {
-      const questionIds = answers
+    if (subject && rawAnswers.length > 0) {
+      const questionIds = rawAnswers
         .map((answer: any) => answer.questionId)
         .filter((questionId: string) => typeof questionId === 'string' && questionId.length > 0)
 
@@ -55,7 +58,18 @@ export async function POST(request: NextRequest) {
           questionMap.set(q.id, q)
         })
 
-        answers.forEach((answer: any) => {
+        normalizedAnswers = rawAnswers.map((answer: any) => {
+          const question = questionMap.get(answer.questionId)
+          return {
+            ...answer,
+            subject: answer.subject || question?.subject || subject,
+            questionNumber: typeof answer.questionNumber === 'number'
+              ? answer.questionNumber
+              : question?.questionNumber,
+          }
+        })
+
+        normalizedAnswers.forEach((answer: any) => {
           const question = questionMap.get(answer.questionId)
           const weight = weightMap.get(question?.chapter) || 1
           weightedTotal += weight
@@ -85,14 +99,14 @@ export async function POST(request: NextRequest) {
         weightedTotal,
         weightedPercent,
         passed,
-        answers,
+        answers: normalizedAnswers,
         duration: duration || 0,
       },
     })
 
     if (resolvedUserId) {
       const now = new Date()
-      const questionIds = answers
+      const questionIds = normalizedAnswers
         .map((answer: any) => answer.questionId)
         .filter((questionId: string) => typeof questionId === 'string' && questionId.length > 0)
 

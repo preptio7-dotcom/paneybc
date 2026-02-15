@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { ReportQuestionButton } from '@/components/report-question-button'
+import { AnswerBreakdown } from '@/components/answer-breakdown'
 
 interface Question {
   id?: string
@@ -170,6 +171,18 @@ export default function CustomTestPage() {
     })
   }
 
+  const indexToOptionText = (options: string[] | undefined, index: number) => {
+    if (!options || index < 0 || index >= options.length) return '-'
+    const label = String.fromCharCode(65 + index)
+    const text = options[index]?.trim() || ''
+    return text ? `${label}. ${text}` : label
+  }
+
+  const toOptionList = (options: string[] | undefined, value: number[] | null) => {
+    if (!value || value.length === 0) return '-'
+    return value.map((index) => indexToOptionText(options, index)).join(', ')
+  }
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -293,6 +306,28 @@ export default function CustomTestPage() {
   }
 
   if (isSubmitted && testResult) {
+    const wrongAnswers = questions
+      .map((question, idx) => {
+        const selected = userAnswers[idx] || []
+        const correctAnswer = question.correctAnswers?.length
+          ? question.correctAnswers.map((index: number) => indexToOptionText(question.options, index)).join(', ')
+          : indexToOptionText(question.options, typeof question.correctAnswer === 'number' ? question.correctAnswer : -1)
+        const isCorrect = question.correctAnswers && question.correctAnswers.length > 0
+          ? [...selected].sort().join(',') === [...question.correctAnswers].sort().join(',')
+          : selected.length > 0 && selected[0] === question.correctAnswer
+
+        return {
+          questionNumber: question.questionNumber || idx + 1,
+          questionText: question.question || 'Question text unavailable.',
+          yourAnswer: toOptionList(question.options, selected),
+          correctAnswer,
+          isCorrect,
+          timeSpent: '0s',
+          explanation: question.explanation || '',
+        }
+      })
+      .filter((answer) => !answer.isCorrect)
+
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
         <Navigation />
@@ -343,14 +378,21 @@ export default function CustomTestPage() {
               </Card>
             </div>
 
-            <div className="flex gap-4">
-              <Button onClick={() => router.push('/dashboard')} className="flex-1 h-12 text-lg bg-slate-800">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button onClick={() => router.push('/dashboard')} className="w-full sm:flex-1 h-12 bg-slate-800">
                 Back to Dashboard
               </Button>
-              <Button variant="outline" onClick={() => router.push('/custom-quiz')} className="flex-1 h-12 text-lg">
+              <Button variant="outline" onClick={() => router.push('/custom-quiz')} className="w-full sm:flex-1 h-12">
                 Build Another Quiz
               </Button>
             </div>
+
+            <AnswerBreakdown
+              answers={wrongAnswers}
+              title="WRONG ANSWERS REVIEW"
+              emptyMessage="Great job! You didn't miss any questions in this test."
+              alwaysExpanded
+            />
           </div>
         </main>
       </div>
