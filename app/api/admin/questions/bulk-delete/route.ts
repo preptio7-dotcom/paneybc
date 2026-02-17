@@ -10,11 +10,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
         }
 
-        const { subject, deleteAll } = await request.json()
+        const { subject, chapter, deleteAll } = await request.json()
 
         let query: any = {}
         if (subject && subject !== 'all') {
             query.subject = subject
+        }
+        if (chapter && chapter !== 'all') {
+            if (!subject || subject === 'all') {
+                return NextResponse.json({ error: 'Subject is required for chapter deletion' }, { status: 400 })
+            }
+            query.chapter = { equals: chapter, mode: 'insensitive' }
         }
 
         if (deleteAll === true) {

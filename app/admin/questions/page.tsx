@@ -83,6 +83,7 @@ export default function QuestionsManagementPage() {
     const [total, setTotal] = useState(0)
     const [pageSize, setPageSize] = useState(50)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [isDeletingChapter, setIsDeletingChapter] = useState(false)
     const [subjects, setSubjects] = useState<Subject[]>([])
     const [isLoadingSubjects, setIsLoadingSubjects] = useState(true)
     const [isEditing, setIsEditing] = useState(false)
@@ -169,6 +170,18 @@ export default function QuestionsManagementPage() {
         setChapterFilter('all')
     }, [subjectFilter])
 
+    const selectedSubject = useMemo(
+        () => subjects.find((s) => s.code === subjectFilter),
+        [subjects, subjectFilter]
+    )
+    const selectedChapter = useMemo(
+        () => selectedSubject?.chapters?.find((ch) => ch.code === chapterFilter),
+        [selectedSubject, chapterFilter]
+    )
+    const subjectLabel = selectedSubject ? `${selectedSubject.name} (${selectedSubject.code})` : subjectFilter
+    const chapterLabel = selectedChapter ? `${selectedChapter.name} (${selectedChapter.code})` : chapterFilter
+    const canDeleteChapter = subjectFilter !== 'all' && chapterFilter !== 'all'
+
     const getQuestionId = (q: Question) => String(q.id ?? q._id ?? '')
 
     const clearFilters = () => {
@@ -209,6 +222,49 @@ export default function QuestionsManagementPage() {
             })
         } finally {
             setIsDeleting(false)
+        }
+    }
+
+    const handleBulkDeleteChapter = async () => {
+        if (!canDeleteChapter) {
+            toast({
+                title: "Select a chapter",
+                description: "Choose a subject and chapter before deleting.",
+                variant: "destructive"
+            })
+            return
+        }
+
+        try {
+            setIsDeletingChapter(true)
+            const response = await fetch('/api/admin/questions/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subject: subjectFilter,
+                    chapter: chapterFilter,
+                    deleteAll: true
+                })
+            })
+
+            const data = await response.json().catch(() => ({}))
+            if (response.ok) {
+                toast({
+                    title: "Success",
+                    description: `All questions in ${subjectLabel} - ${chapterLabel} deleted.`,
+                })
+                fetchQuestions()
+            } else {
+                throw new Error(data.error || 'Failed to delete')
+            }
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message || "Chapter deletion failed.",
+                variant: "destructive"
+            })
+        } finally {
+            setIsDeletingChapter(false)
         }
     }
 
@@ -375,6 +431,39 @@ export default function QuestionsManagementPage() {
                                             disabled={isDeleting}
                                         >
                                             {isDeleting ? 'Deleting...' : 'Yes, Delete Everything'}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="destructive"
+                                        className="gap-2"
+                                        disabled={!canDeleteChapter}
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete Chapter {chapterFilter === 'all' ? '' : chapterFilter}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-white">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle className="flex items-center gap-2 text-error-red">
+                                            <AlertTriangle />
+                                            Chapter Delete Warning
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action will permanently delete <strong>all questions for {subjectLabel} - {chapterLabel}</strong>. This cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={handleBulkDeleteChapter}
+                                            className="bg-red-600 hover:bg-red-700 text-white"
+                                            disabled={isDeletingChapter}
+                                        >
+                                            {isDeletingChapter ? 'Deleting...' : 'Yes, Delete Chapter'}
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
