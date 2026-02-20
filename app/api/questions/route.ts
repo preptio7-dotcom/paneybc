@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       query.subject = resolvedSubjectCode
     }
     if (normalizedChapter) {
-      query.chapter = { contains: normalizedChapter, mode: 'insensitive' }
+      query.chapter = { equals: normalizedChapter, mode: 'insensitive' }
     }
     if (search) {
       query.question = { contains: search, mode: 'insensitive' }
