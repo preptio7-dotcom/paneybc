@@ -70,6 +70,8 @@ interface Subject {
     chapters?: { name: string; code: string }[]
 }
 
+const optionLetters = ['a', 'b', 'c', 'd'] as const
+
 export default function QuestionsManagementPage() {
     const { toast } = useToast()
     const [questions, setQuestions] = useState<Question[]>([])
@@ -183,6 +185,30 @@ export default function QuestionsManagementPage() {
     const canDeleteChapter = subjectFilter !== 'all' && chapterFilter !== 'all'
 
     const getQuestionId = (q: Question) => String(q.id ?? q._id ?? '')
+    const formatCorrectOption = (q: Question) => {
+        const normalizedMultiple = Array.isArray(q.correctAnswers)
+            ? Array.from(new Set(q.correctAnswers.filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < optionLetters.length)))
+            : []
+
+        if (normalizedMultiple.length > 1 || q.allowMultiple) {
+            if (normalizedMultiple.length > 0) {
+                return normalizedMultiple
+                    .sort((a, b) => a - b)
+                    .map((idx) => optionLetters[idx])
+                    .join(',')
+            }
+        }
+
+        if (normalizedMultiple.length === 1) {
+            return optionLetters[normalizedMultiple[0]]
+        }
+
+        if (typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer < optionLetters.length) {
+            return optionLetters[q.correctAnswer]
+        }
+
+        return '--'
+    }
 
     const clearFilters = () => {
         setSearchQuery('')
@@ -618,6 +644,7 @@ export default function QuestionsManagementPage() {
                                                 <TableHead>Subject</TableHead>
                                                 <TableHead>Chapter</TableHead>
                                                 <TableHead>Difficulty</TableHead>
+                                                <TableHead>Correct</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -655,6 +682,9 @@ export default function QuestionsManagementPage() {
                                                             }>
                                                                 {q.difficulty}
                                                             </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="font-mono text-xs">
+                                                            {formatCorrectOption(q)}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <Button
@@ -698,7 +728,7 @@ export default function QuestionsManagementPage() {
                                                 ))
                                             ) : (
                                                 <TableRow>
-                                                    <TableCell colSpan={7} className="text-center p-12 text-text-light">
+                                                    <TableCell colSpan={8} className="text-center p-12 text-text-light">
                                                         No questions found.
                                                     </TableCell>
                                                 </TableRow>
