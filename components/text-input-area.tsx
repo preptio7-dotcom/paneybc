@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
 import { Label } from './ui/label'
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from './ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Image as ImageIcon, Plus, Trash2, Upload } from 'lucide-react'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import {
@@ -41,7 +41,9 @@ export function TextInputArea() {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadingImageRow, setUploadingImageRow] = useState<number | null>(null)
   const [previewRow, setPreviewRow] = useState<number | null>(null)
+  const imageFileInputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   const createRow = () => ({
     questionNumber: '',
@@ -140,6 +142,59 @@ export function TextInputArea() {
       })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleImageUpload = async (rowIndex: number, file: File) => {
+    if (!file) return
+    if (!file.type?.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please upload an image file.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      setUploadingImageRow(rowIndex)
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/admin/upload/image', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Image upload failed')
+      }
+      if (!data.publicUrl) {
+        throw new Error('Upload succeeded but no URL was returned')
+      }
+
+      setRows((prev) => {
+        if (!prev[rowIndex]) return prev
+        const next = [...prev]
+        next[rowIndex].imageUrl = data.publicUrl
+        return next
+      })
+
+      toast({
+        title: "Uploaded",
+        description: "Image uploaded and URL filled automatically.",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message || 'Unable to upload image.',
+        variant: "destructive"
+      })
+    } finally {
+      setUploadingImageRow((prev) => (prev === rowIndex ? null : prev))
+      const inputRef = imageFileInputRefs.current[rowIndex]
+      if (inputRef) inputRef.value = ''
     }
   }
 
@@ -300,16 +355,54 @@ export function TextInputArea() {
                       </Select>
                     </td>
                     <td className="px-3 py-2">
-                      <Input
-                        value={row.imageUrl}
-                        onChange={(e) => {
-                          const next = [...rows]
-                          next[rowIndex].imageUrl = e.target.value
-                          setRows(next)
-                        }}
-                        placeholder="https://..."
-                        className="min-w-[180px]"
-                      />
+                      <div className="min-w-[220px] space-y-2">
+                        <Input
+                          value={row.imageUrl}
+                          onChange={(e) => {
+                            const next = [...rows]
+                            next[rowIndex].imageUrl = e.target.value
+                            setRows(next)
+                          }}
+                          placeholder="https://..."
+                          className="min-w-[180px]"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => imageFileInputRefs.current[rowIndex]?.click()}
+                            disabled={uploadingImageRow === rowIndex}
+                          >
+                            {uploadingImageRow === rowIndex ? (
+                              <>
+                                <Loader2 size={14} className="animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload size={14} />
+                                Upload Image
+                              </>
+                            )}
+                          </Button>
+                          <input
+                            ref={(el) => {
+                              imageFileInputRefs.current[rowIndex] = el
+                            }}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                handleImageUpload(rowIndex, file)
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-2">
                       <Button
