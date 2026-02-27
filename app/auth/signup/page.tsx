@@ -288,7 +288,7 @@ export default function SignupPage() {
     return (
       <>
         <Navigation />
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-4 pt-[90px] pb-8">
           <div className="animate-spin text-primary-green">Loading...</div>
         </div>
       </>
@@ -298,8 +298,8 @@ export default function SignupPage() {
   return (
     <>
       <Navigation />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-xl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4 pt-[90px] pb-8">
+        <div className="w-full max-w-xl mx-auto">
           <Card className="border-0 shadow-lg">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold text-center text-[#0F7938]">Create Account</CardTitle>
@@ -620,4 +620,3 @@ export default function SignupPage() {
     </>
   )
 }
-
