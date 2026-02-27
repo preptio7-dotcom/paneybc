@@ -1,12 +1,31 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook, X, Linkedin, Instagram, Mail, Phone, MapPin } from 'lucide-react'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+  const [questionCountLabel, setQuestionCountLabel] = useState('2,000+')
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const response = await fetch('/api/public/stats')
+        if (!response.ok) return
+        const data = await response.json()
+        const totalQuestions = Number(data.totalQuestions) || 0
+        if (totalQuestions > 0) {
+          setQuestionCountLabel(`${totalQuestions.toLocaleString()}+`)
+        }
+      } catch {
+        // keep fallback text
+      }
+    }
+
+    loadStats()
+  }, [])
 
   return (
     <footer className="w-full bg-slate-950 text-white pt-20 pb-10 border-t border-white/5">
@@ -19,7 +38,7 @@ export function Footer() {
               <span>Preptio</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
-              The ultimate platform for CA exam candidates. Master your professional exams with over 2000+ real exam-style questions and detailed explanations.
+              The ultimate platform for CA exam candidates. Master your professional exams with over {questionCountLabel} real exam-style questions and detailed explanations.
             </p>
             <div className="flex gap-4">
               <Link href="#" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white">
@@ -81,7 +100,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-[13px]">
-          <p>© {currentYear} <Link href="https://forgeweb.dev" className="text-primary-green">ForgeWeb</Link> All rights reserved.</p>
+          <p>&copy; {currentYear} <span className="text-primary-green">Preptio</span> All rights reserved.</p>
           <div className="flex items-center gap-6">
             <p>Designed for Excellence.</p>
           </div>

@@ -8,6 +8,7 @@ interface User {
   name: string
   avatar?: string
   role: 'student' | 'admin' | 'super_admin'
+  studentRole?: 'user' | 'ambassador' | 'paid' | 'unpaid'
 }
 
 interface AuthContextType {
@@ -15,7 +16,24 @@ interface AuthContextType {
   loading: boolean
   setUser: React.Dispatch<React.SetStateAction<User | null>>
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, name: string, options?: { degree?: string; level?: string; verificationToken?: string }) => Promise<void>
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    options?: {
+      degree?: string
+      level?: string
+      institute?: string
+      city?: string
+      studentId?: string
+      phone?: string
+      instituteRating?: number
+      acceptedTerms?: boolean
+      verificationToken?: string
+      website?: string
+      startedAt?: number
+    }
+  ) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -71,7 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     name: string,
-    options?: { degree?: string; level?: string; verificationToken?: string }
+    options?: {
+      degree?: string
+      level?: string
+      institute?: string
+      city?: string
+      studentId?: string
+      phone?: string
+      instituteRating?: number
+      acceptedTerms?: boolean
+      verificationToken?: string
+      website?: string
+      startedAt?: number
+    }
   ) => {
     const response = await fetch('/api/auth/register', {
       method: 'POST',

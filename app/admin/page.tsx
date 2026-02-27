@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle } from 'lucide-react'
+import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle, X } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -23,7 +23,11 @@ export default function AdminDashboardPage() {
         fullBookTimeMinutes: 120,
         chapterTestDefaultMinutes: 30,
         chapterTestDefaultQuestions: 25,
+        registrationDegrees: ['CA'],
+        registrationLevels: ['PRC', 'CAF'],
     })
+    const [newDegree, setNewDegree] = useState('')
+    const [newLevel, setNewLevel] = useState('')
     const [isSavingTestSettings, setIsSavingTestSettings] = useState(false)
 
     useEffect(() => {
@@ -41,6 +45,12 @@ export default function AdminDashboardPage() {
                         fullBookTimeMinutes: Number(data.testSettings.fullBookTimeMinutes) || 120,
                         chapterTestDefaultMinutes: Number(data.testSettings.chapterTestDefaultMinutes) || 30,
                         chapterTestDefaultQuestions: Number(data.testSettings.chapterTestDefaultQuestions) || 25,
+                        registrationDegrees: Array.isArray(data.testSettings.registrationDegrees) && data.testSettings.registrationDegrees.length
+                            ? data.testSettings.registrationDegrees
+                            : ['CA'],
+                        registrationLevels: Array.isArray(data.testSettings.registrationLevels) && data.testSettings.registrationLevels.length
+                            ? data.testSettings.registrationLevels
+                            : ['PRC', 'CAF'],
                     })
                 }
             } catch (error) {
@@ -115,6 +125,24 @@ export default function AdminDashboardPage() {
             icon: Users,
         },
         {
+            title: 'FAQ Settings',
+            description: 'Manage FAQ questions and answers.',
+            href: '/admin/faq',
+            icon: Settings,
+        },
+        {
+            title: 'Beta Features',
+            description: 'Control which features are public or ambassador-only.',
+            href: '/admin/beta-features',
+            icon: Flag,
+        },
+        {
+            title: 'Audit Logs',
+            description: 'Track who changed admin settings and user controls.',
+            href: '/admin/audit-logs',
+            icon: FileText,
+        },
+        {
             title: 'User Management',
             description: 'View, ban, or delete registered users.',
             href: '/admin/users',
@@ -133,6 +161,8 @@ export default function AdminDashboardPage() {
                         fullBookTimeMinutes: testSettings.fullBookTimeMinutes,
                         chapterTestDefaultMinutes: testSettings.chapterTestDefaultMinutes,
                         chapterTestDefaultQuestions: testSettings.chapterTestDefaultQuestions,
+                        registrationDegrees: testSettings.registrationDegrees,
+                        registrationLevels: testSettings.registrationLevels,
                     },
                 }),
             })
@@ -153,6 +183,38 @@ export default function AdminDashboardPage() {
         } finally {
             setIsSavingTestSettings(false)
         }
+    }
+
+    const addOption = (type: 'degree' | 'level') => {
+        const value = (type === 'degree' ? newDegree : newLevel).trim()
+        if (!value) return
+        if (type === 'degree') {
+            setTestSettings((prev) => ({
+                ...prev,
+                registrationDegrees: Array.from(new Set([...prev.registrationDegrees, value])),
+            }))
+            setNewDegree('')
+            return
+        }
+        setTestSettings((prev) => ({
+            ...prev,
+            registrationLevels: Array.from(new Set([...prev.registrationLevels, value])),
+        }))
+        setNewLevel('')
+    }
+
+    const removeOption = (type: 'degree' | 'level', value: string) => {
+        if (type === 'degree') {
+            setTestSettings((prev) => ({
+                ...prev,
+                registrationDegrees: prev.registrationDegrees.filter((item) => item !== value),
+            }))
+            return
+        }
+        setTestSettings((prev) => ({
+            ...prev,
+            registrationLevels: prev.registrationLevels.filter((item) => item !== value),
+        }))
     }
 
     return (
@@ -219,6 +281,42 @@ export default function AdminDashboardPage() {
                                         value={testSettings.chapterTestDefaultQuestions}
                                         onChange={(e) => setTestSettings((prev) => ({ ...prev, chapterTestDefaultQuestions: Number(e.target.value) || 25 }))}
                                     />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
+                                <div className="space-y-3">
+                                    <Label>Registration Degrees</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {testSettings.registrationDegrees.map((degree) => (
+                                            <span key={degree} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                                {degree}
+                                                <button type="button" onClick={() => removeOption('degree', degree)}>
+                                                    <X size={12} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Input value={newDegree} placeholder="Add degree" onChange={(e) => setNewDegree(e.target.value)} />
+                                        <Button type="button" variant="outline" onClick={() => addOption('degree')}>Add</Button>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label>Registration Levels</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {testSettings.registrationLevels.map((level) => (
+                                            <span key={level} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                                {level}
+                                                <button type="button" onClick={() => removeOption('level', level)}>
+                                                    <X size={12} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Input value={newLevel} placeholder="Add level (e.g. CAF)" onChange={(e) => setNewLevel(e.target.value)} />
+                                        <Button type="button" variant="outline" onClick={() => addOption('level')}>Add</Button>
+                                    </div>
                                 </div>
                             </div>
                             <Button onClick={handleSaveTestSettings} disabled={isSavingTestSettings}>

@@ -13,6 +13,8 @@ import { AdSlot } from '@/components/ad-slot'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { betaFeatureDefinitions } from '@/data/beta-features'
+import { extractBetaFeatureSettings } from '@/lib/beta-features'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -81,6 +83,7 @@ export default function DashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showGoodbye, setShowGoodbye] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [betaFeatureLinks, setBetaFeatureLinks] = useState<Array<{ label: string; href: string }>>([])
   const [fsSummary, setFsSummary] = useState<{
     totalCases: number
     totalQuestions: number
@@ -143,22 +146,33 @@ export default function DashboardPage() {
         if (!response.ok) {
           setAdsEnabled(false)
           setAdContent(fallbackAds)
+          setBetaFeatureLinks([])
           return
         }
         const data = await response.json()
         setAdsEnabled(Boolean(data.adsEnabled))
         setAdContent(data.adContent || fallbackAds)
+        if (user?.studentRole === 'ambassador') {
+          const betaSettings = extractBetaFeatureSettings(data?.testSettings || {})
+          const links = betaFeatureDefinitions
+            .filter((feature) => betaSettings[feature.key] !== 'public')
+            .map((feature) => ({ label: feature.label, href: feature.href }))
+          setBetaFeatureLinks(links)
+        } else {
+          setBetaFeatureLinks([])
+        }
       } catch (error) {
         console.error('Failed to load settings:', error)
         setAdsEnabled(false)
         setAdContent(fallbackAds)
+        setBetaFeatureLinks([])
       } finally {
         setAdsLoaded(true)
       }
     }
 
     loadSettings()
-  }, [])
+  }, [user?.studentRole])
 
   const defaultChecklist = [
     { label: 'Practiced 50+ questions per subject', done: false },
@@ -460,7 +474,11 @@ export default function DashboardPage() {
           )}
           {/* Welcome Section */}
           <div className="pt-8 mb-12">
-            <WelcomeSection statsData={globalStats} reviewDueCount={reviewDueCount} />
+            <WelcomeSection
+              statsData={globalStats}
+              reviewDueCount={reviewDueCount}
+              betaFeatures={betaFeatureLinks}
+            />
           </div>
 
           {reviewDueCount > 0 && (

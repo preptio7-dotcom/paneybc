@@ -55,6 +55,21 @@ export function AdminHeader() {
                 Upload
               </Button>
             </Link>
+            <Link href="/admin/faq">
+              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+                FAQ
+              </Button>
+            </Link>
+            <Link href="/admin/beta-features">
+              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+                Beta
+              </Button>
+            </Link>
+            <Link href="/admin/audit-logs">
+              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+                Audit
+              </Button>
+            </Link>
             <Link href="/admin/users">
               <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
                 Users

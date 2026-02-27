@@ -47,6 +47,14 @@ export default function ResetPasswordPage() {
             })
         }
 
+        if (password.length < 8) {
+            return toast({
+                title: "Weak password",
+                description: "Password must be at least 8 characters long.",
+                variant: "destructive",
+            })
+        }
+
         try {
             setIsLoading(true)
             const response = await fetch('/api/auth/reset-password', {

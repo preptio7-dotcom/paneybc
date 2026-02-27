@@ -9,6 +9,12 @@ import { ProfileModal } from './profile-modal'
 import Image from 'next/image'
 import { NotificationOptIn } from './notification-opt-in'
 import { usePathname } from 'next/navigation'
+import {
+  DEFAULT_BETA_FEATURE_SETTINGS,
+  extractBetaFeatureSettings,
+  type BetaFeatureSettings,
+} from '@/lib/beta-features'
+import { betaFeatureDefinitions } from '@/data/beta-features'
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -18,6 +24,7 @@ export function Navigation() {
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [hasUnread, setHasUnread] = useState(false)
   const [welcomeTemplate, setWelcomeTemplate] = useState('Welcome back, {{name}}!')
+  const [betaFeatures, setBetaFeatures] = useState<BetaFeatureSettings>(DEFAULT_BETA_FEATURE_SETTINGS)
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const dashboardNavRoutes = [
@@ -61,6 +68,7 @@ export function Navigation() {
         if (data.welcomeMessageTemplate) {
           setWelcomeTemplate(data.welcomeMessageTemplate)
         }
+        setBetaFeatures(extractBetaFeatureSettings(data?.testSettings || {}))
       } catch (error) {
         // ignore
       }
@@ -112,6 +120,12 @@ export function Navigation() {
       }
     }
   }
+
+  const betaNavItems = useMemo(() => {
+    if (user?.studentRole !== 'ambassador') return []
+    return betaFeatureDefinitions.filter((item) => betaFeatures[item.key] !== 'public')
+  }, [betaFeatures, user?.studentRole])
+  const showBetaLinks = betaNavItems.length > 0
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm h-[70px] flex items-center">
@@ -181,6 +195,20 @@ export function Navigation() {
                   {link.label}
                 </Link>
               ))}
+              {showBetaLinks ? (
+                <div className="flex items-center gap-2 border-l border-slate-200 pl-3 ml-1">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold">Beta</span>
+                  {betaNavItems.map((item) => (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-2 rounded-full hover:bg-white"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : (
             <>
@@ -199,6 +227,16 @@ export function Navigation() {
               <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors">
                 Contact
               </Link>
+              {showBetaLinks ? (
+                <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold">Beta</span>
+                  {betaNavItems.map((item) => (
+                    <Link key={item.key} href={item.href} className="text-text-dark hover:text-primary-green transition-colors">
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
             </>
           )}
         </div>
@@ -379,6 +417,21 @@ export function Navigation() {
                     {link.label}
                   </Link>
                 ))}
+                {showBetaLinks ? (
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold mb-1">Beta</p>
+                    {betaNavItems.map((item) => (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        className="text-text-dark hover:text-primary-green transition-colors py-1 block"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <>
@@ -397,6 +450,21 @@ export function Navigation() {
                 <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                   Contact
                 </Link>
+                {showBetaLinks ? (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold mb-1">Beta</p>
+                    {betaNavItems.map((item) => (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        className="text-text-dark hover:text-primary-green transition-colors py-1 block"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
               </>
             )}
             <div className="flex flex-col gap-2 pt-2 border-t border-border">

@@ -12,6 +12,13 @@ enum UserRole {
   super_admin
 }
 
+enum StudentRole {
+  user
+  ambassador
+  paid
+  unpaid
+}
+
 enum QuestionDifficulty {
   easy
   medium
@@ -80,11 +87,18 @@ model User {
   password             String
   name                 String
   role                 UserRole @default(student)
+  studentRole          StudentRole @default(unpaid)
   avatar               String   @default("/avatars/boy_1.png")
   isBanned             Boolean  @default(false)
   adminOtpFailedAttempts Int    @default(0)
   degree               String   @default("")
   level                String   @default("")
+  institute            String?
+  city                 String?
+  studentId            String?  @unique
+  phone                String?  @unique
+  instituteRating      Int?
+  termsAcceptedAt      DateTime?
   examName             String   @default("")
   examDate             DateTime?
   dailyQuestionGoal    Int      @default(0)
@@ -443,4 +457,24 @@ model FinancialStatementReport {
   @@index([caseId])
   @@index([status])
   @@index([userId])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorEmail String
+  actorRole  String
+  action     String
+  targetType String?
+  targetId   String?
+  before     Json?
+  after      Json?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
 }

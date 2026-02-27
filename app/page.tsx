@@ -6,6 +6,7 @@ import { CTABanner } from '@/components/cta-banner'
 import { Footer } from '@/components/footer'
 import { HomeAdBanner } from '@/components/home-ad-banner'
 import { LogoutToast } from '@/components/logout-toast'
+import { HomeFaqSection } from '@/components/home-faq-section'
 import { Suspense } from 'react'
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
       <FeaturesSection />
       <StatsSection />
       <CTABanner />
+      <HomeFaqSection />
       <Footer />
     </main>
   )

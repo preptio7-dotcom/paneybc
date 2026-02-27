@@ -1,9 +1,9 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { Card, CardContent } from './ui/card'
-import { BookOpen, BarChart3, CheckCircle } from 'lucide-react'
-import { useAuth } from '@/lib/auth-context'
+import { BookOpen, BarChart3, CheckCircle, FlaskConical } from 'lucide-react'
 
 interface WelcomeSectionProps {
   statsData?: {
@@ -12,9 +12,13 @@ interface WelcomeSectionProps {
     totalQuestionsPracticed: number
   }
   reviewDueCount?: number
+  betaFeatures?: Array<{
+    label: string
+    href: string
+  }>
 }
 
-export function WelcomeSection({ statsData, reviewDueCount = 0 }: WelcomeSectionProps) {
+export function WelcomeSection({ statsData, reviewDueCount = 0, betaFeatures = [] }: WelcomeSectionProps) {
   const stats = [
     {
       icon: <BookOpen size={24} className="text-primary-green" />,
@@ -47,6 +51,7 @@ export function WelcomeSection({ statsData, reviewDueCount = 0 }: WelcomeSection
       day: 'numeric'
     })
   }
+  const hasBetaFeatures = betaFeatures.length > 0
 
   return (
     <div className="mb-12">
@@ -58,7 +63,7 @@ export function WelcomeSection({ statsData, reviewDueCount = 0 }: WelcomeSection
       </p>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${hasBetaFeatures ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
         {stats.map((stat, index) => (
           <Card key={index} className="border border-border">
             <CardContent className="pt-6">
@@ -76,6 +81,31 @@ export function WelcomeSection({ statsData, reviewDueCount = 0 }: WelcomeSection
             </CardContent>
           </Card>
         ))}
+        {hasBetaFeatures ? (
+          <Card className="border border-primary-green/30 bg-emerald-50/40">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="p-3 bg-white rounded-lg">
+                  <FlaskConical size={24} className="text-primary-green" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-text-light">Beta Features</p>
+                  <div className="flex flex-wrap gap-2">
+                    {betaFeatures.map((feature) => (
+                      <Link
+                        key={feature.href}
+                        href={feature.href}
+                        className="text-xs font-semibold text-primary-green hover:underline"
+                      >
+                        {feature.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </div>
   )

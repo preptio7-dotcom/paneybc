@@ -41,6 +41,12 @@ export default function TermsPage() {
                                 <p>
                                     You may be required to register with the Website. You agree to keep your password confidential and will be responsible for all use of your account and password. We reserve the right to remove, reclaim, or change a username you select if we determine, in our sole discretion, that such username is inappropriate.
                                 </p>
+                                <p>
+                                    By registering, you confirm that your student ID, institute, city, phone number, and other submitted details are true and accurate. If any submitted detail is false or misleading, including an incorrect student ID, your account may be permanently banned.
+                                </p>
+                                <p>
+                                    You also agree that your phone number may be used for official Preptio communication channels, including study groups or announcement channels on WhatsApp.
+                                </p>
                             </section>
 
                             <section>

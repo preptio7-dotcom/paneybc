@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,77 +8,143 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast'
 import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Star } from 'lucide-react'
+import { normalizePkPhone } from '@/lib/account-utils'
+
+type RegistrationOptions = {
+  degrees: string[]
+  levels: string[]
+}
+
+const fallbackOptions: RegistrationOptions = {
+  degrees: ['CA'],
+  levels: ['PRC', 'CAF'],
+}
 
 export default function SignupPage() {
   const { toast } = useToast()
   const { register, user, loading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true)
   const [step, setStep] = useState(1)
+  const [registrationOptions, setRegistrationOptions] = useState<RegistrationOptions>(fallbackOptions)
+  const [formStartedAt] = useState(() => Date.now())
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
-    degree: 'CA',
-    level: 'PRC',
-    verificationCode: ''
+    degree: fallbackOptions.degrees[0],
+    level: fallbackOptions.levels[0],
+    institute: '',
+    city: '',
+    studentId: '',
+    instituteRating: 0,
+    acceptTerms: false,
+    verificationCode: '',
+    website: '',
   })
 
   useEffect(() => {
     if (loading) return
     if (!user) return
     const target = user.role === 'admin' ? '/admin' : '/dashboard'
-    // Use a hard redirect to avoid client router getting stuck on auth pages.
     window.location.replace(target)
   }, [loading, user])
 
+  useEffect(() => {
+    const loadRegistrationOptions = async () => {
+      try {
+        setIsLoadingOptions(true)
+        const response = await fetch('/api/public/settings')
+        if (!response.ok) return
+        const data = await response.json()
+        const degrees = Array.isArray(data?.testSettings?.registrationDegrees)
+          ? data.testSettings.registrationDegrees.map((item: string) => String(item).trim()).filter(Boolean)
+          : fallbackOptions.degrees
+        const levels = Array.isArray(data?.testSettings?.registrationLevels)
+          ? data.testSettings.registrationLevels.map((item: string) => String(item).trim()).filter(Boolean)
+          : fallbackOptions.levels
+
+        const nextOptions = {
+          degrees: degrees.length ? degrees : fallbackOptions.degrees,
+          levels: levels.length ? levels : fallbackOptions.levels,
+        }
+        setRegistrationOptions(nextOptions)
+        setFormData((prev) => ({
+          ...prev,
+          degree: nextOptions.degrees.includes(prev.degree) ? prev.degree : nextOptions.degrees[0],
+          level: nextOptions.levels.includes(prev.level) ? prev.level : nextOptions.levels[0],
+        }))
+      } catch {
+        // keep defaults
+      } finally {
+        setIsLoadingOptions(false)
+      }
+    }
+
+    loadRegistrationOptions()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value, type, checked } = e.target
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value,
     }))
   }
 
   const handleSelectChange = (field: 'degree' | 'level', value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }))
   }
 
   const validateStepOne = () => {
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.password || !formData.confirmPassword) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
       })
       return false
     }
 
     if (formData.password !== formData.confirmPassword) {
       toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Passwords do not match',
+        variant: 'destructive',
       })
       return false
     }
 
-    if (formData.password.length < 6) {
+    if (formData.password.length < 8) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Password must be at least 8 characters',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!normalizePkPhone(formData.phone)) {
+      toast({
+        title: 'Error',
+        description: 'The number you entered is wrong. Use a valid Pakistani mobile number.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!formData.acceptTerms) {
+      toast({
+        title: 'Error',
+        description: 'Please accept the terms and conditions to continue.',
+        variant: 'destructive',
       })
       return false
     }
@@ -86,17 +152,35 @@ export default function SignupPage() {
     return true
   }
 
+  const validateStepTwo = () => {
+    if (
+      !formData.degree ||
+      !formData.level ||
+      !formData.institute.trim() ||
+      !formData.city.trim() ||
+      !formData.studentId.trim()
+    ) {
+      toast({
+        title: 'Error',
+        description: 'Please complete degree, level, institute, city, and student ID.',
+        variant: 'destructive',
+      })
+      return false
+    }
+    if (!formData.instituteRating || formData.instituteRating < 1 || formData.instituteRating > 5) {
+      toast({
+        title: 'Error',
+        description: 'Please rate your institute from 1 to 5 stars.',
+        variant: 'destructive',
+      })
+      return false
+    }
+    return true
+  }
+
   const handleNext = async () => {
     if (step === 1 && !validateStepOne()) return
-
-    if (step === 2 && (!formData.degree || !formData.level)) {
-      toast({
-        title: "Error",
-        description: "Please select your degree and level",
-        variant: "destructive"
-      })
-      return
-    }
+    if (step === 2 && !validateStepTwo()) return
 
     if (step === 2) {
       setIsLoading(true)
@@ -104,7 +188,7 @@ export default function SignupPage() {
         const response = await fetch('/api/auth/signup/send-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email })
+          body: JSON.stringify({ email: formData.email.trim() }),
         })
 
         const data = await response.json()
@@ -122,7 +206,7 @@ export default function SignupPage() {
         toast({
           title: 'Error',
           description: error.message || 'Failed to send verification code',
-          variant: 'destructive'
+          variant: 'destructive',
         })
       } finally {
         setIsLoading(false)
@@ -130,32 +214,22 @@ export default function SignupPage() {
       return
     }
 
-    if (step < 3) setStep(prev => prev + 1)
+    if (step < 3) setStep((prev) => prev + 1)
   }
 
   const handleBack = () => {
-    if (step > 1) setStep(prev => prev - 1)
+    if (step > 1) setStep((prev) => prev - 1)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateStepOne()) return
-
-    if (!formData.degree || !formData.level) {
-      toast({
-        title: "Error",
-        description: "Please select your degree and level",
-        variant: "destructive"
-      })
-      return
-    }
-
+    if (!validateStepOne() || !validateStepTwo()) return
     if (!formData.verificationCode || formData.verificationCode.trim().length < 4) {
       toast({
-        title: "Error",
-        description: "Please enter the verification code",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Please enter the verification code',
+        variant: 'destructive',
       })
       return
     }
@@ -165,7 +239,7 @@ export default function SignupPage() {
       const verifyResponse = await fetch('/api/auth/signup/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, code: formData.verificationCode })
+        body: JSON.stringify({ email: formData.email.trim(), code: formData.verificationCode }),
       })
 
       const verifyData = await verifyResponse.json()
@@ -173,30 +247,42 @@ export default function SignupPage() {
         throw new Error(verifyData.error || 'Verification failed')
       }
 
-      await register(formData.email, formData.password, formData.name, {
+      await register(formData.email.trim(), formData.password, formData.name.trim(), {
         degree: formData.degree,
         level: formData.level,
+        institute: formData.institute.trim(),
+        city: formData.city.trim(),
+        studentId: formData.studentId.trim(),
+        phone: formData.phone.trim(),
+        instituteRating: formData.instituteRating,
+        acceptedTerms: formData.acceptTerms,
         verificationToken: verifyData.verificationToken,
+        website: formData.website,
+        startedAt: formStartedAt,
       })
 
       toast({
-        title: "Success",
-        description: "Account created successfully. Redirecting...",
+        title: 'Success',
+        description: 'Account created successfully. Redirecting...',
       })
 
-      // Hard redirect to ensure navigation even if router state is stale.
       window.location.assign('/dashboard')
     } catch (error: any) {
-      console.log("[v0] Signup error:", error)
       toast({
-        title: "Error",
-        description: error.message || "An error occurred. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: error.message || 'An error occurred. Please try again.',
+        variant: 'destructive',
       })
     } finally {
       setIsLoading(false)
     }
   }
+
+  const termsNote = useMemo(
+    () =>
+      'I confirm all details are accurate. I understand this phone number may be used to add me to official WhatsApp groups/channels. If my student ID or any provided detail is incorrect, my account can be permanently banned.',
+    []
+  )
 
   if (loading) {
     return (
@@ -213,126 +299,251 @@ export default function SignupPage() {
     <>
       <Navigation />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-xl">
           <Card className="border-0 shadow-lg">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center text-[#0F7938]">
-                Create Account
-              </CardTitle>
-              <CardDescription className="text-center">
-                Join Preptio and start studying
-              </CardDescription>
+              <CardTitle className="text-2xl font-bold text-center text-[#0F7938]">Create Account</CardTitle>
+              <CardDescription className="text-center">Join Preptio and start studying</CardDescription>
+              <p className="text-center text-xs text-slate-500">Step {step} of 3</p>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  autoComplete="off"
+                  tabIndex={-1}
+                  className="hidden"
+                  aria-hidden="true"
+                />
+
                 {step === 1 && (
                   <>
-                    <div className="space-y-2">
-                      <label htmlFor="name" className="text-sm font-medium text-gray-700">
-                        Full Name
-                      </label>
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        placeholder="John Doe"
-                        value={formData.name}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                        required
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2 md:col-span-2">
+                        <label htmlFor="name" className="text-sm font-medium text-gray-700">
+                          Full Name *
+                        </label>
+                        <Input
+                          id="name"
+                          name="name"
+                          type="text"
+                          placeholder="John Doe"
+                          value={formData.name}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                          Email Address *
+                        </label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={formData.email}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                          Pakistani Phone Number *
+                        </label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          placeholder="+923001234567 or 03001234567"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                          Password *
+                        </label>
+                        <Input
+                          id="password"
+                          name="password"
+                          type="password"
+                          placeholder="Minimum 8 characters"
+                          value={formData.password}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                          Confirm Password *
+                        </label>
+                        <Input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          placeholder="Re-enter password"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                        Email Address
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                      <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="acceptTerms"
+                          checked={formData.acceptTerms}
+                          onChange={handleChange}
+                          className="mt-1"
+                          required
+                        />
+                        <span>
+                          {termsNote}{' '}
+                          <Link href="/terms" className="text-[#0F7938] font-semibold hover:underline">
+                            Read Terms
+                          </Link>
+                        </span>
                       </label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={formData.email}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                        Password
-                      </label>
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                        Confirm Password
-                      </label>
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                        required
-                      />
                     </div>
                   </>
                 )}
 
                 {step === 2 && (
                   <>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">
-                        Degree
-                      </label>
-                      <Select
-                        value={formData.degree}
-                        onValueChange={(value) => handleSelectChange('degree', value)}
-                        disabled={isLoading}
-                      >
-                        <SelectTrigger className="w-full border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]">
-                          <SelectValue placeholder="Select degree" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CA">CA</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Degree *</label>
+                        <Select
+                          value={formData.degree}
+                          onValueChange={(value) => handleSelectChange('degree', value)}
+                          disabled={isLoading || isLoadingOptions}
+                        >
+                          <SelectTrigger className="w-full border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]">
+                            <SelectValue placeholder="Select degree" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {registrationOptions.degrees.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Level *</label>
+                        <Select
+                          value={formData.level}
+                          onValueChange={(value) => handleSelectChange('level', value)}
+                          disabled={isLoading || isLoadingOptions}
+                        >
+                          <SelectTrigger className="w-full border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]">
+                            <SelectValue placeholder="Select level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {registrationOptions.levels.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label htmlFor="institute" className="text-sm font-medium text-gray-700">
+                          Institute *
+                        </label>
+                        <Input
+                          id="institute"
+                          name="institute"
+                          type="text"
+                          placeholder="Your institute name"
+                          value={formData.institute}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="city" className="text-sm font-medium text-gray-700">
+                          City *
+                        </label>
+                        <Input
+                          id="city"
+                          name="city"
+                          type="text"
+                          placeholder="City"
+                          value={formData.city}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="studentId" className="text-sm font-medium text-gray-700">
+                          Student ID *
+                        </label>
+                        <Input
+                          id="studentId"
+                          name="studentId"
+                          type="text"
+                          placeholder="Institute student ID"
+                          value={formData.studentId}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">
-                        Level
-                      </label>
-                      <Select
-                        value={formData.level}
-                        onValueChange={(value) => handleSelectChange('level', value)}
-                        disabled={isLoading}
-                      >
-                        <SelectTrigger className="w-full border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]">
-                          <SelectValue placeholder="Select level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PRC">PRC</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <label className="text-sm font-medium text-gray-700">Rate Your Institute *</label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, instituteRating: star }))}
+                            className="p-1"
+                            aria-label={`Rate ${star} star`}
+                          >
+                            <Star
+                              size={20}
+                              className={star <= formData.instituteRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
+                            />
+                          </button>
+                        ))}
+                        <span className="text-xs text-slate-500">
+                          {formData.instituteRating ? `${formData.instituteRating}/5` : 'Select rating'}
+                        </span>
+                      </div>
                     </div>
                   </>
                 )}
@@ -340,13 +551,12 @@ export default function SignupPage() {
                 {step === 3 && (
                   <>
                     <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">
-                      We sent a verification code to <span className="font-semibold">{formData.email}</span>.
-                      Enter it below to confirm your email.
+                      We sent a verification code to <span className="font-semibold">{formData.email}</span>. Enter it below to confirm your email.
                     </div>
 
                     <div className="space-y-2">
                       <label htmlFor="verificationCode" className="text-sm font-medium text-gray-700">
-                        Verification Code
+                        Verification Code *
                       </label>
                       <Input
                         id="verificationCode"
@@ -380,10 +590,10 @@ export default function SignupPage() {
                     <Button
                       type="button"
                       onClick={handleNext}
-                      disabled={isLoading}
+                      disabled={isLoading || (step === 2 && isLoadingOptions)}
                       className="w-full sm:flex-1 bg-[#0F7938] hover:bg-[#0F7938]/90 text-white"
                     >
-                      {step === 2 ? 'Continue' : 'Next'}
+                      {step === 2 ? 'Send Verification Code' : 'Next'}
                     </Button>
                   ) : (
                     <Button
@@ -410,3 +620,4 @@ export default function SignupPage() {
     </>
   )
 }
+

@@ -3,9 +3,25 @@ import { prisma } from '@/lib/prisma'
 import bcryptjs from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import { isPakistanRequest, blockedCountryResponse } from '@/lib/geo'
+import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    const geo = isPakistanRequest(request)
+    if (!geo.allowed) {
+      return blockedCountryResponse(geo.country)
+    }
+
+    const rateLimit = await enforceIpRateLimit(request, {
+      scope: 'auth-login',
+      maxRequests: 10,
+      windowSeconds: 60,
+    })
+    if (!rateLimit.allowed) {
+      return rateLimitExceededResponse('login', rateLimit.retryAfterSeconds)
+    }
+
     const { email, password } = await request.json()
 
     if (!email || !password) {
@@ -15,7 +31,7 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = String(email).trim().toLowerCase()
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true, email: true, name: true, avatar: true, role: true, password: true, isBanned: true },
+      select: { id: true, email: true, name: true, avatar: true, role: true, studentRole: true, password: true, isBanned: true },
     })
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
@@ -47,6 +63,7 @@ export async function POST(request: NextRequest) {
           name: user.name,
           avatar: user.avatar || '/avatars/boy_1.png',
           role: user.role,
+          studentRole: user.studentRole,
         },
       },
       { status: 200 }

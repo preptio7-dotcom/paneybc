@@ -2,6 +2,10 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-utils'
+import { extractFaqSettings } from '@/lib/faq-utils'
+import { extractBetaFeatureSettings } from '@/lib/beta-features'
+import { createAdminAuditLog } from '@/lib/admin-audit'
 
 function isAuthorized(request: NextRequest) {
   const hasSuperAdminSession = request.headers.get('cookie')?.includes('super_admin_session')
@@ -26,7 +30,16 @@ export async function GET(request: NextRequest) {
       settings = await prisma.systemSettings.create({ data: { adsEnabled: false } })
     }
 
-    const adContent = settings.adContent || {
+    const savedAdContent =
+      settings.adContent && typeof settings.adContent === 'object' && !Array.isArray(settings.adContent)
+        ? (settings.adContent as Record<string, any>)
+        : {}
+    const savedTestSettings =
+      settings.testSettings && typeof settings.testSettings === 'object' && !Array.isArray(settings.testSettings)
+        ? (settings.testSettings as Record<string, any>)
+        : {}
+
+    const adContent = Object.keys(savedAdContent).length ? savedAdContent : {
       dashboard: {
         headline: 'Level up your CA prep with expert-led notes',
         body: 'Get concise, exam-focused summaries and practice packs tailored for CA students.',
@@ -49,14 +62,36 @@ export async function GET(request: NextRequest) {
       demoMaxQuestions: 10,
       demoTimeMinutes: 20,
       demoSubjects: [],
-      ...(settings.testSettings || {}),
+      registrationDegrees: DEFAULT_DEGREES,
+      registrationLevels: DEFAULT_LEVELS,
+      betaFeatures: extractBetaFeatureSettings(savedTestSettings),
+      faq: extractFaqSettings(savedTestSettings),
+      ...savedTestSettings,
+    }
+    const normalizedBetaFeatures = extractBetaFeatureSettings(testSettings)
+    const normalizedFaq = extractFaqSettings(testSettings)
+    const normalizedTestSettings = {
+      ...testSettings,
+      registrationDegrees: (() => {
+        const next = parseOptionList(testSettings.registrationDegrees, DEFAULT_DEGREES)
+        return next.length ? next : DEFAULT_DEGREES
+      })(),
+      registrationLevels: (() => {
+        const next = parseOptionList(testSettings.registrationLevels, DEFAULT_LEVELS)
+        return next.length ? next : DEFAULT_LEVELS
+      })(),
+      betaFeatures: normalizedBetaFeatures,
+      faq: {
+        ...normalizedFaq,
+        visibility: normalizedBetaFeatures.faq,
+      },
     }
 
     return NextResponse.json({
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
       adContent,
-      testSettings,
+      testSettings: normalizedTestSettings,
     })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to load settings' }, { status: 500 })
@@ -68,6 +103,7 @@ export async function POST(request: NextRequest) {
     if (!isAuthorized(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const admin = getCurrentUser(request)
 
     const payload = await request.json()
     let settings = await prisma.systemSettings.findFirst()
@@ -75,7 +111,16 @@ export async function POST(request: NextRequest) {
       settings = await prisma.systemSettings.create({ data: {} })
     }
 
-    const currentAdContent = settings.adContent || {
+    const savedAdContent =
+      settings.adContent && typeof settings.adContent === 'object' && !Array.isArray(settings.adContent)
+        ? (settings.adContent as Record<string, any>)
+        : {}
+    const savedTestSettings =
+      settings.testSettings && typeof settings.testSettings === 'object' && !Array.isArray(settings.testSettings)
+        ? (settings.testSettings as Record<string, any>)
+        : {}
+
+    const currentAdContent = Object.keys(savedAdContent).length ? savedAdContent : {
       dashboard: {
         headline: 'Level up your CA prep with expert-led notes',
         body: 'Get concise, exam-focused summaries and practice packs tailored for CA students.',
@@ -98,7 +143,17 @@ export async function POST(request: NextRequest) {
       demoMaxQuestions: 10,
       demoTimeMinutes: 20,
       demoSubjects: [],
-      ...(settings.testSettings || {}),
+      registrationDegrees: DEFAULT_DEGREES,
+      registrationLevels: DEFAULT_LEVELS,
+      betaFeatures: extractBetaFeatureSettings(savedTestSettings),
+      faq: extractFaqSettings(savedTestSettings),
+      ...savedTestSettings,
+    }
+    const beforeSnapshot = {
+      adsEnabled: settings.adsEnabled ?? false,
+      welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
+      adContent: currentAdContent,
+      testSettings: currentTestSettings,
     }
 
     const updatedAdContent = {
@@ -111,9 +166,27 @@ export async function POST(request: NextRequest) {
         : currentAdContent.results,
     }
 
-    const updatedTestSettings = payload.testSettings
+    const mergedTestSettings = payload.testSettings
       ? { ...currentTestSettings, ...payload.testSettings }
       : currentTestSettings
+    const mergedBetaFeatures = extractBetaFeatureSettings(mergedTestSettings)
+
+    const updatedTestSettings = {
+      ...mergedTestSettings,
+      registrationDegrees: (() => {
+        const next = parseOptionList(mergedTestSettings.registrationDegrees, DEFAULT_DEGREES)
+        return next.length ? next : DEFAULT_DEGREES
+      })(),
+      registrationLevels: (() => {
+        const next = parseOptionList(mergedTestSettings.registrationLevels, DEFAULT_LEVELS)
+        return next.length ? next : DEFAULT_LEVELS
+      })(),
+      betaFeatures: mergedBetaFeatures,
+      faq: {
+        ...extractFaqSettings(mergedTestSettings),
+        visibility: mergedBetaFeatures.faq,
+      },
+    }
 
     settings = await prisma.systemSettings.update({
       where: { id: settings.id },
@@ -124,6 +197,28 @@ export async function POST(request: NextRequest) {
         testSettings: updatedTestSettings,
       },
     })
+
+    if (admin && (admin.role === 'admin' || admin.role === 'super_admin')) {
+      await createAdminAuditLog({
+        request,
+        actor: admin,
+        action: 'SYSTEM_SETTINGS_UPDATED',
+        targetType: 'system_settings',
+        targetId: settings.id,
+        before: beforeSnapshot,
+        after: {
+          adsEnabled: settings.adsEnabled,
+          welcomeMessageTemplate: settings.welcomeMessageTemplate,
+          adContent: settings.adContent,
+          testSettings: settings.testSettings,
+        },
+        metadata: {
+          changedKeys: Object.keys(payload || {}),
+          changedTestSettingsKeys: Object.keys(payload?.testSettings || {}),
+          changedBetaFeaturesKeys: Object.keys(payload?.testSettings?.betaFeatures || {}),
+        },
+      })
+    }
 
     return NextResponse.json({
       success: true,

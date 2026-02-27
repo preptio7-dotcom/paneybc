@@ -10,7 +10,7 @@ interface Stat {
 
 const defaultStats: Stat[] = [
   { number: 2000, label: 'Questions Available', suffix: '+' },
-  { number: 15000, label: 'Active Students', suffix: '+' },
+  { number: 0, label: 'Active Students' },
   { number: 95, label: 'Pass Rate', suffix: '%' },
   { number: 5, label: 'Subjects Covered' }
 ]
@@ -60,6 +60,7 @@ export function StatsSection() {
         const data = await response.json()
         const totalQuestions = Number(data.totalQuestions) || 0
         const totalSubjects = Number(data.totalSubjects) || 0
+        const totalUsers = Number(data.totalUsers) || 0
         const roundedQuestions = totalQuestions >= 1000
           ? Math.floor(totalQuestions / 1000) * 1000
           : totalQuestions
@@ -70,6 +71,9 @@ export function StatsSection() {
           }
           if (stat.label === 'Subjects Covered' && totalSubjects > 0) {
             return { ...stat, number: totalSubjects, suffix: stat.suffix }
+          }
+          if (stat.label === 'Active Students') {
+            return { ...stat, number: totalUsers, suffix: '' }
           }
           return stat
         }))
@@ -87,10 +91,10 @@ export function StatsSection() {
         {/* Section Title */}
         <div className="text-center mb-16">
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-text-dark mb-4">
-            Trusted by Thousands
+            Built for ICAP Students, by People Who Understand the Exam
           </h2>
           <p className="text-text-light text-lg">
-            Join a thriving community of successful CA students
+            We're a new platform and proud of it — growing fast with students who want a smarter way to prepare.
           </p>
         </div>
 

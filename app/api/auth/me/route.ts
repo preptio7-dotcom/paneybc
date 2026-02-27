@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
           name: user.name,
           avatar: user.avatar || '/avatars/boy_1.png',
           role: user.role,
+          studentRole: user.studentRole,
         },
       },
       { status: 200 }
