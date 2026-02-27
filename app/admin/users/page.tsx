@@ -319,40 +319,42 @@ export default function AdminUsersPage() {
                 <div className="text-center text-text-light py-10">No users found.</div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-left text-text-light">
+                  <table className="w-full min-w-[1520px] text-sm">
+                    <thead className="text-left text-text-light bg-slate-50">
                       <tr className="border-b border-border">
-                        <th className="py-2">Name</th>
-                        <th className="py-2">Email</th>
-                        <th className="py-2">Access Role</th>
-                        <th className="py-2">Student Role</th>
-                        <th className="py-2">Degree/Level</th>
-                        <th className="py-2">Institute</th>
-                        <th className="py-2">Phone</th>
-                        <th className="py-2">Rating</th>
-                        <th className="py-2">Status</th>
-                        <th className="py-2">Joined</th>
-                        <th className="py-2 text-right">Actions</th>
+                        <th className="px-4 py-3 font-semibold min-w-[170px]">Name</th>
+                        <th className="px-4 py-3 font-semibold min-w-[220px]">Email</th>
+                        <th className="px-4 py-3 font-semibold min-w-[120px]">Access Role</th>
+                        <th className="px-4 py-3 font-semibold min-w-[130px]">Student Role</th>
+                        <th className="px-4 py-3 font-semibold min-w-[140px]">Degree/Level</th>
+                        <th className="px-4 py-3 font-semibold min-w-[260px]">Institute</th>
+                        <th className="px-4 py-3 font-semibold min-w-[150px]">Phone</th>
+                        <th className="px-4 py-3 font-semibold min-w-[90px]">Rating</th>
+                        <th className="px-4 py-3 font-semibold min-w-[100px]">Status</th>
+                        <th className="px-4 py-3 font-semibold min-w-[110px]">Joined</th>
+                        <th className="px-4 py-3 font-semibold min-w-[230px] text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {users.map((user) => (
-                        <tr key={user.id} className="border-b border-border">
-                          <td className="py-3 font-medium text-text-dark">{user.name}</td>
-                          <td className="py-3 text-text-light">{user.email}</td>
-                          <td className="py-3 text-text-light uppercase text-xs">{user.role}</td>
-                          <td className="py-3 text-text-light capitalize">{user.studentRole || 'unpaid'}</td>
-                          <td className="py-3 text-text-light">
+                        <tr key={user.id} className="border-b border-border align-top">
+                          <td className="px-4 py-4 font-medium text-text-dark whitespace-nowrap">{user.name}</td>
+                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.email}</td>
+                          <td className="px-4 py-4 text-text-light uppercase text-xs whitespace-nowrap">{user.role}</td>
+                          <td className="px-4 py-4 text-text-light capitalize whitespace-nowrap">{user.studentRole || 'unpaid'}</td>
+                          <td className="px-4 py-4 text-text-light whitespace-nowrap">
                             {user.degree || '--'} / {user.level || '--'}
                           </td>
-                          <td className="py-3 text-text-light">
-                            <div>{user.institute || '--'}</div>
-                            <div className="text-xs">{user.city || '--'}</div>
-                            <div className="text-xs font-mono">{user.studentId || '--'}</div>
+                          <td className="px-4 py-4 text-text-light min-w-[260px]">
+                            <div className="space-y-1 leading-snug">
+                              <div className="font-medium text-text-dark">{user.institute || '--'}</div>
+                              <div className="text-xs">{user.city || '--'}</div>
+                              <div className="text-xs font-mono">{user.studentId || '--'}</div>
+                            </div>
                           </td>
-                          <td className="py-3 text-text-light">{user.phone || '--'}</td>
-                          <td className="py-3 text-text-light">{user.instituteRating || '--'}/5</td>
-                          <td className="py-3">
+                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.phone || '--'}</td>
+                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.instituteRating || '--'}/5</td>
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <span
                               className={`text-xs font-semibold px-2 py-1 rounded-full ${
                                 user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
@@ -361,8 +363,8 @@ export default function AdminUsersPage() {
                               {user.isBanned ? 'Banned' : 'Active'}
                             </span>
                           </td>
-                          <td className="py-3 text-text-light">{new Date(user.createdAt).toLocaleDateString()}</td>
-                          <td className="py-3 text-right space-x-2">
+                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
+                          <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
                             <Button
                               size="sm"
                               variant="outline"
@@ -503,4 +505,3 @@ export default function AdminUsersPage() {
     </main>
   )
 }
-

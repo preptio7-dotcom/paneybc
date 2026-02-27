@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Button } from './ui/button'
-import { LogOut, Shield, User as UserIcon } from 'lucide-react'
+import { LogOut, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useState } from 'react'
@@ -24,54 +24,54 @@ export function AdminHeader() {
             </h1>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-2 xl:gap-3">
             <Link href="/admin/questions">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Questions
               </Button>
             </Link>
             <Link href="/admin/reports">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Reports
               </Button>
             </Link>
             <Link href="/admin/demo-settings">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Demo Settings
               </Button>
             </Link>
             <Link href="/admin/financial-statements">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Financial Statements
               </Button>
             </Link>
             <Link href="/admin/subjects">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Subjects
               </Button>
             </Link>
             <Link href="/admin/upload">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Upload
               </Button>
             </Link>
             <Link href="/admin/faq">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 FAQ
               </Button>
             </Link>
             <Link href="/admin/beta-features">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Beta
               </Button>
             </Link>
             <Link href="/admin/audit-logs">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Audit
               </Button>
             </Link>
             <Link href="/admin/users">
-              <Button variant="ghost" size="sm" className="text-text-light hover:text-primary-green">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Users
               </Button>
             </Link>

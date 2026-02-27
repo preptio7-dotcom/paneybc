@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FaqItem } from '@/data/faq-data'
 import { ChevronDown } from 'lucide-react'
 
@@ -8,13 +8,37 @@ type FAQSectionProps = {
   items: FaqItem[]
   betaLabel?: string
   sectionId?: string
+  initialVisibleCount?: number
+  showMoreLabel?: string
+  showLessLabel?: string
 }
 
-export function FAQSection({ items, betaLabel, sectionId = 'faq-section' }: FAQSectionProps) {
-  const [openIndex, setOpenIndex] = useState<number | null>(0)
+export function FAQSection({
+  items,
+  betaLabel,
+  sectionId = 'faq-section',
+  initialVisibleCount = items.length,
+  showMoreLabel = 'View More Questions',
+  showLessLabel = 'Show Less Questions',
+}: FAQSectionProps) {
+  const [showAll, setShowAll] = useState(false)
+  const [openId, setOpenId] = useState<string | null>(items[0]?.id || null)
 
-  const toggle = (index: number) => {
-    setOpenIndex((prev) => (prev === index ? null : index))
+  const visibleCount = Math.min(Math.max(initialVisibleCount, 1), items.length)
+  const visibleItems = useMemo(
+    () => (showAll ? items : items.slice(0, visibleCount)),
+    [items, showAll, visibleCount]
+  )
+  const hasMoreItems = items.length > visibleCount
+
+  useEffect(() => {
+    if (!visibleItems.some((item) => item.id === openId)) {
+      setOpenId(visibleItems[0]?.id || null)
+    }
+  }, [visibleItems, openId])
+
+  const toggle = (id: string) => {
+    setOpenId((prev) => (prev === id ? null : id))
   }
 
   if (!items.length) {
@@ -39,17 +63,17 @@ export function FAQSection({ items, betaLabel, sectionId = 'faq-section' }: FAQS
         </div>
 
         <div className="space-y-3">
-          {items.map((item, index) => {
-            const isOpen = openIndex === index
+          {visibleItems.map((item) => {
+            const isOpen = openId === item.id
 
             return (
               <div
-                key={item.question}
+                key={item.id}
                 className="rounded-xl border border-border bg-white shadow-sm overflow-hidden"
               >
                 <button
                   type="button"
-                  onClick={() => toggle(index)}
+                  onClick={() => toggle(item.id)}
                   className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
                   aria-expanded={isOpen}
                 >
@@ -68,6 +92,17 @@ export function FAQSection({ items, betaLabel, sectionId = 'faq-section' }: FAQS
             )
           })}
         </div>
+        {hasMoreItems ? (
+          <div className="mt-5 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAll((prev) => !prev)}
+              className="inline-flex items-center rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-primary-green hover:bg-slate-50 transition-colors"
+            >
+              {showAll ? showLessLabel : showMoreLabel}
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   )

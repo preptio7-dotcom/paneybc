@@ -58,8 +58,10 @@ export async function GET(request: NextRequest) {
     const betaFeatures = extractBetaFeatureSettings(testSettings)
     const faqSettings = extractFaqSettings(testSettings)
     let faqItems = faqSettings.items
+    let faqFeaturedIds = faqSettings.featuredIds
     if (!canAccessBetaFeature(betaFeatures.faq, null)) {
       faqItems = []
+      faqFeaturedIds = []
       if (currentUser) {
         const user = await prisma.user.findUnique({
           where: { id: currentUser.userId },
@@ -67,9 +69,12 @@ export async function GET(request: NextRequest) {
         })
         if (canAccessBetaFeature(betaFeatures.faq, user?.studentRole)) {
           faqItems = faqSettings.items
+          faqFeaturedIds = faqSettings.featuredIds
         }
       }
     }
+    const visibleIds = new Set(faqItems.map((item) => item.id))
+    faqFeaturedIds = faqFeaturedIds.filter((id) => visibleIds.has(id))
 
     const normalizedTestSettings = {
       ...testSettings,
@@ -86,6 +91,7 @@ export async function GET(request: NextRequest) {
         ...faqSettings,
         visibility: betaFeatures.faq,
         items: faqItems,
+        featuredIds: faqFeaturedIds,
       },
     }
 
@@ -125,6 +131,7 @@ export async function GET(request: NextRequest) {
             ...extractFaqSettings({}),
             visibility: fallbackBetaFeatures.faq,
             items: [],
+            featuredIds: [],
           },
         },
       },

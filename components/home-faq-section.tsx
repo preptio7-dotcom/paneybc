@@ -13,11 +13,13 @@ import {
 type HomeFaqState = {
   visibility: BetaFeatureVisibility
   items: FaqItem[]
+  featuredIds: string[]
 }
 
 const defaultFaqState: HomeFaqState = {
   visibility: 'beta_ambassador',
   items: faqData,
+  featuredIds: faqData.slice(0, 5).map((item) => item.id),
 }
 
 export function HomeFaqSection() {
@@ -35,18 +37,32 @@ export function HomeFaqSection() {
         const faq = testSettings.faq || {}
         const betaFeatures = extractBetaFeatureSettings(testSettings)
         const hasFaqItemsArray = Array.isArray(faq.items)
+        const normalizedFeaturedIds = Array.isArray(faq.featuredIds)
+          ? faq.featuredIds.map((id: any) => String(id || '').trim()).filter(Boolean)
+          : []
         const normalizedItems = hasFaqItemsArray
           ? faq.items
-              .map((item: any) => ({
+              .map((item: any, index: number) => ({
+                id: String(item?.id || '').trim() || `faq-item-${index + 1}`,
                 question: String(item?.question || '').trim(),
                 answer: String(item?.answer || '').trim(),
               }))
-              .filter((item: FaqItem) => item.question && item.answer)
+              .filter((item: FaqItem) => item.id && item.question && item.answer)
           : faqData
+
+        const itemMap = new Map(normalizedItems.map((item) => [item.id, item]))
+        const featured = normalizedFeaturedIds
+          .map((id: string) => itemMap.get(id))
+          .filter((item): item is FaqItem => Boolean(item))
+        const featuredItems = featured.length ? featured : normalizedItems.slice(0, 5)
+        const remainingItems = normalizedItems.filter(
+          (item) => !featuredItems.some((featuredItem) => featuredItem.id === item.id)
+        )
 
         setFaqState({
           visibility: betaFeatures.faq,
-          items: normalizedItems,
+          items: [...featuredItems, ...remainingItems],
+          featuredIds: featuredItems.map((item) => item.id),
         })
       } catch {
         // keep defaults
@@ -82,6 +98,9 @@ export function HomeFaqSection() {
       sectionId="frequently-asked-questions"
       items={faqState.items}
       betaLabel={betaLabel}
+      initialVisibleCount={Math.min(5, faqState.featuredIds.length || 5)}
+      showMoreLabel="View More Questions"
+      showLessLabel="Show Less Questions"
     />
   )
 }
