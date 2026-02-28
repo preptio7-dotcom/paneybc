@@ -14,5 +14,10 @@ export const betaFeatureDefinitions: BetaFeatureDefinition[] = [
     description: 'Frequently asked questions shown on the home page.',
     href: '/#frequently-asked-questions',
   },
+  {
+    key: 'studentFeedback',
+    label: 'Student Feedback',
+    description: 'Student review carousel shown above the FAQ section on the home page.',
+    href: '/#student-feedback',
+  },
 ]
-

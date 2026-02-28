@@ -131,6 +131,12 @@ export default function AdminDashboardPage() {
             icon: Settings,
         },
         {
+            title: 'Student Feedback',
+            description: 'Moderate homepage feedback (approve/reject/delete).',
+            href: '/admin/feedback',
+            icon: FileText,
+        },
+        {
             title: 'Beta Features',
             description: 'Control which features are public or ambassador-only.',
             href: '/admin/beta-features',

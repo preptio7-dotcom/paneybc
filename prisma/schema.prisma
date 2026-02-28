@@ -81,6 +81,11 @@ enum FinancialStatementInputType {
   manual
 }
 
+enum FeedbackStatus {
+  pending
+  approved
+}
+
 model User {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -485,6 +490,7 @@ model UserFeedback {
   userId    String   @unique
   rating    Int
   message   String
+  status    FeedbackStatus @default(pending)
   source    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -492,4 +498,5 @@ model UserFeedback {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+  @@index([status, createdAt])
 }

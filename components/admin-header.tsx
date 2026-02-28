@@ -60,6 +60,11 @@ export function AdminHeader() {
                 FAQ
               </Button>
             </Link>
+            <Link href="/admin/feedback">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
+                Feedback
+              </Button>
+            </Link>
             <Link href="/admin/beta-features">
               <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Beta

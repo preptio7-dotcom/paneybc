@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         id: true,
         rating: true,
         message: true,
+        status: true,
         source: true,
         createdAt: true,
         updatedAt: true,
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     const existing = await prisma.userFeedback.findUnique({
       where: { userId: currentUser.userId },
-      select: { id: true },
+      select: { id: true, status: true },
     })
     if (existing) {
       return NextResponse.json(
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
         id: true,
         rating: true,
         message: true,
+        status: true,
         source: true,
         createdAt: true,
         updatedAt: true,
@@ -134,11 +136,13 @@ export async function PATCH(request: NextRequest) {
         rating,
         message,
         source,
+        status: 'pending',
       },
       select: {
         id: true,
         rating: true,
         message: true,
+        status: true,
         source: true,
         createdAt: true,
         updatedAt: true,

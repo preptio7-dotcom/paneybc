@@ -15,6 +15,8 @@ type FeedbackForm = {
   message: string
 }
 
+type FeedbackStatus = 'pending' | 'approved'
+
 const initialForm: FeedbackForm = {
   rating: 0,
   message: '',
@@ -30,6 +32,7 @@ export default function FeedbackClient() {
   const [isSaving, setIsSaving] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
+  const [status, setStatus] = useState<FeedbackStatus>('pending')
 
   useEffect(() => {
     if (!user) {
@@ -52,11 +55,13 @@ export default function FeedbackClient() {
             message: String(data.feedback.message || ''),
           })
           setUpdatedAt(data.feedback.updatedAt || data.feedback.createdAt || null)
+          setStatus((data.feedback.status as FeedbackStatus) || 'pending')
           setHasSubmitted(true)
         } else {
           setForm(initialForm)
           setHasSubmitted(false)
           setUpdatedAt(null)
+          setStatus('pending')
         }
       } catch (error: any) {
         toast({
@@ -108,6 +113,7 @@ export default function FeedbackClient() {
 
       setHasSubmitted(true)
       setUpdatedAt(data.feedback?.updatedAt || null)
+      setStatus((data.feedback?.status as FeedbackStatus) || 'pending')
       toast({
         title: hasSubmitted ? 'Feedback updated' : 'Feedback submitted',
         description: 'Thank you for sharing your feedback.',
@@ -169,6 +175,14 @@ export default function FeedbackClient() {
           {updatedAt ? (
             <p className="text-xs text-slate-500 mt-1">
               Last updated: {new Date(updatedAt).toLocaleString()}
+            </p>
+          ) : null}
+          {hasSubmitted ? (
+            <p className="text-xs mt-1 text-slate-500">
+              Review status:{' '}
+              <span className={status === 'approved' ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                {status}
+              </span>
             </p>
           ) : null}
         </div>

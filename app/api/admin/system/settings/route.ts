@@ -85,6 +85,9 @@ export async function GET(request: NextRequest) {
         ...normalizedFaq,
         visibility: normalizedBetaFeatures.faq,
       },
+      studentFeedback: {
+        visibility: normalizedBetaFeatures.studentFeedback,
+      },
     }
 
     return NextResponse.json({
@@ -185,6 +188,9 @@ export async function POST(request: NextRequest) {
       faq: {
         ...extractFaqSettings(mergedTestSettings),
         visibility: mergedBetaFeatures.faq,
+      },
+      studentFeedback: {
+        visibility: mergedBetaFeatures.studentFeedback,
       },
     }
 
