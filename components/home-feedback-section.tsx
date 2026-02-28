@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -124,13 +124,11 @@ export function HomeFeedbackSection() {
   const [isLoading, setIsLoading] = useState(true)
   const [payload, setPayload] = useState<FeedbackPayload | null>(null)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
-  const [inView, setInView] = useState(false)
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: 'start',
     dragFree: false,
   })
-  const sectionRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     const loadFeedback = async () => {
@@ -155,37 +153,6 @@ export function HomeFeedbackSection() {
     }
 
     loadFeedback()
-  }, [])
-
-  useEffect(() => {
-    const element = sectionRef.current
-    if (!element) return
-
-    if (typeof IntersectionObserver === 'undefined') {
-      setInView(true)
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setInView(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.2 }
-    )
-
-    const fallbackTimer = window.setTimeout(() => {
-      setInView(true)
-    }, 1800)
-
-    observer.observe(element)
-
-    return () => {
-      window.clearTimeout(fallbackTimer)
-      observer.disconnect()
-    }
   }, [])
 
   useEffect(() => {
@@ -216,12 +183,8 @@ export function HomeFeedbackSection() {
   }
 
   return (
-    <section id="student-feedback" ref={sectionRef} className="w-full bg-background-light py-20">
-      <div
-        className={`max-w-6xl mx-auto px-6 transition-all duration-700 ${
-          inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-        }`}
-      >
+    <section id="student-feedback" className="w-full bg-background-light py-20">
+      <div className="max-w-6xl mx-auto px-6 transition-all duration-700 opacity-100 translate-y-0">
         <div className="text-center mb-10">
           {isBeta ? (
             <p className="text-xs uppercase tracking-[0.18em] text-primary-green font-semibold mb-3">Beta</p>
