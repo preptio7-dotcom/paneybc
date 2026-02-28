@@ -12,6 +12,14 @@ const ADSENSE_SRC =
   'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378'
 const ADBLOCK_SESSION_KEY = 'preptio_adblock_passed'
 
+type ScriptStatus = 'idle' | 'loaded' | 'error'
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
 function detectAdblocker() {
   return new Promise<boolean>((resolve) => {
     if (typeof document === 'undefined') {
@@ -41,6 +49,37 @@ function detectAdblocker() {
   })
 }
 
+function probeAdSenseScriptLoad() {
+  return new Promise<boolean>((resolve) => {
+    if (typeof document === 'undefined') {
+      resolve(false)
+      return
+    }
+
+    let finished = false
+    const script = document.createElement('script')
+    script.src = ADSENSE_SRC
+    script.async = true
+    script.crossOrigin = 'anonymous'
+    script.setAttribute('data-preptio-ad-probe', '1')
+
+    const finish = (blocked: boolean) => {
+      if (finished) return
+      finished = true
+      window.clearTimeout(timeoutId)
+      script.onload = null
+      script.onerror = null
+      script.remove()
+      resolve(blocked)
+    }
+
+    const timeoutId = window.setTimeout(() => finish(true), 2500)
+    script.onload = () => finish(false)
+    script.onerror = () => finish(true)
+    document.head.appendChild(script)
+  })
+}
+
 export function AdExperienceGuard() {
   const pathname = usePathname() || '/'
   const { user, loading } = useAuth()
@@ -50,6 +89,7 @@ export function AdExperienceGuard() {
   const [showOverlay, setShowOverlay] = useState(false)
   const [isRechecking, setIsRechecking] = useState(false)
   const [recheckMessage, setRecheckMessage] = useState('')
+  const [scriptStatus, setScriptStatus] = useState<ScriptStatus>('idle')
 
   const adEligibility = useMemo(() => {
     if (loading) return null
@@ -91,6 +131,24 @@ export function AdExperienceGuard() {
     setRecheckMessage('')
   }, [])
 
+  const runAdblockDetection = useCallback(async () => {
+    const baitBlocked = await detectAdblocker()
+    if (baitBlocked) return true
+
+    if (scriptStatus === 'error') return true
+    if (scriptStatus === 'loaded') return false
+
+    await wait(1200)
+    if (scriptStatus === 'error') return true
+    if (scriptStatus === 'loaded') return false
+
+    if (typeof window !== 'undefined' && Array.isArray((window as any).adsbygoogle)) {
+      return false
+    }
+
+    return probeAdSenseScriptLoad()
+  }, [scriptStatus])
+
   useEffect(() => {
     if (!shouldCheckAdblock) {
       setShowOverlay(false)
@@ -100,7 +158,7 @@ export function AdExperienceGuard() {
 
     let active = true
     const check = async () => {
-      const blocked = await detectAdblocker()
+      const blocked = await runAdblockDetection()
       if (!active) return
       if (blocked) {
         setShowOverlay(true)
@@ -113,12 +171,12 @@ export function AdExperienceGuard() {
     return () => {
       active = false
     }
-  }, [shouldCheckAdblock, markSessionPassed])
+  }, [shouldCheckAdblock, markSessionPassed, runAdblockDetection])
 
   const handleContinue = async () => {
     setIsRechecking(true)
     setRecheckMessage('')
-    const blocked = await detectAdblocker()
+    const blocked = await runAdblockDetection()
     if (!blocked) {
       markSessionPassed()
       setIsRechecking(false)
@@ -141,6 +199,8 @@ export function AdExperienceGuard() {
           src={ADSENSE_SRC}
           crossOrigin="anonymous"
           strategy="afterInteractive"
+          onLoad={() => setScriptStatus('loaded')}
+          onError={() => setScriptStatus('error')}
         />
       ) : null}
 
