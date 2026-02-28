@@ -5,7 +5,6 @@ import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { getCurrentUser } from '@/lib/auth'
 import { canAccessBetaFeature, extractBetaFeatureSettings } from '@/lib/beta-features'
-import { extractGeoRestrictionSettings } from '@/lib/geo-restriction'
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,7 +44,6 @@ export async function GET(request: NextRequest) {
       fullBookTimeMinutes: 120,
       chapterTestDefaultMinutes: 30,
       chapterTestDefaultQuestions: 25,
-      geoRestriction: { pakistanOnly: true },
       demoEnabled: true,
       demoMaxQuestions: 10,
       demoTimeMinutes: 20,
@@ -59,7 +57,6 @@ export async function GET(request: NextRequest) {
 
     const betaFeatures = extractBetaFeatureSettings(testSettings)
     const faqSettings = extractFaqSettings(testSettings)
-    const geoRestriction = extractGeoRestrictionSettings(testSettings)
     let faqItems = faqSettings.items
     let faqFeaturedIds = faqSettings.featuredIds
     if (!canAccessBetaFeature(betaFeatures.faq, null)) {
@@ -99,7 +96,6 @@ export async function GET(request: NextRequest) {
       studentFeedback: {
         visibility: betaFeatures.studentFeedback,
       },
-      geoRestriction,
     }
 
     return NextResponse.json(
@@ -127,7 +123,6 @@ export async function GET(request: NextRequest) {
           fullBookTimeMinutes: 120,
           chapterTestDefaultMinutes: 30,
           chapterTestDefaultQuestions: 25,
-          geoRestriction: { pakistanOnly: true },
           demoEnabled: true,
           demoMaxQuestions: 10,
           demoTimeMinutes: 20,
@@ -144,7 +139,6 @@ export async function GET(request: NextRequest) {
           studentFeedback: {
             visibility: fallbackBetaFeatures.studentFeedback,
           },
-          geoRestriction: { pakistanOnly: true },
         },
       },
       {

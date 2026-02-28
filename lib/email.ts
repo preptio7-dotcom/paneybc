@@ -477,3 +477,30 @@ export async function sendContactAdminEmail(payload: {
   }
   return transporter.sendMail(mailOptions)
 }
+
+export async function sendSecurityAlertEmail(email: string, name?: string) {
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/forgot-password`
+
+  const mailOptions = {
+    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'Security Alert: Multiple Login Attempts Detected',
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px; color: #1e293b;">
+        <h2 style="color: #dc2626; margin-top: 0;">Security Alert</h2>
+        <p>Hello ${name || 'there'},</p>
+        <p>Someone tried to access your Preptio account multiple times. If this was not you please reset your password immediately.</p>
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${resetUrl}" style="background: #16a34a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+            Reset Password
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #64748b;">If this was you, you can ignore this message.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center;">Preptio &copy; ${new Date().getFullYear()}</p>
+      </div>
+    `,
+  }
+
+  return transporter.sendMail(mailOptions)
+}

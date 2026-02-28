@@ -5,13 +5,43 @@ import { Button } from './ui/button'
 import { LogOut, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ProfileModal } from './profile-modal'
 import Image from 'next/image'
 
 export function AdminHeader() {
   const { user, logout } = useAuth()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [activeThreatCount, setActiveThreatCount] = useState(0)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadSummary = async () => {
+      try {
+        const response = await fetch('/api/admin/ip-security/summary', {
+          cache: 'no-store',
+        })
+        if (!response.ok) return
+        const data = await response.json()
+        if (!isMounted) return
+        const count = Number(data?.activeThreatUnreviewedCount || 0)
+        setActiveThreatCount(Number.isNaN(count) ? 0 : count)
+      } catch {
+        if (isMounted) setActiveThreatCount(0)
+      }
+    }
+
+    void loadSummary()
+    const intervalId = window.setInterval(() => {
+      void loadSummary()
+    }, 60_000)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(intervalId)
+    }
+  }, [])
 
   return (
     <div className="fixed top-0 left-0 right-0 h-[60px] bg-white border-b border-border z-40 flex items-center">
@@ -78,6 +108,18 @@ export function AdminHeader() {
             <Link href="/admin/users">
               <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green">
                 Users
+              </Button>
+            </Link>
+            <span className="mx-1 h-4 w-px bg-slate-200" />
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-1">Security</span>
+            <Link href="/admin/ip-security">
+              <Button variant="ghost" size="sm" className="px-3 text-[13px] font-medium text-text-light hover:text-primary-green gap-2">
+                IP Security
+                {activeThreatCount > 0 ? (
+                  <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                    {activeThreatCount > 99 ? '99+' : activeThreatCount}
+                  </span>
+                ) : null}
               </Button>
             </Link>
           </nav>

@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle, X } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -26,7 +25,6 @@ export default function AdminDashboardPage() {
         chapterTestDefaultQuestions: 25,
         registrationDegrees: ['CA'],
         registrationLevels: ['PRC', 'CAF'],
-        geoRestrictionPakistanOnly: true,
     })
     const [newDegree, setNewDegree] = useState('')
     const [newLevel, setNewLevel] = useState('')
@@ -53,10 +51,6 @@ export default function AdminDashboardPage() {
                         registrationLevels: Array.isArray(data.testSettings.registrationLevels) && data.testSettings.registrationLevels.length
                             ? data.testSettings.registrationLevels
                             : ['PRC', 'CAF'],
-                        geoRestrictionPakistanOnly:
-                            typeof data.testSettings?.geoRestriction?.pakistanOnly === 'boolean'
-                                ? data.testSettings.geoRestriction.pakistanOnly
-                                : true,
                     })
                 }
             } catch (error) {
@@ -149,6 +143,12 @@ export default function AdminDashboardPage() {
             icon: Flag,
         },
         {
+            title: 'IP Security',
+            description: 'Review suspicious traffic, block IPs, and manage whitelist.',
+            href: '/admin/ip-security',
+            icon: Settings,
+        },
+        {
             title: 'Audit Logs',
             description: 'Track who changed admin settings and user controls.',
             href: '/admin/audit-logs',
@@ -175,9 +175,6 @@ export default function AdminDashboardPage() {
                         chapterTestDefaultQuestions: testSettings.chapterTestDefaultQuestions,
                         registrationDegrees: testSettings.registrationDegrees,
                         registrationLevels: testSettings.registrationLevels,
-                        geoRestriction: {
-                            pakistanOnly: testSettings.geoRestrictionPakistanOnly,
-                        },
                     },
                 }),
             })
@@ -333,20 +330,6 @@ export default function AdminDashboardPage() {
                                         <Button type="button" variant="outline" onClick={() => addOption('level')}>Add</Button>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border border-border bg-white px-4 py-3">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-semibold text-text-dark">Pakistan-Only Access</p>
-                                    <p className="text-xs text-text-light">
-                                        When enabled, users outside Pakistan are redirected to the unsupported region page.
-                                    </p>
-                                </div>
-                                <Switch
-                                    checked={testSettings.geoRestrictionPakistanOnly}
-                                    onCheckedChange={(checked) =>
-                                        setTestSettings((prev) => ({ ...prev, geoRestrictionPakistanOnly: checked }))
-                                    }
-                                />
                             </div>
                             <Button onClick={handleSaveTestSettings} disabled={isSavingTestSettings}>
                                 {isSavingTestSettings ? 'Saving...' : 'Save Test Settings'}

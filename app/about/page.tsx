@@ -5,6 +5,7 @@ import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth-context'
 
 type FadeInSectionProps = {
   children: React.ReactNode
@@ -66,6 +67,32 @@ function FadeInSection({ children, className = '', delayMs = 0 }: FadeInSectionP
 }
 
 export default function AboutPage() {
+  const { user } = useAuth()
+  const [subjectCount, setSubjectCount] = useState('5')
+
+  useEffect(() => {
+    let active = true
+
+    const loadPublicStats = async () => {
+      try {
+        const response = await fetch('/api/public/stats', { cache: 'no-store' })
+        if (!response.ok) return
+        const data = await response.json()
+        const totalSubjects = Number(data?.totalSubjects)
+        if (!active || Number.isNaN(totalSubjects) || totalSubjects < 0) return
+        setSubjectCount(totalSubjects.toLocaleString())
+      } catch {
+        // keep fallback
+      }
+    }
+
+    loadPublicStats()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   const timelineItems: TimelineItem[] = [
     {
       label: 'The Problem',
@@ -163,7 +190,7 @@ export default function AboutPage() {
                       {'\u{1F3AF}'}
                     </span>
                     <div>
-                      <p className="text-3xl font-black text-slate-900">5</p>
+                      <p className="text-3xl font-black text-slate-900">{subjectCount}</p>
                       <p className="text-sm text-text-light">CA Subjects Covered</p>
                     </div>
                   </div>
@@ -248,21 +275,23 @@ export default function AboutPage() {
         </section>
 
         {/* Section 4: CTA Banner */}
-        <section className="max-w-7xl mx-auto px-6 pb-16 md:pb-20">
-          <FadeInSection>
-            <div className="rounded-3xl bg-primary-green text-white py-10 px-6 md:py-12 md:px-10 text-center space-y-5 shadow-lg">
-              <h2 className="font-heading text-3xl md:text-4xl font-black">Ready to Start Your CA Journey?</h2>
-              <p className="text-white/90 text-base md:text-lg max-w-2xl mx-auto">
-                Join thousands of CA students already practicing smarter with Preptio. It's completely free.
-              </p>
-              <Link href="/auth/signup" className="inline-block">
-                <Button className="bg-white text-primary-green hover:bg-slate-100 font-bold h-12 px-8">
-                  Create Free Account {'\u2192'}
-                </Button>
-              </Link>
-            </div>
-          </FadeInSection>
-        </section>
+        {!user ? (
+          <section className="max-w-7xl mx-auto px-6 pb-16 md:pb-20">
+            <FadeInSection>
+              <div className="rounded-3xl bg-primary-green text-white py-10 px-6 md:py-12 md:px-10 text-center space-y-5 shadow-lg">
+                <h2 className="font-heading text-3xl md:text-4xl font-black">Ready to Start Your CA Journey?</h2>
+                <p className="text-white/90 text-base md:text-lg max-w-2xl mx-auto">
+                  Join thousands of CA students already practicing smarter with Preptio. It's completely free.
+                </p>
+                <Link href="/auth/signup" className="inline-block">
+                  <Button className="bg-white text-primary-green hover:bg-slate-100 font-bold h-12 px-8">
+                    Create Free Account {'\u2192'}
+                  </Button>
+                </Link>
+              </div>
+            </FadeInSection>
+          </section>
+        ) : null}
       </div>
 
       <Footer />

@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth'
 import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-utils'
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { extractBetaFeatureSettings } from '@/lib/beta-features'
-import { extractGeoRestrictionSettings } from '@/lib/geo-restriction'
 import { createAdminAuditLog } from '@/lib/admin-audit'
 
 function isAuthorized(request: NextRequest) {
@@ -59,7 +58,6 @@ export async function GET(request: NextRequest) {
       fullBookTimeMinutes: 120,
       chapterTestDefaultMinutes: 30,
       chapterTestDefaultQuestions: 25,
-      geoRestriction: { pakistanOnly: true },
       demoEnabled: true,
       demoMaxQuestions: 10,
       demoTimeMinutes: 20,
@@ -72,7 +70,6 @@ export async function GET(request: NextRequest) {
     }
     const normalizedBetaFeatures = extractBetaFeatureSettings(testSettings)
     const normalizedFaq = extractFaqSettings(testSettings)
-    const normalizedGeoRestriction = extractGeoRestrictionSettings(testSettings)
     const normalizedTestSettings = {
       ...testSettings,
       registrationDegrees: (() => {
@@ -91,7 +88,6 @@ export async function GET(request: NextRequest) {
       studentFeedback: {
         visibility: normalizedBetaFeatures.studentFeedback,
       },
-      geoRestriction: normalizedGeoRestriction,
     }
 
     return NextResponse.json({
@@ -146,7 +142,6 @@ export async function POST(request: NextRequest) {
       fullBookTimeMinutes: 120,
       chapterTestDefaultMinutes: 30,
       chapterTestDefaultQuestions: 25,
-      geoRestriction: { pakistanOnly: true },
       demoEnabled: true,
       demoMaxQuestions: 10,
       demoTimeMinutes: 20,
@@ -178,7 +173,6 @@ export async function POST(request: NextRequest) {
       ? { ...currentTestSettings, ...payload.testSettings }
       : currentTestSettings
     const mergedBetaFeatures = extractBetaFeatureSettings(mergedTestSettings)
-    const mergedGeoRestriction = extractGeoRestrictionSettings(mergedTestSettings)
 
     const updatedTestSettings = {
       ...mergedTestSettings,
@@ -198,7 +192,6 @@ export async function POST(request: NextRequest) {
       studentFeedback: {
         visibility: mergedBetaFeatures.studentFeedback,
       },
-      geoRestriction: mergedGeoRestriction,
     }
 
     settings = await prisma.systemSettings.update({

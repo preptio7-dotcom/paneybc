@@ -86,6 +86,27 @@ enum FeedbackStatus {
   approved
 }
 
+enum SecurityActivityType {
+  failed_login
+  brute_force_attempt
+  too_many_requests
+  account_lockout
+  csrf_violation
+  xss_attempt
+}
+
+enum SecurityEventStatus {
+  active_threat
+  suspicious
+  resolved
+  blocked
+}
+
+enum IpBlockSource {
+  auto
+  admin
+}
+
 model User {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -483,6 +504,80 @@ model AdminAuditLog {
   @@index([actorId, createdAt])
   @@index([action, createdAt])
   @@index([createdAt])
+}
+
+model IpActivityLog {
+  id             String             @id @default(cuid())
+  ipAddress      String             @map("ip_address")
+  activityType   SecurityActivityType @map("activity_type")
+  targetUserId   String?            @map("target_user_id")
+  targetEndpoint String?            @map("target_endpoint")
+  attemptsCount  Int                @default(1) @map("attempts_count")
+  firstSeen      DateTime           @default(now()) @map("first_seen")
+  lastSeen       DateTime           @default(now()) @map("last_seen")
+  status         SecurityEventStatus @default(suspicious)
+  isReviewed     Boolean            @default(false) @map("is_reviewed")
+  reviewedAt     DateTime?          @map("reviewed_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@index([status])
+  @@index([activityType, createdAt])
+  @@map("ip_activity_log")
+}
+
+model BlockedIp {
+  id                      String        @id @default(cuid())
+  ipAddress               String        @unique @map("ip_address")
+  reason                  String
+  blockedBy               String        @map("blocked_by")
+  blockedAt               DateTime      @default(now()) @map("blocked_at")
+  isActive                Boolean       @default(true) @map("is_active")
+  blockSource             IpBlockSource @default(admin) @map("block_source")
+  totalAttemptsBeforeBlock Int          @default(0) @map("total_attempts_before_block")
+  isSubnet                Boolean       @default(false) @map("is_subnet")
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+
+  @@index([ipAddress])
+  @@index([blockedAt])
+  @@index([isActive, blockedAt])
+  @@index([createdAt])
+  @@map("blocked_ips")
+}
+
+model WhitelistedIp {
+  id        String   @id @default(cuid())
+  ipAddress String   @unique @map("ip_address")
+  label     String?
+  addedBy   String   @map("added_by")
+  addedAt   DateTime @default(now()) @map("added_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ipAddress])
+  @@index([addedAt])
+  @@index([createdAt])
+  @@map("whitelisted_ips")
+}
+
+model IpSecurityAudit {
+  id          String   @id @default(cuid())
+  adminId     String   @map("admin_id")
+  action      String
+  ipAddress   String   @map("ip_address")
+  reason      String?
+  performedAt DateTime @default(now()) @map("performed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  metadata    Json?
+
+  @@index([ipAddress])
+  @@index([performedAt])
+  @@index([adminId, performedAt])
+  @@index([createdAt])
+  @@map("ip_security_audit")
 }
 
 model UserFeedback {

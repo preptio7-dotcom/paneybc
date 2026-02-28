@@ -1,8 +1,13 @@
-export const runtime = 'nodejs'
+﻿export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
+import { hasValidSameOrigin } from '@/lib/csrf'
+import { detectSuspiciousInput, sanitizePlainText } from '@/lib/security-input'
+import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
+import { getIpAccess, getRequestIpAddress, logSecurityEvent } from '@/lib/ip-security'
 
 function sanitizeFeedbackMessage(value: unknown) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, 2000)
@@ -15,10 +20,7 @@ function normalizeRating(value: unknown) {
 }
 
 function isFeedbackTableMissing(error: unknown) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === 'P2021'
-  )
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021'
 }
 
 export async function GET(request: NextRequest) {
@@ -64,10 +66,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ipAddress = getRequestIpAddress(request)
+    const ipAccess = await getIpAccess(ipAddress)
+
+    if (!hasValidSameOrigin(request)) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'csrf_violation',
+        status: 'active_threat',
+        targetEndpoint: '/api/user/feedback',
+        targetUserId: currentUser.userId,
+      })
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
+    }
+
+    if (!ipAccess.isWhitelisted) {
+      const rateLimit = await enforceIpRateLimit(request, {
+        scope: 'user-feedback-submit',
+        maxRequests: 8,
+        windowSeconds: 600,
+      })
+      if (!rateLimit.allowed) {
+        await logSecurityEvent({
+          ipAddress,
+          activityType: 'too_many_requests',
+          status: 'active_threat',
+          targetEndpoint: '/api/user/feedback',
+          targetUserId: currentUser.userId,
+          attemptsIncrement: rateLimit.currentCount,
+        })
+        return rateLimitExceededResponse('feedback submissions', rateLimit.retryAfterSeconds)
+      }
+    }
+
     const body = await request.json()
+    const suspiciousInput = detectSuspiciousInput({ message: body?.message, source: body?.source })
+    if (suspiciousInput) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'xss_attempt',
+        status: 'active_threat',
+        targetEndpoint: `/api/user/feedback#${suspiciousInput.field}`,
+        targetUserId: currentUser.userId,
+      })
+      return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
+    }
+
     const rating = normalizeRating(body.rating)
     const message = sanitizeFeedbackMessage(body.message)
-    const source = String(body.source || '').trim().slice(0, 80) || null
+    const source = sanitizePlainText(body.source, 80) || null
 
     if (!rating || !message) {
       return NextResponse.json({ error: 'Rating and feedback message are required' }, { status: 400 })
@@ -121,10 +168,55 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ipAddress = getRequestIpAddress(request)
+    const ipAccess = await getIpAccess(ipAddress)
+
+    if (!hasValidSameOrigin(request)) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'csrf_violation',
+        status: 'active_threat',
+        targetEndpoint: '/api/user/feedback',
+        targetUserId: currentUser.userId,
+      })
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
+    }
+
+    if (!ipAccess.isWhitelisted) {
+      const rateLimit = await enforceIpRateLimit(request, {
+        scope: 'user-feedback-update',
+        maxRequests: 12,
+        windowSeconds: 600,
+      })
+      if (!rateLimit.allowed) {
+        await logSecurityEvent({
+          ipAddress,
+          activityType: 'too_many_requests',
+          status: 'active_threat',
+          targetEndpoint: '/api/user/feedback',
+          targetUserId: currentUser.userId,
+          attemptsIncrement: rateLimit.currentCount,
+        })
+        return rateLimitExceededResponse('feedback updates', rateLimit.retryAfterSeconds)
+      }
+    }
+
     const body = await request.json()
+    const suspiciousInput = detectSuspiciousInput({ message: body?.message, source: body?.source })
+    if (suspiciousInput) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'xss_attempt',
+        status: 'active_threat',
+        targetEndpoint: `/api/user/feedback#${suspiciousInput.field}`,
+        targetUserId: currentUser.userId,
+      })
+      return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
+    }
+
     const rating = normalizeRating(body.rating)
     const message = sanitizeFeedbackMessage(body.message)
-    const source = String(body.source || '').trim().slice(0, 80) || null
+    const source = sanitizePlainText(body.source, 80) || null
 
     if (!rating || !message) {
       return NextResponse.json({ error: 'Rating and feedback message are required' }, { status: 400 })

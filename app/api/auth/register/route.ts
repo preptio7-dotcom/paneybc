@@ -1,32 +1,50 @@
-export const runtime = 'nodejs'
+﻿export const runtime = 'nodejs'
+
 import { prisma } from '@/lib/prisma'
 import bcryptjs from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 import { extractRegistrationSettings, normalizeEmail, normalizePkPhone, sanitizeText } from '@/lib/account-utils'
-import { isPakistanRequest, blockedCountryResponse } from '@/lib/geo'
-import { extractGeoRestrictionSettings } from '@/lib/geo-restriction'
+import { hasValidSameOrigin } from '@/lib/csrf'
+import { detectSuspiciousInput } from '@/lib/security-input'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
+import { getIpAccess, getRequestIpAddress, logSecurityEvent } from '@/lib/ip-security'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
 const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const REGISTER_ENDPOINT = '/api/auth/register'
 
 export async function POST(request: NextRequest) {
   try {
-    const settings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
-    const geoRestriction = extractGeoRestrictionSettings(settings?.testSettings || {})
-    const geo = isPakistanRequest(request, { pakistanOnly: geoRestriction.pakistanOnly })
-    if (!geo.allowed) {
-      return blockedCountryResponse(geo.country)
+    const ipAddress = getRequestIpAddress(request)
+    const ipAccess = await getIpAccess(ipAddress)
+
+    if (!hasValidSameOrigin(request)) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'csrf_violation',
+        status: 'active_threat',
+        targetEndpoint: REGISTER_ENDPOINT,
+      })
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
     }
 
-    const rateLimit = await enforceIpRateLimit(request, {
-      scope: 'auth-register',
-      maxRequests: 5,
-      windowSeconds: 600,
-    })
-    if (!rateLimit.allowed) {
-      return rateLimitExceededResponse('signup attempts', rateLimit.retryAfterSeconds)
+    if (!ipAccess.isWhitelisted) {
+      const rateLimit = await enforceIpRateLimit(request, {
+        scope: 'auth-register',
+        maxRequests: 5,
+        windowSeconds: 600,
+      })
+      if (!rateLimit.allowed) {
+        await logSecurityEvent({
+          ipAddress,
+          activityType: 'too_many_requests',
+          status: 'active_threat',
+          targetEndpoint: REGISTER_ENDPOINT,
+          attemptsIncrement: rateLimit.currentCount,
+        })
+        return rateLimitExceededResponse('signup attempts', rateLimit.retryAfterSeconds)
+      }
     }
 
     const {
@@ -46,6 +64,27 @@ export async function POST(request: NextRequest) {
       startedAt,
     } = await request.json()
 
+    const suspiciousInput = detectSuspiciousInput({
+      email,
+      name,
+      degree,
+      level,
+      institute,
+      city,
+      studentId,
+      phone,
+      website,
+    })
+    if (suspiciousInput) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'xss_attempt',
+        status: 'active_threat',
+        targetEndpoint: `${REGISTER_ENDPOINT}#${suspiciousInput.field}`,
+      })
+      return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
+    }
+
     const normalizedEmail = normalizeEmail(email || '')
     const normalizedName = sanitizeText(name || '', 100)
     const normalizedDegree = sanitizeText(degree || '', 40)
@@ -57,6 +96,12 @@ export async function POST(request: NextRequest) {
     const parsedRating = Number(instituteRating)
 
     if (typeof website === 'string' && website.trim().length > 0) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'xss_attempt',
+        status: 'active_threat',
+        targetEndpoint: `${REGISTER_ENDPOINT}#website`,
+      })
       return NextResponse.json({ error: 'Spam detected' }, { status: 400 })
     }
 
@@ -72,7 +117,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
-    if (!normalizedDegree || !normalizedLevel || !normalizedInstitute || !normalizedCity || !normalizedStudentId || !normalizedPhone) {
+    if (
+      !normalizedDegree ||
+      !normalizedLevel ||
+      !normalizedInstitute ||
+      !normalizedCity ||
+      !normalizedStudentId ||
+      !normalizedPhone
+    ) {
       return NextResponse.json({ error: 'Please complete all required profile fields' }, { status: 400 })
     }
 
@@ -97,6 +149,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired verification token' }, { status: 401 })
     }
 
+    const settings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
     const registrationSettings = extractRegistrationSettings(settings?.testSettings || {})
     if (!registrationSettings.degrees.includes(normalizedDegree)) {
       return NextResponse.json({ error: 'Selected degree is no longer available' }, { status: 400 })
@@ -183,8 +236,6 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error: any) {
     console.error('Registration error:', error)
-
     return NextResponse.json({ error: error.message || 'An error occurred' }, { status: 500 })
   }
 }
-

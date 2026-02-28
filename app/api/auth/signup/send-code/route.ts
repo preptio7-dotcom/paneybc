@@ -1,32 +1,62 @@
-export const runtime = 'nodejs'
+﻿export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendSignupVerificationEmail } from '@/lib/email'
-import { isPakistanRequest, blockedCountryResponse } from '@/lib/geo'
-import { extractGeoRestrictionSettings } from '@/lib/geo-restriction'
+import { hasValidSameOrigin } from '@/lib/csrf'
+import { detectSuspiciousInput, sanitizeEmail } from '@/lib/security-input'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
+import { getIpAccess, getRequestIpAddress, logSecurityEvent } from '@/lib/ip-security'
+
+const SEND_CODE_ENDPOINT = '/api/auth/signup/send-code'
 
 export async function POST(req: NextRequest) {
   try {
-    const systemSettings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
-    const geoRestriction = extractGeoRestrictionSettings(systemSettings?.testSettings || {})
-    const geo = isPakistanRequest(req, { pakistanOnly: geoRestriction.pakistanOnly })
-    if (!geo.allowed) {
-      return blockedCountryResponse(geo.country)
+    const ipAddress = getRequestIpAddress(req)
+    const ipAccess = await getIpAccess(ipAddress)
+
+    if (!hasValidSameOrigin(req)) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'csrf_violation',
+        status: 'active_threat',
+        targetEndpoint: SEND_CODE_ENDPOINT,
+      })
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
     }
 
-    const rateLimit = await enforceIpRateLimit(req, {
-      scope: 'auth-signup-send-code',
-      maxRequests: 5,
-      windowSeconds: 600,
-    })
-    if (!rateLimit.allowed) {
-      return rateLimitExceededResponse('signup code requests', rateLimit.retryAfterSeconds)
+    if (!ipAccess.isWhitelisted) {
+      const rateLimit = await enforceIpRateLimit(req, {
+        scope: 'auth-signup-send-code',
+        maxRequests: 5,
+        windowSeconds: 600,
+      })
+      if (!rateLimit.allowed) {
+        await logSecurityEvent({
+          ipAddress,
+          activityType: 'too_many_requests',
+          status: 'active_threat',
+          targetEndpoint: SEND_CODE_ENDPOINT,
+          attemptsIncrement: rateLimit.currentCount,
+        })
+        return rateLimitExceededResponse('signup code requests', rateLimit.retryAfterSeconds)
+      }
     }
 
     const { email } = await req.json()
 
-    const normalizedEmail = email?.trim().toLowerCase()
+    const suspiciousInput = detectSuspiciousInput({ email })
+    if (suspiciousInput) {
+      await logSecurityEvent({
+        ipAddress,
+        activityType: 'xss_attempt',
+        status: 'active_threat',
+        targetEndpoint: `${SEND_CODE_ENDPOINT}#${suspiciousInput.field}`,
+      })
+      return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
+    }
+
+    const normalizedEmail = sanitizeEmail(email)
     if (!normalizedEmail) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
@@ -73,4 +103,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
-
