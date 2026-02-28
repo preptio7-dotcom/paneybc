@@ -123,7 +123,9 @@ export function Navigation() {
 
   const betaNavItems = useMemo(() => {
     if (user?.studentRole !== 'ambassador') return []
-    return betaFeatureDefinitions.filter((item) => betaFeatures[item.key] !== 'public')
+    return betaFeatureDefinitions.filter(
+      (item) => item.key !== 'studentFeedback' && betaFeatures[item.key] !== 'public'
+    )
   }, [betaFeatures, user?.studentRole])
   const showBetaLinks = betaNavItems.length > 0
 
