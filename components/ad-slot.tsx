@@ -1,6 +1,11 @@
+'use client'
+
 import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { usePathname } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+import { shouldLoadAdsForContext } from '@/lib/ad-access'
 
 interface AdSlotProps {
   placement: 'dashboard' | 'results'
@@ -11,6 +16,14 @@ interface AdSlotProps {
 }
 
 export function AdSlot({ placement, headline, body, cta, href }: AdSlotProps) {
+  const pathname = usePathname() || '/'
+  const { user, loading } = useAuth()
+
+  // Do not render sponsored units for blocked roles/pages.
+  if (loading || !shouldLoadAdsForContext(pathname, user)) {
+    return null
+  }
+
   const sizeClass = placement === 'dashboard'
     ? 'min-h-[90px]'
     : 'min-h-[140px]'
