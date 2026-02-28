@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { clearAuthCookie } from '@/lib/auth-cookie'
 
 export const runtime = 'nodejs'
 
@@ -18,30 +19,12 @@ export async function GET(request: NextRequest) {
 
     if (user.isBanned) {
       const response = NextResponse.json({ error: 'Account banned' }, { status: 403 })
-      const cookieDomain = process.env.COOKIE_DOMAIN
-      const isProd = process.env.NODE_ENV === 'production'
-      const baseCookie = {
-        httpOnly: true,
-        maxAge: 0,
-        expires: new Date(0),
-        sameSite: 'lax' as const,
-        secure: isProd,
-        path: '/',
-      }
-      response.cookies.set('token', '', baseCookie)
-      if (cookieDomain) {
-        response.cookies.set('token', '', { ...baseCookie, domain: cookieDomain })
-        if (!cookieDomain.startsWith('.')) {
-          response.cookies.set('token', '', { ...baseCookie, domain: `.${cookieDomain}` })
-        }
-      }
-      const host = request.nextUrl.hostname
-      if (host) {
-        response.cookies.set('token', '', { ...baseCookie, domain: host })
-        if (!host.startsWith('.')) {
-          response.cookies.set('token', '', { ...baseCookie, domain: `.${host}` })
-        }
-      }
+      clearAuthCookie(response, {
+        cookieName: 'token',
+        isProd: process.env.NODE_ENV === 'production',
+        host: request.nextUrl.hostname,
+        configuredDomain: process.env.COOKIE_DOMAIN,
+      })
       return response
     }
 
