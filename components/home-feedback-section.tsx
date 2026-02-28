@@ -115,9 +115,7 @@ function FeedbackCard({
         ) : null}
       </div>
 
-      <p className="mt-4 text-[11px] uppercase tracking-wide text-slate-400">
-        {formatDate(review.createdAt)}
-      </p>
+      <p className="mt-4 text-[11px] uppercase tracking-wide text-slate-400">{formatDate(review.createdAt)}</p>
     </article>
   )
 }
@@ -137,10 +135,18 @@ export function HomeFeedbackSection() {
   useEffect(() => {
     const loadFeedback = async () => {
       try {
-        const response = await fetch('/api/public/feedback')
-        if (!response.ok) return
+        const response = await fetch('/api/public/feedback', { cache: 'no-store' })
+        if (!response.ok) {
+          setPayload(null)
+          return
+        }
+
         const data = await response.json()
-        setPayload(data)
+        if (data && typeof data === 'object') {
+          setPayload(data)
+        } else {
+          setPayload(null)
+        }
       } catch {
         setPayload(null)
       } finally {
@@ -155,6 +161,11 @@ export function HomeFeedbackSection() {
     const element = sectionRef.current
     if (!element) return
 
+    if (typeof IntersectionObserver === 'undefined') {
+      setInView(true)
+      return
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
@@ -165,8 +176,16 @@ export function HomeFeedbackSection() {
       { threshold: 0.2 }
     )
 
+    const fallbackTimer = window.setTimeout(() => {
+      setInView(true)
+    }, 1800)
+
     observer.observe(element)
-    return () => observer.disconnect()
+
+    return () => {
+      window.clearTimeout(fallbackTimer)
+      observer.disconnect()
+    }
   }, [])
 
   useEffect(() => {
@@ -189,9 +208,7 @@ export function HomeFeedbackSection() {
   const useCarousel = reviews.length >= 3
 
   const toggleReadMore = useCallback((id: string) => {
-    setExpandedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    )
+    setExpandedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }, [])
 
   if (isLoading || !sectionVisible) {
@@ -199,11 +216,7 @@ export function HomeFeedbackSection() {
   }
 
   return (
-    <section
-      id="student-feedback"
-      ref={sectionRef}
-      className="w-full bg-background-light py-20"
-    >
+    <section id="student-feedback" ref={sectionRef} className="w-full bg-background-light py-20">
       <div
         className={`max-w-6xl mx-auto px-6 transition-all duration-700 ${
           inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
@@ -211,19 +224,18 @@ export function HomeFeedbackSection() {
       >
         <div className="text-center mb-10">
           {isBeta ? (
-            <p className="text-xs uppercase tracking-[0.18em] text-primary-green font-semibold mb-3">
-              Beta
-            </p>
+            <p className="text-xs uppercase tracking-[0.18em] text-primary-green font-semibold mb-3">Beta</p>
           ) : null}
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-text-dark mb-3">
-            💬 What Our Students Are Saying
+            {'\u{1F4AC} What Our Students Are Saying'}
           </h2>
           <p className="text-text-light text-lg max-w-3xl mx-auto">
             Real words from real CA students who are already using Preptio
           </p>
           {payload?.averageRating !== null ? (
             <p className="mt-4 text-sm md:text-base text-text-dark font-medium">
-              ⭐ {payload.averageRating.toFixed(1)} out of 5  —  Based on {payload.totalReviews} reviews
+              {'\u2B50'} {payload.averageRating.toFixed(1)} out of 5 {'\u2014'} Based on {payload.totalReviews}{' '}
+              reviews
             </p>
           ) : null}
         </div>

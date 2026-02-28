@@ -1,4 +1,5 @@
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
@@ -21,6 +22,10 @@ function isFeedbackTableMissing(error: unknown) {
 }
 
 export async function GET(request: NextRequest) {
+  const jsonHeaders = {
+    'Cache-Control': 'no-store, no-cache, max-age=0, must-revalidate',
+  }
+
   try {
     const currentUser = getCurrentUser(request)
 
@@ -45,21 +50,28 @@ export async function GET(request: NextRequest) {
 
     let canView = canAccessBetaFeature(visibility, null)
     if (!canView && currentUser) {
-      const user = await prisma.user.findUnique({
-        where: { id: currentUser.userId },
-        select: { studentRole: true },
-      })
-      canView = canAccessBetaFeature(visibility, user?.studentRole)
+      if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+        canView = true
+      } else {
+        const user = await prisma.user.findUnique({
+          where: { id: currentUser.userId },
+          select: { studentRole: true },
+        })
+        canView = canAccessBetaFeature(visibility, user?.studentRole)
+      }
     }
 
     if (!canView) {
-      return NextResponse.json({
-        sectionVisible: false,
-        visibility,
-        averageRating: null,
-        totalReviews: 0,
-        reviews: [],
-      })
+      return NextResponse.json(
+        {
+          sectionVisible: false,
+          visibility,
+          averageRating: null,
+          totalReviews: 0,
+          reviews: [],
+        },
+        { headers: jsonHeaders }
+      )
     }
 
     const [feedbackRows, aggregate] = await Promise.all([
@@ -106,23 +118,32 @@ export async function GET(request: NextRequest) {
       },
     }))
 
-    return NextResponse.json({
-      sectionVisible: reviews.length > 0,
-      visibility,
-      averageRating,
-      totalReviews,
-      reviews,
-    })
+    return NextResponse.json(
+      {
+        sectionVisible: reviews.length > 0,
+        visibility,
+        averageRating,
+        totalReviews,
+        reviews,
+      },
+      { headers: jsonHeaders }
+    )
   } catch (error: any) {
     if (isFeedbackTableMissing(error)) {
-      return NextResponse.json({
-        sectionVisible: false,
-        averageRating: null,
-        totalReviews: 0,
-        reviews: [],
-      })
+      return NextResponse.json(
+        {
+          sectionVisible: false,
+          averageRating: null,
+          totalReviews: 0,
+          reviews: [],
+        },
+        { headers: jsonHeaders }
+      )
     }
     console.error('Public feedback fetch error:', error)
-    return NextResponse.json({ error: error.message || 'Failed to load feedback' }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message || 'Failed to load feedback' },
+      { status: 500, headers: jsonHeaders }
+    )
   }
 }
