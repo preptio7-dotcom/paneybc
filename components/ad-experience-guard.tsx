@@ -96,9 +96,9 @@ export function AdExperienceGuard() {
     return getAdEligibilityInfo(pathname, user)
   }, [loading, pathname, user])
 
-  const showAdminDebugBadge = Boolean(
-    !loading && user && (user.role === 'admin' || user.role === 'super_admin') && adEligibility
-  )
+  const showAdminDebugBadge =
+    process.env.NODE_ENV === 'development' &&
+    Boolean(!loading && user && (user.role === 'admin' || user.role === 'super_admin') && adEligibility)
 
   useEffect(() => {
     try {

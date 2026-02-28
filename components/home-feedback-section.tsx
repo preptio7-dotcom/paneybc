@@ -197,8 +197,7 @@ export function HomeFeedbackSection() {
           </p>
           {payload?.averageRating !== null ? (
             <p className="mt-4 text-sm md:text-base text-text-dark font-medium">
-              {'\u2B50'} {payload.averageRating.toFixed(1)} out of 5 {'\u2014'} Based on {payload.totalReviews}{' '}
-              reviews
+              {'\u2B50'} {payload.averageRating.toFixed(1)} out of 5
             </p>
           ) : null}
         </div>
