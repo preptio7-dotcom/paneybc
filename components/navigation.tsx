@@ -221,8 +221,8 @@ export function Navigation() {
               <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors">
                 Subjects
               </Link>
-              <Link href="/join-us" className="text-text-dark hover:text-primary-green transition-colors">
-                Join Us
+              <Link href="/ambassador" className="text-text-dark hover:text-primary-green transition-colors">
+                Ambassador
               </Link>
               <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors">
                 Contact
@@ -444,8 +444,8 @@ export function Navigation() {
                 <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                   Subjects
                 </Link>
-                <Link href="/join-us" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
-                  Join Us
+                <Link href="/ambassador" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                  Ambassador
                 </Link>
                 <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                   Contact
