@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 
 function sanitizeFeedbackMessage(value: unknown) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, 2000)
@@ -11,6 +12,13 @@ function normalizeRating(value: unknown) {
   const rating = Number(value)
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return null
   return rating
+}
+
+function isFeedbackTableMissing(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2021'
+  )
 }
 
 export async function GET(request: NextRequest) {
@@ -37,6 +45,13 @@ export async function GET(request: NextRequest) {
       feedback: feedback || null,
     })
   } catch (error: any) {
+    if (isFeedbackTableMissing(error)) {
+      return NextResponse.json({
+        hasSubmitted: false,
+        feedback: null,
+        setupRequired: true,
+      })
+    }
     return NextResponse.json({ error: error.message || 'Failed to load feedback' }, { status: 500 })
   }
 }
@@ -87,6 +102,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, feedback })
   } catch (error: any) {
+    if (isFeedbackTableMissing(error)) {
+      return NextResponse.json(
+        { error: 'Feedback storage is not ready yet. Please contact support.' },
+        { status: 503 }
+      )
+    }
     return NextResponse.json({ error: error.message || 'Failed to submit feedback' }, { status: 500 })
   }
 }
@@ -126,7 +147,12 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, feedback })
   } catch (error: any) {
+    if (isFeedbackTableMissing(error)) {
+      return NextResponse.json(
+        { error: 'Feedback storage is not ready yet. Please contact support.' },
+        { status: 503 }
+      )
+    }
     return NextResponse.json({ error: error.message || 'Failed to update feedback' }, { status: 500 })
   }
 }
-
