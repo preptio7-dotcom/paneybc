@@ -44,21 +44,31 @@ function collectDomainCandidates(host?: string | null, configuredDomain?: string
 
 export function clearAuthCookie(response: NextResponse, options: ClearAuthCookieOptions) {
   const { cookieName, isProd, host, configuredDomain } = options
-  const baseCookie = {
-    httpOnly: true,
-    maxAge: 0,
-    expires: new Date(0),
-    sameSite: 'lax' as const,
-    secure: isProd,
-    path: '/',
+  const serializeCookie = (domain?: string) => {
+    const parts = [
+      `${cookieName}=`,
+      'Path=/',
+      'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+      'Max-Age=0',
+      'HttpOnly',
+      'SameSite=Lax',
+    ]
+    if (isProd) parts.push('Secure')
+    if (domain) parts.push(`Domain=${domain}`)
+    return parts.join('; ')
   }
 
-  // Host-only cookie
-  response.cookies.set(cookieName, '', baseCookie)
+  // Host-only cookie clear
+  response.headers.append('Set-Cookie', serializeCookie())
 
+  // Domain cookie clears (if present)
   const domains = collectDomainCandidates(host, configuredDomain)
+  const emitted = new Set<string>()
   for (const domain of domains) {
-    response.cookies.set(cookieName, '', { ...baseCookie, domain })
-    response.cookies.set(cookieName, '', { ...baseCookie, domain: `.${domain}` })
+    const normalized = normalizeDomain(domain)
+    if (!normalized || emitted.has(normalized)) continue
+    emitted.add(normalized)
+    response.headers.append('Set-Cookie', serializeCookie(normalized))
+    response.headers.append('Set-Cookie', serializeCookie(`.${normalized}`))
   }
 }
