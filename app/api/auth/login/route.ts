@@ -4,11 +4,14 @@ import bcryptjs from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 import { isPakistanRequest, blockedCountryResponse } from '@/lib/geo'
+import { extractGeoRestrictionSettings } from '@/lib/geo-restriction'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
-    const geo = isPakistanRequest(request)
+    const systemSettings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
+    const geoRestriction = extractGeoRestrictionSettings(systemSettings?.testSettings || {})
+    const geo = isPakistanRequest(request, { pakistanOnly: geoRestriction.pakistanOnly })
     if (!geo.allowed) {
       return blockedCountryResponse(geo.country)
     }

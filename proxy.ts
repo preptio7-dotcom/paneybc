@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { isPakistanRequest } from '@/lib/geo'
+import { DEFAULT_GEO_RESTRICTION_SETTINGS } from '@/lib/geo-restriction'
 
 export default async function proxy(request: NextRequest) {
     const token = request.cookies.get('token')?.value
@@ -25,9 +26,41 @@ export default async function proxy(request: NextRequest) {
     const isPublicApi = pathname.startsWith('/api/public')
     const isStaticAsset = pathname.startsWith('/_next') || pathname.includes('.')
 
-    // 0. Country restriction (Pakistan only)
-    if (!isUnsupportedRegionPage && !isMaintenancePage && !isUnsupportedPage && !isPublicApi && !isStaticAsset) {
-        const geo = isPakistanRequest(request)
+    let isMaintenanceMode = false
+    let pakistanOnly = DEFAULT_GEO_RESTRICTION_SETTINGS.pakistanOnly
+
+    // Load public runtime flags used by proxy (maintenance + geo restriction)
+    if (!isPublicApi && !isStaticAsset) {
+        try {
+            const statusUrl = new URL('/api/public/maintenance-status', request.url)
+            const res = await fetch(statusUrl, { cache: 'no-store' })
+
+            if (res.ok) {
+                const contentType = res.headers.get('content-type') || ''
+                if (contentType.includes('application/json')) {
+                    const payload = await res.json()
+                    isMaintenanceMode = Boolean(payload?.isMaintenanceMode)
+                    const payloadPakistanOnly = payload?.geoRestriction?.pakistanOnly
+                    if (typeof payloadPakistanOnly === 'boolean') {
+                        pakistanOnly = payloadPakistanOnly
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Maintenance check failed', err)
+        }
+    }
+
+    // 0. Country restriction (Pakistan only, admin configurable)
+    if (
+        pakistanOnly &&
+        !isUnsupportedRegionPage &&
+        !isMaintenancePage &&
+        !isUnsupportedPage &&
+        !isPublicApi &&
+        !isStaticAsset
+    ) {
+        const geo = isPakistanRequest(request, { pakistanOnly })
         if (!geo.allowed) {
             return NextResponse.rewrite(new URL('/unsupported-region', request.url))
         }
@@ -36,27 +69,8 @@ export default async function proxy(request: NextRequest) {
     // 1. Maintenance Mode check (STRICT PRIORITY)
     // Must come before mobile block so mobile users see maintenance if site is down
     if (!isSecretAdminRoute && !isMaintenancePage && !isUnsupportedPage && !isPublicApi && !isStaticAsset) {
-        try {
-            // Check maintenance status (we fetch internal API)
-            // Note: Request.url origin is used for absolute URL
-            const statusUrl = new URL('/api/public/maintenance-status', request.url)
-            const res = await fetch(statusUrl, { cache: 'no-store' })
-
-            if (!res.ok) {
-                return NextResponse.next()
-            }
-
-            const contentType = res.headers.get('content-type') || ''
-            if (!contentType.includes('application/json')) {
-                return NextResponse.next()
-            }
-
-            const { isMaintenanceMode } = await res.json()
-            if (isMaintenanceMode) {
-                return NextResponse.rewrite(new URL('/maintenance', request.url))
-            }
-        } catch (err) {
-            console.error('Maintenance check failed', err)
+        if (isMaintenanceMode) {
+            return NextResponse.rewrite(new URL('/maintenance', request.url))
         }
     }
 

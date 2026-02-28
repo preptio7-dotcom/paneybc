@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 import { extractRegistrationSettings, normalizeEmail, normalizePkPhone, sanitizeText } from '@/lib/account-utils'
 import { isPakistanRequest, blockedCountryResponse } from '@/lib/geo'
+import { extractGeoRestrictionSettings } from '@/lib/geo-restriction'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
@@ -12,7 +13,9 @@ const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function POST(request: NextRequest) {
   try {
-    const geo = isPakistanRequest(request)
+    const settings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
+    const geoRestriction = extractGeoRestrictionSettings(settings?.testSettings || {})
+    const geo = isPakistanRequest(request, { pakistanOnly: geoRestriction.pakistanOnly })
     if (!geo.allowed) {
       return blockedCountryResponse(geo.country)
     }
@@ -94,7 +97,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired verification token' }, { status: 401 })
     }
 
-    const settings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
     const registrationSettings = extractRegistrationSettings(settings?.testSettings || {})
     if (!registrationSettings.degrees.includes(normalizedDegree)) {
       return NextResponse.json({ error: 'Selected degree is no longer available' }, { status: 400 })

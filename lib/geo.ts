@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 
 type RequestLike = { headers: Headers }
+type PakistanAccessOptions = {
+  pakistanOnly?: boolean
+  allowUnknownCountry?: boolean
+}
 
 const COUNTRY_HEADER_CANDIDATES = [
   'x-vercel-ip-country',
@@ -23,15 +27,22 @@ export function getRequestCountry(request: RequestLike) {
   return null
 }
 
-export function isPakistanRequest(request: RequestLike) {
+export function isPakistanRequest(request: RequestLike, options: PakistanAccessOptions = {}) {
   const host = request.headers.get('host') || ''
   if (process.env.NODE_ENV !== 'production' || isLocalhostHost(host)) {
     return { allowed: true, country: getRequestCountry(request) }
   }
 
+  if (options.pakistanOnly === false) {
+    return { allowed: true, country: getRequestCountry(request) }
+  }
+
   const country = getRequestCountry(request)
   if (!country) {
-    const allowUnknown = process.env.ALLOW_UNKNOWN_COUNTRY === '1'
+    const allowUnknown =
+      typeof options.allowUnknownCountry === 'boolean'
+        ? options.allowUnknownCountry
+        : process.env.ALLOW_UNKNOWN_COUNTRY === '1'
     return { allowed: allowUnknown, country: null }
   }
 
@@ -47,4 +58,3 @@ export function blockedCountryResponse(country: string | null) {
     { status: 403 }
   )
 }
-

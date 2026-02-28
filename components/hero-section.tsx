@@ -73,14 +73,16 @@ export function HeroSection() {
                 {user ? 'Start Practicing Now' : 'Get Started Free'}
                 <ArrowRight size={20} />
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto border-primary-green text-primary-green hover:bg-primary-green/5 bg-transparent"
-                onClick={() => router.push('/demo')}
-              >
-                Try Demo
-              </Button>
+              {!user ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto border-primary-green text-primary-green hover:bg-primary-green/5 bg-transparent"
+                  onClick={() => router.push('/demo')}
+                >
+                  Try Demo
+                </Button>
+              ) : null}
             </div>
 
             <p className="hero-fade-in-delayed text-[13px] text-text-light leading-relaxed flex flex-wrap items-center gap-x-2 gap-y-1">

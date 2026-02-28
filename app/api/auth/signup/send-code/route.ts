@@ -3,11 +3,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendSignupVerificationEmail } from '@/lib/email'
 import { isPakistanRequest, blockedCountryResponse } from '@/lib/geo'
+import { extractGeoRestrictionSettings } from '@/lib/geo-restriction'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
-    const geo = isPakistanRequest(req)
+    const systemSettings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
+    const geoRestriction = extractGeoRestrictionSettings(systemSettings?.testSettings || {})
+    const geo = isPakistanRequest(req, { pakistanOnly: geoRestriction.pakistanOnly })
     if (!geo.allowed) {
       return blockedCountryResponse(geo.country)
     }
