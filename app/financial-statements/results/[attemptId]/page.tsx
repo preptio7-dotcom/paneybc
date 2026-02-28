@@ -8,6 +8,7 @@ import { ReviewTable } from '@/components/financial-statements/ReviewTable'
 import { PdfViewer } from '@/components/financial-statements/PdfViewer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { FeedbackPromptCard } from '@/components/feedback-prompt-card'
 import { Loader2 } from 'lucide-react'
 
 export default function FinancialStatementResultsPage() {
@@ -83,6 +84,8 @@ export default function FinancialStatementResultsPage() {
             percentage={attemptData.percentageScore || 0}
             timeSpent={attemptData.timeSpent || 0}
           />
+
+          <FeedbackPromptCard source="financial-statements-test" />
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-6">
             <div className="space-y-4">

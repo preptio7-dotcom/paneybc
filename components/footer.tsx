@@ -73,6 +73,7 @@ export function Footer() {
             <div className="flex flex-col gap-3">
               <Link href="/auth/login" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Student Login</Link>
               <Link href="/auth/signup" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Register Account</Link>
+              <Link href="/feedback" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Share Feedback</Link>
               <Link href="/privacy" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Privacy Policy</Link>
               <Link href="/terms" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Terms of Service</Link>
             </div>

@@ -20,6 +20,7 @@ import {
 import { Navigation } from '@/components/navigation'
 import { ReportQuestionButton } from '@/components/report-question-button'
 import { AnswerBreakdown } from '@/components/answer-breakdown'
+import { FeedbackPromptCard } from '@/components/feedback-prompt-card'
 
 interface Question {
     id?: string
@@ -400,6 +401,8 @@ export default function TestPage() {
                                 Retake Exam
                             </Button>
                         </div>
+
+                        <FeedbackPromptCard source="subject-test" />
 
                         <AnswerBreakdown
                             answers={wrongAnswers}

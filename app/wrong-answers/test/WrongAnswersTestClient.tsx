@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import { AlertCircle, Clock, Timer, Trophy, ChevronLeft, ChevronRight, Send } from 'lucide-react'
 import { ReportQuestionButton } from '@/components/report-question-button'
 import { AnswerBreakdown } from '@/components/answer-breakdown'
+import { FeedbackPromptCard } from '@/components/feedback-prompt-card'
 
 interface Question {
   id: string
@@ -332,6 +333,8 @@ export default function WrongAnswersTestClient() {
                 Practice Again
               </Button>
             </div>
+
+            <FeedbackPromptCard source="wrong-answers-practice" />
 
             <AnswerBreakdown
               answers={wrongAnswers}

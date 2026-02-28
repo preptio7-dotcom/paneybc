@@ -251,7 +251,7 @@ export default function TestPage() {
 
       const data = await response.json()
       const resultId = data.result?.id ?? data.result?._id
-      router.push(resultId ? `/results?id=${resultId}` : '/results')
+      router.push(resultId ? `/results?id=${resultId}&promptFeedback=1` : '/results?promptFeedback=1')
     } catch (error) {
       toast({
         title: 'Error',

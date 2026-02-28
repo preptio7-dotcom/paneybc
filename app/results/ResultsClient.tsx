@@ -6,6 +6,7 @@ import { ResultsHeader } from '@/components/results-header'
 import { PerformanceSummary } from '@/components/performance-summary'
 import { AnswerBreakdown } from '@/components/answer-breakdown'
 import { ResultsActions } from '@/components/results-actions'
+import { FeedbackPromptCard } from '@/components/feedback-prompt-card'
 import { AdSlot } from '@/components/ad-slot'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -68,6 +69,7 @@ export default function ResultsPage() {
   })
 
   const resultId = useMemo(() => searchParams.get('id'), [searchParams])
+  const shouldPromptFeedback = useMemo(() => searchParams.get('promptFeedback') === '1', [searchParams])
 
   useEffect(() => {
     const loadResults = async () => {
@@ -267,6 +269,10 @@ export default function ResultsPage() {
           emptyMessage="Great job! You didn't miss any questions in this test."
           alwaysExpanded
         />
+
+        {shouldPromptFeedback ? (
+          <FeedbackPromptCard source="results-page" className="mt-8" />
+        ) : null}
 
         <ResultsActions
           onPracticeAgain={() => router.push('/subjects')}

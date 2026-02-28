@@ -75,6 +75,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
   const [isResettingNotes, setIsResettingNotes] = useState(false)
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false)
+  const [feedbackStatusLoaded, setFeedbackStatusLoaded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'password' | 'otp' | 'confirm'>('password')
   const [deletePassword, setDeletePassword] = useState('')
@@ -236,6 +238,20 @@ export default function DashboardPage() {
         setExamDate(userProfile.examDate ? new Date(userProfile.examDate).toISOString().slice(0, 10) : '')
         setDailyQuestionGoal(userProfile.dailyQuestionGoal || 0)
         setChecklist(userProfile.prepChecklist?.length ? userProfile.prepChecklist : defaultChecklist)
+      }
+
+      try {
+        const feedbackResponse = await fetch('/api/user/feedback', { cache: 'no-store' })
+        if (feedbackResponse.ok) {
+          const feedbackData = await feedbackResponse.json()
+          setHasSubmittedFeedback(Boolean(feedbackData?.hasSubmitted))
+        } else {
+          setHasSubmittedFeedback(false)
+        }
+      } catch (error) {
+        setHasSubmittedFeedback(false)
+      } finally {
+        setFeedbackStatusLoaded(true)
       }
 
       const fsResponse = await fetch('/api/financial-statements/summary')
@@ -663,6 +679,31 @@ export default function DashboardPage() {
                       )}
                     </DialogContent>
                   </Dialog>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-border bg-white">
+                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h3 className="font-heading text-xl font-bold text-text-dark">
+                      Feedback
+                    </h3>
+                    <p className="text-text-light">
+                      {hasSubmittedFeedback
+                        ? 'You already shared feedback. You can edit it anytime.'
+                        : 'Share quick feedback to help improve your experience.'}
+                    </p>
+                  </div>
+                  <Button
+                    variant={hasSubmittedFeedback ? 'outline' : 'default'}
+                    onClick={() => window.location.assign('/feedback?source=dashboard')}
+                  >
+                    {feedbackStatusLoaded
+                      ? hasSubmittedFeedback
+                        ? 'Manage Feedback'
+                        : 'Share Feedback'
+                      : 'Feedback'}
+                  </Button>
                 </CardContent>
               </Card>
             </div>

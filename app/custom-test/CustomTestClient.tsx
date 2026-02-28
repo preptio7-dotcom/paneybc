@@ -20,6 +20,7 @@ import {
 import { Navigation } from '@/components/navigation'
 import { ReportQuestionButton } from '@/components/report-question-button'
 import { AnswerBreakdown } from '@/components/answer-breakdown'
+import { FeedbackPromptCard } from '@/components/feedback-prompt-card'
 
 interface Question {
   id?: string
@@ -386,6 +387,8 @@ export default function CustomTestPage() {
                 Build Another Quiz
               </Button>
             </div>
+
+            <FeedbackPromptCard source="custom-quiz" />
 
             <AnswerBreakdown
               answers={wrongAnswers}
