@@ -18,6 +18,7 @@ import { betaFeatureDefinitions } from '@/data/beta-features'
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isPracticeOpen, setIsPracticeOpen] = useState(false)
   const [isStudyOpen, setIsStudyOpen] = useState(false)
@@ -58,6 +59,16 @@ export function Navigation() {
     { href: '/dashboard#subjects', label: 'Your Subjects' },
     { href: '/dashboard#performance-tracking', label: 'Performance Tracking' },
   ]
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -128,10 +139,17 @@ export function Navigation() {
     )
   }, [betaFeatures, user?.studentRole])
   const showBetaLinks = betaNavItems.length > 0
+  const useFrostedNavbar = isScrolled || isMenuOpen
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm h-[70px] flex items-center">
-        <div className="max-w-7xl mx-auto w-full px-6 flex items-center justify-between gap-6">
+    <nav
+      className={`sticky top-0 left-0 right-0 z-[1000] h-[70px] flex items-center transition-all duration-300 ease-in-out ${
+        useFrostedNavbar
+          ? 'navbar-frosted border-b border-black/10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+          : 'bg-transparent border-b border-transparent shadow-none'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto w-full px-6 flex items-center justify-between gap-6">
         {/* Logo */}
         <Link href="/" className="font-heading font-bold text-xl text-primary-green">
           Preptio
@@ -537,6 +555,18 @@ export function Navigation() {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />
+      <style jsx>{`
+        .navbar-frosted {
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+        @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+          .navbar-frosted {
+            background: rgba(255, 255, 255, 0.95);
+          }
+        }
+      `}</style>
     </nav>
   )
 }

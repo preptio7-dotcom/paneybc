@@ -122,7 +122,11 @@ export function HomepageContent() {
 
   return (
     <>
-      <HeroSection themeVariant={sectionConfig.hero} motionSettings={heroMotion} />
+      <HeroSection
+        themeVariant={sectionConfig.hero}
+        motionSettings={heroMotion}
+        reduceMotion={reduceMotion}
+      />
       <LazyHomeSection minHeight={520}>
         <StatsSection themeVariant={sectionConfig.stats} reduceMotion={reduceMotion} />
       </LazyHomeSection>

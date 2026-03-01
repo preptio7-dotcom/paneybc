@@ -87,25 +87,25 @@ function NumericStatCard({
 
   return (
     <div
-      className={`rounded-2xl border p-8 text-center transition-all duration-200 ease-out md:hover:-translate-y-[2px] ${
+      className={`rounded-2xl border p-6 px-4 md:p-8 min-[1280px]:p-10 text-center transition-all duration-200 ease-out md:hover:-translate-y-[2px] ${
         darkMode
-          ? 'rounded-[20px] border-white/10 bg-white/[0.04] px-8 py-10 backdrop-blur-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:bg-white/[0.08] md:hover:border-[#4ade80]/30 md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+          ? 'rounded-2xl min-[1280px]:rounded-[20px] border-white/10 bg-white/[0.04] backdrop-blur-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:bg-white/[0.08] md:hover:border-[#4ade80]/30 md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
           : 'border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] md:hover:border-[#86efac] md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
       } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
       style={{ transitionDelay: `${delayMs}ms` }}
     >
-      <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#4ade80]/15">
-        <Icon size={20} className="text-[#4ade80]" />
+      <div className="mb-4 inline-flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-[#4ade80]/15">
+        <Icon className="h-[18px] w-[18px] md:h-5 md:w-5 text-[#4ade80]" />
       </div>
       <p
-        className="font-heading text-[3rem] leading-none font-extrabold text-[#4ade80]"
+        className="font-heading text-[2rem] md:text-[2.5rem] min-[1280px]:text-[3rem] leading-none font-extrabold text-[#4ade80] whitespace-nowrap"
         style={{ textShadow: darkMode ? '0 0 30px rgba(74,222,128,0.4)' : 'none' }}
       >
         {animatedValue.toLocaleString()}
         {suffix}
       </p>
       <p
-        className={`mt-4 font-medium text-sm tracking-[0.05em] uppercase ${
+        className={`mt-4 font-medium text-xs md:text-sm tracking-[0.05em] uppercase ${
           darkMode ? 'text-white/70' : 'text-text-light'
         }`}
       >
@@ -132,24 +132,24 @@ function StaticStatCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-8 text-center transition-all duration-200 ease-out md:hover:-translate-y-[2px] ${
+      className={`rounded-2xl border p-6 px-4 md:p-8 min-[1280px]:p-10 text-center transition-all duration-200 ease-out md:hover:-translate-y-[2px] ${
         darkMode
-          ? 'rounded-[20px] border-white/10 bg-white/[0.04] px-8 py-10 backdrop-blur-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:bg-white/[0.08] md:hover:border-[#4ade80]/30 md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+          ? 'rounded-2xl min-[1280px]:rounded-[20px] border-white/10 bg-white/[0.04] backdrop-blur-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:bg-white/[0.08] md:hover:border-[#4ade80]/30 md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
           : 'border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] md:hover:border-[#86efac] md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
       } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
       style={{ transitionDelay: `${delayMs}ms` }}
     >
-      <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#4ade80]/15">
-        <Icon size={20} className="text-[#4ade80]" />
+      <div className="mb-4 inline-flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-[#4ade80]/15">
+        <Icon className="h-[18px] w-[18px] md:h-5 md:w-5 text-[#4ade80]" />
       </div>
       <p
-        className="font-heading text-[3rem] leading-none font-extrabold text-[#4ade80]"
+        className="font-heading text-[2rem] md:text-[2.5rem] min-[1280px]:text-[3rem] leading-none font-extrabold text-[#4ade80] whitespace-nowrap"
         style={{ textShadow: darkMode ? '0 0 30px rgba(74,222,128,0.4)' : 'none' }}
       >
         {value}
       </p>
       <p
-        className={`mt-4 font-medium text-sm tracking-[0.05em] uppercase ${
+        className={`mt-4 font-medium text-xs md:text-sm tracking-[0.05em] uppercase ${
           darkMode ? 'text-white/70' : 'text-text-light'
         }`}
       >
@@ -313,7 +313,7 @@ export function StatsSection({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid max-[374px]:grid-cols-1 grid-cols-2 min-[1280px]:grid-cols-4 gap-3 md:gap-4 min-[1280px]:gap-6">
           {renderedStats.map((stat, index) =>
             stat.type === 'numeric' ? (
               <NumericStatCard
