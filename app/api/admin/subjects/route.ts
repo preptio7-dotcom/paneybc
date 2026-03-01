@@ -15,6 +15,11 @@ export async function GET(request: NextRequest) {
                 where: { subject: subject.code },
                 _count: { _all: true },
             })
+            const difficultyCounts = await prisma.question.groupBy({
+                by: ['difficulty'],
+                where: { subject: subject.code },
+                _count: { _all: true },
+            })
 
             const chapterCountMap = new Map<string, number>()
             chapterCounts.forEach((row: any) => {
@@ -28,10 +33,21 @@ export async function GET(request: NextRequest) {
 
             const assignedCount = chapters.reduce((sum: number, ch: any) => sum + (ch.questionCount || 0), 0)
             const unassignedQuestions = Math.max(count - assignedCount, 0)
+            const difficultyMap = difficultyCounts.reduce(
+                (acc: { easy: number; medium: number; hard: number }, row: any) => {
+                    const key = String(row.difficulty || '').toLowerCase()
+                    if (key === 'easy' || key === 'medium' || key === 'hard') {
+                        acc[key] = row._count?._all || 0
+                    }
+                    return acc
+                },
+                { easy: 0, medium: 0, hard: 0 }
+            )
 
             return {
                 ...subject,
                 totalQuestions: count,
+                difficultyCounts: difficultyMap,
                 chapters,
                 unassignedQuestions,
             }
