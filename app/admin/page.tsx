@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle, X } from 'lucide-react'
+import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle, Shield, X } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -141,6 +141,12 @@ export default function AdminDashboardPage() {
             description: 'Control which features are public or ambassador-only.',
             href: '/admin/beta-features',
             icon: Flag,
+        },
+        {
+            title: 'Security Overview',
+            description: 'Check threat status and access platform security tools.',
+            href: '/admin/security',
+            icon: Shield,
         },
         {
             title: 'IP Security',
