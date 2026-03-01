@@ -11,7 +11,9 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import {
+    DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS,
     DEFAULT_HOMEPAGE_THEME_SETTINGS,
+    type HomepageHeroMotionSettings,
     type HomepageSectionThemeSettings,
     type HomepageThemeVariant,
 } from '@/lib/homepage-theme'
@@ -32,6 +34,7 @@ export default function AdminDashboardPage() {
         registrationDegrees: ['CA'],
         registrationLevels: ['PRC', 'CAF'],
         homepageThemes: DEFAULT_HOMEPAGE_THEME_SETTINGS as HomepageSectionThemeSettings,
+        homepageHeroMotion: DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS as HomepageHeroMotionSettings,
     })
     const [newDegree, setNewDegree] = useState('')
     const [newLevel, setNewLevel] = useState('')
@@ -66,6 +69,13 @@ export default function AdminDashboardPage() {
                             cta: data.testSettings.homepageThemes?.cta || DEFAULT_HOMEPAGE_THEME_SETTINGS.cta,
                             feedback: data.testSettings.homepageThemes?.feedback || DEFAULT_HOMEPAGE_THEME_SETTINGS.feedback,
                             faq: data.testSettings.homepageThemes?.faq || DEFAULT_HOMEPAGE_THEME_SETTINGS.faq,
+                        },
+                        homepageHeroMotion: {
+                            floatDurationSeconds: Number(data.testSettings.homepageHeroMotion?.floatDurationSeconds) || DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS.floatDurationSeconds,
+                            floatDistanceDesktopPx: Number(data.testSettings.homepageHeroMotion?.floatDistanceDesktopPx) || DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS.floatDistanceDesktopPx,
+                            floatDistanceMobilePx: Number(data.testSettings.homepageHeroMotion?.floatDistanceMobilePx) || DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS.floatDistanceMobilePx,
+                            badgeFloatDurationSeconds: Number(data.testSettings.homepageHeroMotion?.badgeFloatDurationSeconds) || DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS.badgeFloatDurationSeconds,
+                            badgeFloatDistancePx: Number(data.testSettings.homepageHeroMotion?.badgeFloatDistancePx) || DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS.badgeFloatDistancePx,
                         },
                     })
                 }
@@ -198,6 +208,7 @@ export default function AdminDashboardPage() {
                         registrationDegrees: testSettings.registrationDegrees,
                         registrationLevels: testSettings.registrationLevels,
                         homepageThemes: testSettings.homepageThemes,
+                        homepageHeroMotion: testSettings.homepageHeroMotion,
                     },
                 }),
             })
@@ -236,6 +247,16 @@ export default function AdminDashboardPage() {
             homepageThemes: {
                 ...prev.homepageThemes,
                 [section]: variant,
+            },
+        }))
+    }
+
+    const updateHomepageHeroMotion = (key: keyof HomepageHeroMotionSettings, value: number) => {
+        setTestSettings((prev) => ({
+            ...prev,
+            homepageHeroMotion: {
+                ...prev.homepageHeroMotion,
+                [key]: Number.isFinite(value) ? value : prev.homepageHeroMotion[key],
             },
         }))
     }
@@ -413,6 +434,69 @@ export default function AdminDashboardPage() {
                                             </Select>
                                         </div>
                                     ))}
+                                </div>
+                                <div className="mt-4 border-t border-border pt-4">
+                                    <Label className="text-base font-semibold">Hero Floating Motion</Label>
+                                    <p className="text-xs text-text-light mt-1">
+                                        Control speed and floating distance of the hero card and badges.
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+                                        <div className="space-y-2">
+                                            <Label>Card Float Duration (sec)</Label>
+                                            <Input
+                                                type="number"
+                                                min="2"
+                                                max="10"
+                                                step="0.1"
+                                                value={testSettings.homepageHeroMotion.floatDurationSeconds}
+                                                onChange={(e) => updateHomepageHeroMotion('floatDurationSeconds', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Card Float Distance Desktop (px)</Label>
+                                            <Input
+                                                type="number"
+                                                min="4"
+                                                max="30"
+                                                step="1"
+                                                value={testSettings.homepageHeroMotion.floatDistanceDesktopPx}
+                                                onChange={(e) => updateHomepageHeroMotion('floatDistanceDesktopPx', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Card Float Distance Mobile (px)</Label>
+                                            <Input
+                                                type="number"
+                                                min="2"
+                                                max="20"
+                                                step="1"
+                                                value={testSettings.homepageHeroMotion.floatDistanceMobilePx}
+                                                onChange={(e) => updateHomepageHeroMotion('floatDistanceMobilePx', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Badge Float Duration (sec)</Label>
+                                            <Input
+                                                type="number"
+                                                min="2"
+                                                max="8"
+                                                step="0.1"
+                                                value={testSettings.homepageHeroMotion.badgeFloatDurationSeconds}
+                                                onChange={(e) => updateHomepageHeroMotion('badgeFloatDurationSeconds', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Badge Float Distance (px)</Label>
+                                            <Input
+                                                type="number"
+                                                min="2"
+                                                max="20"
+                                                step="1"
+                                                value={testSettings.homepageHeroMotion.badgeFloatDistancePx}
+                                                onChange={(e) => updateHomepageHeroMotion('badgeFloatDistancePx', Number(e.target.value))}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <Button onClick={handleSaveTestSettings} disabled={isSavingTestSettings}>

@@ -142,7 +142,7 @@ export function HowItWorksSection({
         </div>
 
         <div className="relative">
-          <div className="pointer-events-none absolute left-[14%] right-[14%] top-28 hidden xl:block border-t-2 border-dashed border-[#86efac]" />
+          <div className="pointer-events-none absolute left-[9%] right-[9%] top-24 hidden md:block border-t-2 border-dashed border-[#86efac]" />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 lg:gap-6 relative z-10">
             {STEPS.map((step, index) => (
@@ -158,14 +158,17 @@ export function HowItWorksSection({
                   style={{ transitionDelay: `${index * 140}ms` }}
                 >
                   <Card className="relative overflow-hidden rounded-2xl border border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-200 md:hover:-translate-y-1 md:hover:border-[#86efac] md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+                    <span className="absolute left-4 top-4 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-green text-[12px] font-bold text-white">
+                      {step.number}
+                    </span>
                     <span
                       aria-hidden
-                      className="absolute right-4 top-2 text-7xl font-black leading-none text-[#dcfce7]"
+                      className="absolute left-6 top-7 text-[5rem] font-black leading-none text-[#dcfce7] opacity-60"
                     >
                       {step.number}
                     </span>
                     <CardContent className="p-6 relative">
-                      <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#dcfce7] text-primary-green shadow-[0_4px_12px_rgba(34,197,94,0.15)]">
+                      <div className="relative z-10 mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#dcfce7] text-primary-green shadow-[0_4px_12px_rgba(34,197,94,0.15)]">
                         <step.icon size={28} className="text-primary-green" />
                       </div>
                       <p className="mb-2 text-xs font-semibold tracking-[0.08em] text-primary-green uppercase">

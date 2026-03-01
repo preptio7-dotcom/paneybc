@@ -5,8 +5,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { HeroSection } from '@/components/hero-section'
 import { LazyHomeSection } from '@/components/lazy-home-section'
 import {
+  DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS,
   DEFAULT_HOMEPAGE_THEME_SETTINGS,
+  extractHomepageHeroMotionSettings,
   extractHomepageThemeSettings,
+  type HomepageHeroMotionSettings,
   type HomepageSectionThemeSettings,
 } from '@/lib/homepage-theme'
 import { useMotionGuard } from '@/lib/use-motion-guard'
@@ -46,6 +49,9 @@ const Footer = dynamic(() => import('@/components/footer').then((module) => modu
 
 export function HomepageContent() {
   const [themes, setThemes] = useState<HomepageSectionThemeSettings>(DEFAULT_HOMEPAGE_THEME_SETTINGS)
+  const [heroMotion, setHeroMotion] = useState<HomepageHeroMotionSettings>(
+    DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS
+  )
   const reduceMotion = useMotionGuard()
 
   useEffect(() => {
@@ -60,7 +66,9 @@ export function HomepageContent() {
         if (!response.ok) return
         const data = await response.json()
         if (!isMounted) return
-        setThemes(extractHomepageThemeSettings(data?.testSettings || {}))
+        const source = data?.testSettings || {}
+        setThemes(extractHomepageThemeSettings(source))
+        setHeroMotion(extractHomepageHeroMotionSettings(source))
       } catch {
         // keep defaults
       }
@@ -114,9 +122,9 @@ export function HomepageContent() {
 
   return (
     <>
-      <HeroSection themeVariant={sectionConfig.hero} />
-      <LazyHomeSection minHeight={160}>
-        <HomeAdBanner />
+      <HeroSection themeVariant={sectionConfig.hero} motionSettings={heroMotion} />
+      <LazyHomeSection minHeight={520}>
+        <StatsSection themeVariant={sectionConfig.stats} reduceMotion={reduceMotion} />
       </LazyHomeSection>
       <LazyHomeSection minHeight={620}>
         <FeaturesSection themeVariant={sectionConfig.whyChoose} reduceMotion={reduceMotion} />
@@ -124,14 +132,14 @@ export function HomepageContent() {
       <LazyHomeSection minHeight={640}>
         <HowItWorksSection themeVariant={sectionConfig.howItWorks} reduceMotion={reduceMotion} />
       </LazyHomeSection>
-      <LazyHomeSection minHeight={520}>
-        <StatsSection themeVariant={sectionConfig.stats} reduceMotion={reduceMotion} />
+      <LazyHomeSection minHeight={180}>
+        <HomeAdBanner />
+      </LazyHomeSection>
+      <LazyHomeSection minHeight={620}>
+        <HomeFeedbackSection themeVariant={sectionConfig.feedback} reduceMotion={reduceMotion} />
       </LazyHomeSection>
       <LazyHomeSection minHeight={420}>
         <CTABanner themeVariant={sectionConfig.cta} />
-      </LazyHomeSection>
-      <LazyHomeSection minHeight={560}>
-        <HomeFeedbackSection themeVariant={sectionConfig.feedback} reduceMotion={reduceMotion} />
       </LazyHomeSection>
       <LazyHomeSection minHeight={560}>
         <HomeFaqSection themeVariant={sectionConfig.faq} reduceMotion={reduceMotion} />

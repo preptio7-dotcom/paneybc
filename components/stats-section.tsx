@@ -87,24 +87,30 @@ function NumericStatCard({
 
   return (
     <div
-      className={`rounded-2xl border p-8 text-center transition-all duration-200 md:hover:-translate-y-1 ${
+      className={`rounded-2xl border p-8 text-center transition-all duration-200 ease-out md:hover:-translate-y-[2px] ${
         darkMode
-          ? 'border-white/10 bg-white/5 shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+          ? 'rounded-[20px] border-white/10 bg-white/[0.04] px-8 py-10 backdrop-blur-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:bg-white/[0.08] md:hover:border-[#4ade80]/30 md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
           : 'border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] md:hover:border-[#86efac] md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
       } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
       style={{ transitionDelay: `${delayMs}ms` }}
     >
-      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary-green/10">
-        <Icon size={22} className="text-primary-green" />
+      <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#4ade80]/15">
+        <Icon size={20} className="text-[#4ade80]" />
       </div>
       <p
-        className="font-heading text-4xl md:text-5xl font-bold text-[#22c55e]"
-        style={{ textShadow: darkMode ? '0 0 20px rgba(34,197,94,0.3)' : 'none' }}
+        className="font-heading text-[3rem] leading-none font-extrabold text-[#4ade80]"
+        style={{ textShadow: darkMode ? '0 0 30px rgba(74,222,128,0.4)' : 'none' }}
       >
         {animatedValue.toLocaleString()}
         {suffix}
       </p>
-      <p className={`mt-3 font-medium ${darkMode ? 'text-white/80' : 'text-text-light'}`}>{label}</p>
+      <p
+        className={`mt-4 font-medium text-sm tracking-[0.05em] uppercase ${
+          darkMode ? 'text-white/70' : 'text-text-light'
+        }`}
+      >
+        {label}
+      </p>
     </div>
   )
 }
@@ -126,23 +132,29 @@ function StaticStatCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-8 text-center transition-all duration-200 md:hover:-translate-y-1 ${
+      className={`rounded-2xl border p-8 text-center transition-all duration-200 ease-out md:hover:-translate-y-[2px] ${
         darkMode
-          ? 'border-white/10 bg-white/5 shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+          ? 'rounded-[20px] border-white/10 bg-white/[0.04] px-8 py-10 backdrop-blur-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:bg-white/[0.08] md:hover:border-[#4ade80]/30 md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
           : 'border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] md:hover:border-[#86efac] md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
       } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
       style={{ transitionDelay: `${delayMs}ms` }}
     >
-      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary-green/10">
-        <Icon size={22} className="text-primary-green" />
+      <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#4ade80]/15">
+        <Icon size={20} className="text-[#4ade80]" />
       </div>
       <p
-        className="font-heading text-4xl md:text-5xl font-bold text-[#22c55e]"
-        style={{ textShadow: darkMode ? '0 0 20px rgba(34,197,94,0.3)' : 'none' }}
+        className="font-heading text-[3rem] leading-none font-extrabold text-[#4ade80]"
+        style={{ textShadow: darkMode ? '0 0 30px rgba(74,222,128,0.4)' : 'none' }}
       >
         {value}
       </p>
-      <p className={`mt-3 font-medium ${darkMode ? 'text-white/80' : 'text-text-light'}`}>{label}</p>
+      <p
+        className={`mt-4 font-medium text-sm tracking-[0.05em] uppercase ${
+          darkMode ? 'text-white/70' : 'text-text-light'
+        }`}
+      >
+        {label}
+      </p>
     </div>
   )
 }
@@ -150,7 +162,8 @@ function StaticStatCard({
 function getStatsSectionTheme(variant: HomepageThemeVariant) {
   if (variant === 'dark') {
     return {
-      sectionClass: 'bg-[#0f172a]',
+      sectionClass:
+        'border-t border-[rgba(255,255,255,0.06)] bg-[linear-gradient(135deg,#0f172a_0%,#0d2137_50%,#0f172a_100%)]',
       headingClass: 'text-white',
       subtextClass: 'text-slate-300',
       darkMode: true,
@@ -272,7 +285,16 @@ export function StatsSection({
   const theme = getStatsSectionTheme(themeVariant)
 
   return (
-    <section ref={sectionRef} className={`w-full py-[48px] md:py-[72px] lg:py-[96px] ${theme.sectionClass}`}>
+    <section
+      ref={sectionRef}
+      className={`relative w-full overflow-hidden py-[48px] md:py-[72px] lg:py-[96px] ${theme.sectionClass}`}
+    >
+      {theme.darkMode ? (
+        <>
+          <div className="pointer-events-none absolute -left-24 -top-20 h-72 w-72 rounded-full bg-[#22c55e]/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-[#4ade80]/10 blur-3xl" />
+        </>
+      ) : null}
       <div className="max-w-7xl mx-auto w-full px-6">
         <div
           className={`text-center mb-12 transition-all duration-500 ${

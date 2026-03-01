@@ -5,7 +5,10 @@ import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { getCurrentUser } from '@/lib/auth'
 import { canAccessBetaFeature, extractBetaFeatureSettings } from '@/lib/beta-features'
-import { extractHomepageThemeSettings } from '@/lib/homepage-theme'
+import {
+  extractHomepageHeroMotionSettings,
+  extractHomepageThemeSettings,
+} from '@/lib/homepage-theme'
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,6 +57,7 @@ export async function GET(request: NextRequest) {
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
+      homepageHeroMotion: extractHomepageHeroMotionSettings(savedTestSettings),
       ...savedTestSettings,
     }
 
@@ -90,6 +94,7 @@ export async function GET(request: NextRequest) {
       })(),
       betaFeatures,
       homepageThemes: extractHomepageThemeSettings(testSettings),
+      homepageHeroMotion: extractHomepageHeroMotionSettings(testSettings),
       faq: {
         ...faqSettings,
         visibility: betaFeatures.faq,
@@ -134,6 +139,7 @@ export async function GET(request: NextRequest) {
           registrationLevels: DEFAULT_LEVELS,
           betaFeatures: fallbackBetaFeatures,
           homepageThemes: extractHomepageThemeSettings({}),
+          homepageHeroMotion: extractHomepageHeroMotionSettings({}),
           faq: {
             ...extractFaqSettings({}),
             visibility: fallbackBetaFeatures.faq,

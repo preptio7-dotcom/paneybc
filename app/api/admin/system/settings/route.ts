@@ -6,7 +6,10 @@ import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { extractBetaFeatureSettings } from '@/lib/beta-features'
 import { createAdminAuditLog } from '@/lib/admin-audit'
-import { extractHomepageThemeSettings } from '@/lib/homepage-theme'
+import {
+  extractHomepageHeroMotionSettings,
+  extractHomepageThemeSettings,
+} from '@/lib/homepage-theme'
 
 function isAuthorized(request: NextRequest) {
   const hasSuperAdminSession = request.headers.get('cookie')?.includes('super_admin_session')
@@ -68,6 +71,7 @@ export async function GET(request: NextRequest) {
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
+      homepageHeroMotion: extractHomepageHeroMotionSettings(savedTestSettings),
       ...savedTestSettings,
     }
     const normalizedBetaFeatures = extractBetaFeatureSettings(testSettings)
@@ -84,6 +88,7 @@ export async function GET(request: NextRequest) {
       })(),
       betaFeatures: normalizedBetaFeatures,
       homepageThemes: extractHomepageThemeSettings(testSettings),
+      homepageHeroMotion: extractHomepageHeroMotionSettings(testSettings),
       faq: {
         ...normalizedFaq,
         visibility: normalizedBetaFeatures.faq,
@@ -154,6 +159,7 @@ export async function POST(request: NextRequest) {
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
+      homepageHeroMotion: extractHomepageHeroMotionSettings(savedTestSettings),
       ...savedTestSettings,
     }
     const beforeSnapshot = {
@@ -190,6 +196,7 @@ export async function POST(request: NextRequest) {
       })(),
       betaFeatures: mergedBetaFeatures,
       homepageThemes: extractHomepageThemeSettings(mergedTestSettings),
+      homepageHeroMotion: extractHomepageHeroMotionSettings(mergedTestSettings),
       faq: {
         ...extractFaqSettings(mergedTestSettings),
         visibility: mergedBetaFeatures.faq,

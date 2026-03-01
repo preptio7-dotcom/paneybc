@@ -145,9 +145,13 @@ function FeedbackCard({
       className={`relative h-full rounded-2xl border p-5 flex flex-col transition-all duration-200 md:hover:-translate-y-1 ${
         theme.cardClass
       } ${animateIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-      style={{ transitionDelay: `${delayMs}ms` }}
+      style={{ transitionDelay: `${delayMs}ms`, minHeight: '220px' }}
     >
-      <span aria-hidden className="pointer-events-none absolute left-4 top-2 text-6xl font-black text-[#dcfce7]">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-4 -top-[10px] text-[80px] leading-none text-[#dcfce7]"
+        style={{ fontFamily: 'Georgia, serif' }}
+      >
         &quot;
       </span>
       <div className="flex items-start justify-between gap-3">
@@ -211,12 +215,24 @@ export function HomeFeedbackSection({
   const [payload, setPayload] = useState<FeedbackPayload | null>(null)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
   const [isVisible, setIsVisible] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [sectionNode, setSectionNode] = useState<HTMLElement | null>(null)
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: 'start',
     dragFree: false,
   })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const media = window.matchMedia('(max-width: 767px)')
+    const update = () => setIsMobile(media.matches)
+    update()
+
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
 
   useEffect(() => {
     const loadFeedback = async () => {
@@ -271,14 +287,14 @@ export function HomeFeedbackSection({
   }, [sectionNode, reduceMotion])
 
   useEffect(() => {
-    if (!emblaApi || reduceMotion) return
+    if (!emblaApi || reduceMotion || isMobile) return
 
     const timer = window.setInterval(() => {
       emblaApi.scrollNext()
     }, AUTO_SCROLL_MS)
 
     return () => window.clearInterval(timer)
-  }, [emblaApi, reduceMotion])
+  }, [emblaApi, reduceMotion, isMobile])
 
   const reviews = useMemo(() => {
     if (!payload?.reviews) return []
@@ -287,7 +303,7 @@ export function HomeFeedbackSection({
 
   const sectionVisible = Boolean(payload?.sectionVisible && reviews.length > 0)
   const isBeta = payload?.visibility === 'beta_ambassador'
-  const useCarousel = reviews.length >= 3
+  const useCarousel = reviews.length >= 3 && !isMobile
   const theme = getFeedbackTheme(themeVariant)
 
   const toggleReadMore = useCallback((id: string) => {
@@ -302,8 +318,16 @@ export function HomeFeedbackSection({
     <section
       id="student-feedback"
       ref={setSectionNode}
-      className={`w-full py-[48px] md:py-[72px] lg:py-[96px] ${theme.sectionClass}`}
+      className={`relative w-full overflow-hidden py-[64px] md:py-[84px] lg:py-[96px] ${theme.sectionClass}`}
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(135deg, rgba(15,121,56,1) 0, rgba(15,121,56,1) 1px, transparent 1px, transparent 22px)',
+        }}
+      />
       <div className="max-w-6xl mx-auto px-6 transition-all duration-700 opacity-100 translate-y-0">
         <div
           className={`text-center mb-10 transition-all duration-500 ${
@@ -333,7 +357,10 @@ export function HomeFeedbackSection({
         {!useCarousel ? (
           <div className="flex flex-wrap justify-center gap-6">
             {reviews.map((review, index) => (
-              <div key={review.id} className="w-full max-w-sm">
+              <div
+                key={review.id}
+                className={`w-full ${reviews.length <= 2 ? 'max-w-[600px]' : 'md:max-w-sm'}`}
+              >
                 <FeedbackCard
                   review={review}
                   isExpanded={expandedIds.includes(review.id)}
