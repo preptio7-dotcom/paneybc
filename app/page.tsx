@@ -1,6 +1,7 @@
 import { Navigation } from '@/components/navigation'
 import { HeroSection } from '@/components/hero-section'
 import { FeaturesSection } from '@/components/features-section'
+import { HowItWorksSection } from '@/components/how-it-works-section'
 import { StatsSection } from '@/components/stats-section'
 import { CTABanner } from '@/components/cta-banner'
 import { Footer } from '@/components/footer'
@@ -20,6 +21,7 @@ export default function Home() {
       <HeroSection />
       <HomeAdBanner />
       <FeaturesSection />
+      <HowItWorksSection />
       <StatsSection />
       <CTABanner />
       <HomeFeedbackSection />

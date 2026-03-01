@@ -9,13 +9,15 @@ import { useAuth } from '@/lib/auth-context'
 export function CTABanner() {
   const router = useRouter()
   const { user } = useAuth()
+
   const handleStartClick = () => {
-    if (user) { 
+    if (user) {
       router.push('/dashboard')
     } else {
       router.push('/auth/login')
     }
   }
+
   return (
     <section className="w-full bg-primary-green py-20">
       <div className="max-w-7xl mx-auto w-full px-6 text-center">
@@ -30,7 +32,7 @@ export function CTABanner() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
             size="lg"
-            className="bg-white text-primary-green hover:bg-background-light gap-2"
+            className="w-full sm:w-auto bg-white text-primary-green hover:bg-background-light gap-2"
             onClick={handleStartClick}
           >
             Get Started Free
@@ -39,10 +41,10 @@ export function CTABanner() {
           <Button
             size="lg"
             variant="outline"
-            className="border-white text-white hover:bg-white/10 bg-transparent"
-            onClick={() => router.push('/about')}
-            >
-            Learn More
+            className="w-full sm:w-auto border-primary-green text-primary-green hover:bg-primary-green/10 bg-transparent"
+            onClick={() => router.push('/demo')}
+          >
+            Try Demo
           </Button>
         </div>
       </div>

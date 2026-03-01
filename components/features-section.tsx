@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { BookOpen, Clock, BarChart3 } from 'lucide-react'
+import { BookOpen, Clock, BarChart2 } from 'lucide-react'
 
 interface FeatureCard {
-  icon: React.ReactNode
+  icon: React.ComponentType<{ size?: number; className?: string }>
   title: string
   description: string
 }
@@ -34,17 +34,17 @@ export function FeaturesSection() {
 
   const features: FeatureCard[] = [
     {
-      icon: <BookOpen size={60} />,
+      icon: BookOpen,
       title: `${questionStat} Questions`,
       description: 'Comprehensive question bank covering all 5 CA subjects with real exam difficulty levels'
     },
     {
-      icon: <Clock size={60} />,
+      icon: Clock,
       title: 'Real Exam Simulation',
       description: 'Take timed tests exactly like the real CA exam to build time management skills'
     },
     {
-      icon: <BarChart3 size={60} />,
+      icon: BarChart2,
       title: 'Instant Analytics',
       description: 'Track your progress and identify weak areas with detailed performance analytics'
     }
@@ -66,13 +66,15 @@ export function FeaturesSection() {
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <Card 
+            <Card
               key={index}
-              className="border border-border hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer group"
+              className="group cursor-pointer border border-border border-l-4 border-l-transparent transition-all duration-200 md:hover:-translate-y-1 md:hover:shadow-xl md:hover:border-l-primary-green"
             >
               <CardHeader>
-                <div className="mb-4 text-primary-green group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
+                <div
+                  className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#dcfce7] text-primary-green transition-all duration-200 md:group-hover:shadow-[0_4px_12px_rgba(34,197,94,0.15)]"
+                >
+                  <feature.icon size={28} className="text-primary-green" />
                 </div>
                 <CardTitle className="text-xl font-heading">{feature.title}</CardTitle>
               </CardHeader>
