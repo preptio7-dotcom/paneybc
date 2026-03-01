@@ -1,6 +1,8 @@
 export const DEFAULT_DICEBEAR_STYLE = 'avataaars'
 const DICEBEAR_BASE_URL = 'https://api.dicebear.com/7.x'
 const FALLBACK_SEED_PREFIX = 'Pack'
+export const LEGACY_AVATAR_PACK_ID = 'legacy'
+export const LEGACY_AVATAR_STYLE = 'legacy'
 
 export const PREDEFINED_AVATAR_SEEDS = [
   'Alpha',
@@ -26,17 +28,26 @@ export const PREDEFINED_AVATAR_SEEDS = [
 ] as const
 
 export const PRELOAD_AVATAR_COUNT = 4
+export const LEGACY_AVATAR_SEEDS = [
+  'boy_1',
+  'boy_2',
+  'boy_3',
+  'girl_1',
+  'girl_2',
+  'girl_3',
+] as const
 
 const LEGACY_AVATAR_MAP: Record<string, string> = {
-  '/avatars/boy_1.png': 'Alpha',
-  '/avatars/boy_2.png': 'Delta',
-  '/avatars/boy_3.png': 'Hotel',
-  '/avatars/girl_1.png': 'Lima',
-  '/avatars/girl_2.png': 'Quebec',
-  '/avatars/girl_3.png': 'Tango',
+  '/avatars/boy_1.png': 'boy_1',
+  '/avatars/boy_2.png': 'boy_2',
+  '/avatars/boy_3.png': 'boy_3',
+  '/avatars/girl_1.png': 'girl_1',
+  '/avatars/girl_2.png': 'girl_2',
+  '/avatars/girl_3.png': 'girl_3',
 }
 
 const DEFAULT_SEED_SET = new Set<string>(PREDEFINED_AVATAR_SEEDS)
+const LEGACY_SEED_SET = new Set<string>(LEGACY_AVATAR_SEEDS)
 
 export type AvatarPackSummary = {
   id: string
@@ -57,6 +68,9 @@ export type ResolvedAvatar = {
 export function buildAvatarUrl(style: string, seed: string) {
   const safeStyle = String(style || DEFAULT_DICEBEAR_STYLE).trim() || DEFAULT_DICEBEAR_STYLE
   const safeSeed = String(seed || 'Preptio').trim() || 'Preptio'
+  if (safeStyle === LEGACY_AVATAR_STYLE && LEGACY_SEED_SET.has(safeSeed)) {
+    return `/avatars/${safeSeed}.png`
+  }
   return `${DICEBEAR_BASE_URL}/${encodeURIComponent(safeStyle)}/svg?seed=${encodeURIComponent(safeSeed)}`
 }
 
@@ -124,8 +138,16 @@ export function normalizeAvatarSeeds(rawSeeds: unknown, variantsCount = PREDEFIN
   return result.slice(0, targetCount)
 }
 
-export function isLegacySeedAvatarId(value: unknown) {
+export function isLegacySeedAvatarId(
+  value: unknown
+): value is (typeof PREDEFINED_AVATAR_SEEDS)[number] {
   return typeof value === 'string' && DEFAULT_SEED_SET.has(value)
+}
+
+export function isLegacyAvatarSeed(
+  value: unknown
+): value is (typeof LEGACY_AVATAR_SEEDS)[number] {
+  return typeof value === 'string' && LEGACY_SEED_SET.has(value)
 }
 
 export function getLegacyAvatarSeedFromPath(avatarUrl: string | null | undefined) {
@@ -166,6 +188,26 @@ export function resolveAvatarForKnownPack(
     seeds: string[]
   }
 ): ResolvedAvatar {
+  if (pack.id === LEGACY_AVATAR_PACK_ID) {
+    const packed = parsePackedAvatarId(user.avatarId)
+    if (packed && packed.packId === LEGACY_AVATAR_PACK_ID && isLegacyAvatarSeed(packed.seed)) {
+      return {
+        avatarId: user.avatarId || packAvatarId(LEGACY_AVATAR_PACK_ID, packed.seed),
+        avatarSeed: packed.seed,
+        avatarPackId: LEGACY_AVATAR_PACK_ID,
+        avatar: buildAvatarUrl(LEGACY_AVATAR_STYLE, packed.seed),
+      }
+    }
+    const legacySeed = getLegacyAvatarSeedFromPath(user.avatar)
+    const nextSeed = isLegacyAvatarSeed(legacySeed) ? legacySeed : LEGACY_AVATAR_SEEDS[0]
+    return {
+      avatarId: packAvatarId(LEGACY_AVATAR_PACK_ID, nextSeed),
+      avatarSeed: nextSeed,
+      avatarPackId: LEGACY_AVATAR_PACK_ID,
+      avatar: buildAvatarUrl(LEGACY_AVATAR_STYLE, nextSeed),
+    }
+  }
+
   const packed = parsePackedAvatarId(user.avatarId)
   if (packed && packed.packId === pack.id && pack.seeds.includes(packed.seed)) {
     return {
@@ -191,4 +233,3 @@ export function resolveAvatarForKnownPack(
     avatar: buildAvatarUrl(pack.dicebearStyle, seed),
   }
 }
-

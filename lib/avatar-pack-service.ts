@@ -2,10 +2,14 @@ import type { AvatarPack, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import {
   DEFAULT_DICEBEAR_STYLE,
+  LEGACY_AVATAR_PACK_ID,
+  LEGACY_AVATAR_SEEDS,
+  LEGACY_AVATAR_STYLE,
   PREDEFINED_AVATAR_SEEDS,
   buildAvatarUrl,
   getDeterministicSeedFromPool,
   getLegacyAvatarSeedFromPath,
+  isLegacyAvatarSeed,
   isLegacySeedAvatarId,
   normalizeAvatarSeeds,
   packAvatarId,
@@ -25,6 +29,17 @@ const DEFAULT_PACK_NAME = 'Default Pack'
 
 function ensurePackSeeds(pack: { seeds: Prisma.JsonValue; variantsCount: number }) {
   return normalizeAvatarSeeds(pack.seeds, pack.variantsCount)
+}
+
+function getLegacyAvatarPackSummary(): AvatarPackSummary {
+  return {
+    id: LEGACY_AVATAR_PACK_ID,
+    name: 'Classic Pack',
+    dicebearStyle: LEGACY_AVATAR_STYLE,
+    variantsCount: LEGACY_AVATAR_SEEDS.length,
+    seeds: [...LEGACY_AVATAR_SEEDS],
+    isActive: false,
+  }
 }
 
 function toAvatarPackSummary(pack: AvatarPack): AvatarPackSummary {
@@ -138,6 +153,16 @@ function resolveAvatarAgainstPacks(
   const legacySeed = isLegacySeedAvatarId(user.avatarId)
     ? String(user.avatarId)
     : getLegacyAvatarSeedFromPath(user.avatar)
+
+  if (isLegacyAvatarSeed(legacySeed)) {
+    return {
+      avatarId: packAvatarId(LEGACY_AVATAR_PACK_ID, legacySeed),
+      avatarPackId: LEGACY_AVATAR_PACK_ID,
+      avatarSeed: legacySeed,
+      avatar: buildAvatarUrl(LEGACY_AVATAR_STYLE, legacySeed),
+    }
+  }
+
   const nextSeed =
     legacySeed && activePack.seeds.includes(legacySeed)
       ? legacySeed
@@ -154,13 +179,18 @@ function resolveAvatarAgainstPacks(
 export async function resolveAvatarForUser(user: AvatarUserInput) {
   const activePack = await getActiveAvatarPack()
   const packed = parsePackedAvatarId(user.avatarId)
+  const legacyPack = getLegacyAvatarPackSummary()
 
-  let packMap = new Map<string, AvatarPackSummary>([[activePack.id, activePack]])
-  if (packed && packed.packId !== activePack.id) {
+  let packMap = new Map<string, AvatarPackSummary>([
+    [activePack.id, activePack],
+    [legacyPack.id, legacyPack],
+  ])
+  if (packed && packed.packId !== activePack.id && packed.packId !== LEGACY_AVATAR_PACK_ID) {
     const linkedPack = await prisma.avatarPack.findUnique({ where: { id: packed.packId } })
     if (linkedPack) {
       packMap = new Map([
         [activePack.id, activePack],
+        [legacyPack.id, legacyPack],
         [linkedPack.id, toAvatarPackSummary(linkedPack)],
       ])
     }
@@ -172,11 +202,15 @@ export async function resolveAvatarForUser(user: AvatarUserInput) {
 export async function resolveAvatarsForUsers<T extends AvatarUserInput>(users: T[]) {
   if (!users.length) return []
   const activePack = await getActiveAvatarPack()
+  const legacyPack = getLegacyAvatarPackSummary()
   const packedIds = Array.from(
     new Set(
       users
         .map((user) => parsePackedAvatarId(user.avatarId)?.packId || null)
-        .filter((value): value is string => Boolean(value) && value !== activePack.id)
+        .filter(
+          (value): value is string =>
+            Boolean(value) && value !== activePack.id && value !== LEGACY_AVATAR_PACK_ID
+        )
     )
   )
 
@@ -186,7 +220,10 @@ export async function resolveAvatarsForUsers<T extends AvatarUserInput>(users: T
       })
     : []
 
-  const packMap = new Map<string, AvatarPackSummary>([[activePack.id, activePack]])
+  const packMap = new Map<string, AvatarPackSummary>([
+    [activePack.id, activePack],
+    [legacyPack.id, legacyPack],
+  ])
   for (const row of packRows) {
     packMap.set(row.id, toAvatarPackSummary(row))
   }

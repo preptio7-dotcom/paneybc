@@ -5,7 +5,9 @@ import { getCurrentUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { extractRegistrationSettings, normalizePkPhone, sanitizeText } from '@/lib/account-utils'
 import {
+  LEGACY_AVATAR_PACK_ID,
   getLegacyAvatarSeedFromPath,
+  isLegacyAvatarSeed,
   isLegacySeedAvatarId,
   normalizeAvatarSeeds,
   packAvatarId,
@@ -99,15 +101,22 @@ export async function PATCH(request: NextRequest) {
       const packedAvatarId = parsePackedAvatarId(providedAvatarId)
 
       if (packedAvatarId) {
-        const targetPack = await prisma.avatarPack.findUnique({ where: { id: packedAvatarId.packId } })
-        if (!targetPack) {
-          return NextResponse.json({ error: 'Selected avatar pack does not exist' }, { status: 400 })
+        if (packedAvatarId.packId === LEGACY_AVATAR_PACK_ID) {
+          if (!isLegacyAvatarSeed(packedAvatarId.seed)) {
+            return NextResponse.json({ error: 'Selected avatar is not part of this pack' }, { status: 400 })
+          }
+          updateData.avatarId = packAvatarId(LEGACY_AVATAR_PACK_ID, packedAvatarId.seed)
+        } else {
+          const targetPack = await prisma.avatarPack.findUnique({ where: { id: packedAvatarId.packId } })
+          if (!targetPack) {
+            return NextResponse.json({ error: 'Selected avatar pack does not exist' }, { status: 400 })
+          }
+          const allowedSeeds = normalizeAvatarSeeds(targetPack.seeds, targetPack.variantsCount)
+          if (!allowedSeeds.includes(packedAvatarId.seed)) {
+            return NextResponse.json({ error: 'Selected avatar is not part of this pack' }, { status: 400 })
+          }
+          updateData.avatarId = packAvatarId(targetPack.id, packedAvatarId.seed)
         }
-        const allowedSeeds = normalizeAvatarSeeds(targetPack.seeds, targetPack.variantsCount)
-        if (!allowedSeeds.includes(packedAvatarId.seed)) {
-          return NextResponse.json({ error: 'Selected avatar is not part of this pack' }, { status: 400 })
-        }
-        updateData.avatarId = packAvatarId(targetPack.id, packedAvatarId.seed)
       } else if (isLegacySeedAvatarId(providedAvatarId) && activeSeeds.includes(providedAvatarId)) {
         updateData.avatarId = packAvatarId(activePack.id, providedAvatarId)
       } else {
@@ -122,10 +131,14 @@ export async function PATCH(request: NextRequest) {
     ) {
       const legacySeed = getLegacyAvatarSeedFromPath(body.avatar)
       if (legacySeed) {
-        const activePack = await getActiveAvatarPack()
-        const activeSeeds = normalizeAvatarSeeds(activePack.seeds, activePack.variantsCount)
-        if (activeSeeds.includes(legacySeed)) {
-          updateData.avatarId = packAvatarId(activePack.id, legacySeed)
+        if (isLegacyAvatarSeed(legacySeed)) {
+          updateData.avatarId = packAvatarId(LEGACY_AVATAR_PACK_ID, legacySeed)
+        } else {
+          const activePack = await getActiveAvatarPack()
+          const activeSeeds = normalizeAvatarSeeds(activePack.seeds, activePack.variantsCount)
+          if (activeSeeds.includes(legacySeed)) {
+            updateData.avatarId = packAvatarId(activePack.id, legacySeed)
+          }
         }
       }
     }

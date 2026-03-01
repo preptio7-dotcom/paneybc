@@ -1,17 +1,29 @@
 export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
-import { buildAvatarUrl, packAvatarId } from '@/lib/avatar'
+import {
+  LEGACY_AVATAR_PACK_ID,
+  LEGACY_AVATAR_SEEDS,
+  LEGACY_AVATAR_STYLE,
+  buildAvatarUrl,
+  packAvatarId,
+} from '@/lib/avatar'
 import { getActiveAvatarPack } from '@/lib/avatar-pack-service'
 
 export async function GET() {
   try {
     const activePack = await getActiveAvatarPack()
-    const options = activePack.seeds.map((seed) => ({
+    const activeOptions = activePack.seeds.map((seed) => ({
       seed,
       avatarId: packAvatarId(activePack.id, seed),
       url: buildAvatarUrl(activePack.dicebearStyle, seed),
     }))
+    const legacyOptions = LEGACY_AVATAR_SEEDS.map((seed) => ({
+      seed,
+      avatarId: packAvatarId(LEGACY_AVATAR_PACK_ID, seed),
+      url: buildAvatarUrl(LEGACY_AVATAR_STYLE, seed),
+    }))
+    const options = [...activeOptions, ...legacyOptions]
 
     return NextResponse.json(
       {
@@ -34,4 +46,3 @@ export async function GET() {
     return NextResponse.json({ error: error.message || 'Failed to load avatar pack' }, { status: 500 })
   }
 }
-
