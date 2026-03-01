@@ -111,6 +111,9 @@ export async function PATCH(request: NextRequest) {
           if (!targetPack) {
             return NextResponse.json({ error: 'Selected avatar pack does not exist' }, { status: 400 })
           }
+          if (!targetPack.isActive) {
+            return NextResponse.json({ error: 'Selected avatar pack is currently unavailable' }, { status: 400 })
+          }
           const allowedSeeds = normalizeAvatarSeeds(targetPack.seeds, targetPack.variantsCount)
           if (!allowedSeeds.includes(packedAvatarId.seed)) {
             return NextResponse.json({ error: 'Selected avatar is not part of this pack' }, { status: 400 })

@@ -32,7 +32,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-badges'
-import { PRELOAD_AVATAR_COUNT } from '@/lib/avatar'
+import { PRELOAD_AVATAR_COUNT, parsePackedAvatarId } from '@/lib/avatar'
 
 type BadgeProgress = {
   badgeType: StreakBadgeType
@@ -60,6 +60,14 @@ type AvatarOption = {
   url: string
 }
 
+type AvatarPackOption = {
+  id: string
+  name: string
+  source: string
+  isDefault: boolean
+  options: AvatarOption[]
+}
+
 export default function DashboardSettingsPage() {
   const { user, setUser, loading: authLoading } = useAuth()
   const { toast } = useToast()
@@ -69,7 +77,10 @@ export default function DashboardSettingsPage() {
   const [isSavingAvatar, setIsSavingAvatar] = useState(false)
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false)
   const [caLevelOptions, setCaLevelOptions] = useState<string[]>(FALLBACK_CA_LEVELS)
-  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>([])
+  const [avatarPacks, setAvatarPacks] = useState<AvatarPackOption[]>([])
+  const [activeAvatarPackTab, setActiveAvatarPackTab] = useState('')
+  const [isSwitchingPack, setIsSwitchingPack] = useState(false)
+  const [currentAvatarPackName, setCurrentAvatarPackName] = useState('')
   const [currentAvatarId, setCurrentAvatarId] = useState('')
   const [selectedAvatarId, setSelectedAvatarId] = useState('')
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState('')
@@ -140,31 +151,54 @@ export default function DashboardSettingsPage() {
           setCaLevelOptions(FALLBACK_CA_LEVELS)
         }
 
+        let parsedAvatarPacks: AvatarPackOption[] = []
         if (avatarPackResponse.ok) {
           const avatarPackData = await avatarPackResponse.json()
-          const options = Array.isArray(avatarPackData?.options)
-            ? avatarPackData.options
-                .map((item: any) => ({
-                  avatarId: String(item?.avatarId || '').trim(),
-                  seed: String(item?.seed || '').trim(),
-                  url: String(item?.url || '').trim(),
-                }))
-                .filter((item: AvatarOption) => item.avatarId && item.url)
+          parsedAvatarPacks = Array.isArray(avatarPackData?.packs)
+            ? avatarPackData.packs
+                .map((pack: any) => {
+                  const options = Array.isArray(pack?.options)
+                    ? pack.options
+                        .map((item: any) => ({
+                          avatarId: String(item?.avatarId || '').trim(),
+                          seed: String(item?.seed || '').trim(),
+                          url: String(item?.url || '').trim(),
+                        }))
+                        .filter((item: AvatarOption) => item.avatarId && item.url)
+                    : []
+                  return {
+                    id: String(pack?.id || '').trim(),
+                    name: String(pack?.name || '').trim(),
+                    source: String(pack?.source || 'dicebear').trim(),
+                    isDefault: Boolean(pack?.isDefault),
+                    options,
+                  }
+                })
+                .filter((pack: AvatarPackOption) => pack.id && pack.options.length > 0)
             : []
-          setAvatarOptions(options)
-        } else {
-          setAvatarOptions([])
         }
+        setAvatarPacks(parsedAvatarPacks)
 
         if (profileResponse.ok) {
           const profileData = await profileResponse.json()
           const profile = profileData?.user || {}
           const avatarId = String(profile.avatarId || user.avatarId || '').trim()
           const avatarUrl = String(profile.avatar || user.avatar || '').trim()
+          const parsedCurrentAvatar = parsePackedAvatarId(avatarId)
+          const currentPackId = parsedCurrentAvatar?.packId || ''
+          const matchingPack =
+            parsedAvatarPacks.find((pack) => pack.id === currentPackId) ||
+            parsedAvatarPacks.find((pack) => pack.isDefault) ||
+            parsedAvatarPacks[0] ||
+            null
 
           setCurrentAvatarId(avatarId)
           setSelectedAvatarId(avatarId)
           setCurrentAvatarUrl(avatarUrl)
+          setActiveAvatarPackTab(matchingPack?.id || '')
+          setCurrentAvatarPackName(
+            parsedAvatarPacks.find((pack) => pack.id === currentPackId)?.name || ''
+          )
           setProfileForm({
             institute: String(profile.institute || ''),
             level: String(profile.level || ''),
@@ -201,9 +235,16 @@ export default function DashboardSettingsPage() {
     setCaLevelOptions((prev) => [...prev, profileForm.level])
   }, [caLevelOptions, profileForm.level])
 
+  const activePack =
+    avatarPacks.find((pack) => pack.id === activeAvatarPackTab) ||
+    avatarPacks.find((pack) => pack.isDefault) ||
+    avatarPacks[0] ||
+    null
+  const activeAvatarOptions = activePack?.options || []
+
   useEffect(() => {
-    if (!avatarOptions.length) return
-    const firstFour = avatarOptions.slice(0, PRELOAD_AVATAR_COUNT)
+    if (!activeAvatarOptions.length) return
+    const firstFour = activeAvatarOptions.slice(0, PRELOAD_AVATAR_COUNT)
     const links = firstFour.map((option) => {
       const link = document.createElement('link')
       link.rel = 'preload'
@@ -220,7 +261,7 @@ export default function DashboardSettingsPage() {
         }
       })
     }
-  }, [avatarOptions])
+  }, [activeAvatarOptions])
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -229,10 +270,22 @@ export default function DashboardSettingsPage() {
   }, [resendCooldown])
 
   useEffect(() => {
-    if (!avatarOptions.length) return
+    if (!activeAvatarOptions.length) return
     if (selectedAvatarId) return
-    setSelectedAvatarId(avatarOptions[0].avatarId)
-  }, [avatarOptions, selectedAvatarId])
+    setSelectedAvatarId(activeAvatarOptions[0].avatarId)
+  }, [activeAvatarOptions, selectedAvatarId])
+
+  useEffect(() => {
+    if (!avatarPacks.length) return
+    if (!selectedAvatarId) return
+    const parsed = parsePackedAvatarId(selectedAvatarId)
+    if (!parsed?.packId) return
+    if (activeAvatarPackTab === parsed.packId) return
+    const nextPack = avatarPacks.find((pack) => pack.id === parsed.packId)
+    if (nextPack) {
+      setActiveAvatarPackTab(nextPack.id)
+    }
+  }, [avatarPacks, selectedAvatarId, activeAvatarPackTab])
 
   const handleSaveAvatar = async () => {
     if (!user?.id || selectedAvatarId === currentAvatarId) return
@@ -248,8 +301,11 @@ export default function DashboardSettingsPage() {
       if (!response.ok) throw new Error(data.error || 'Failed to update avatar')
 
       const nextUser = data.user
+      const nextPackName =
+        avatarPacks.find((pack) => pack.id === parsePackedAvatarId(selectedAvatarId)?.packId)?.name || ''
       setCurrentAvatarId(selectedAvatarId)
       setCurrentAvatarUrl((prev) => String(nextUser?.avatar || prev || user?.avatar || ''))
+      setCurrentAvatarPackName(nextPackName)
       setUser((prev) =>
         prev
           ? {
@@ -271,6 +327,19 @@ export default function DashboardSettingsPage() {
     } finally {
       setIsSavingAvatar(false)
     }
+  }
+
+  const handleAvatarPackTabChange = (packId: string) => {
+    if (!packId || packId === activeAvatarPackTab) return
+    const nextPack = avatarPacks.find((pack) => pack.id === packId)
+    setIsSwitchingPack(true)
+    setTimeout(() => {
+      setActiveAvatarPackTab(packId)
+      if (nextPack?.options?.[0]?.avatarId) {
+        setSelectedAvatarId(nextPack.options[0].avatarId)
+      }
+      setIsSwitchingPack(false)
+    }, 150)
   }
 
   const handleSaveProfile = async () => {
@@ -470,11 +539,15 @@ export default function DashboardSettingsPage() {
   }
 
   const selectedAvatarUrl =
-    avatarOptions.find((option) => option.avatarId === selectedAvatarId)?.url ||
+    activeAvatarOptions.find((option) => option.avatarId === selectedAvatarId)?.url ||
+    avatarPacks
+      .flatMap((pack) => pack.options)
+      .find((option) => option.avatarId === selectedAvatarId)?.url ||
     currentAvatarUrl ||
     user.avatar ||
     ''
   const hasAvatarSelectionChanged = selectedAvatarId !== currentAvatarId
+  const activePackName = activePack?.name || ''
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
@@ -505,53 +578,91 @@ export default function DashboardSettingsPage() {
                 {isAvatarPickerOpen ? (
                   <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
                     <h3 className="text-sm font-semibold text-slate-900 mb-3">Choose Your Avatar</h3>
-                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-                      {avatarOptions.map((avatarOption, index) => {
-                        const selected = selectedAvatarId === avatarOption.avatarId
-                        const loaded = Boolean(loadedAvatarIds[avatarOption.avatarId])
+                    <div className="mb-3 flex items-center gap-2 overflow-x-auto pb-1">
+                      {avatarPacks.map((pack) => {
+                        const isActiveTab = pack.id === activeAvatarPackTab
                         return (
                           <button
-                            key={avatarOption.avatarId}
+                            key={pack.id}
                             type="button"
-                            onClick={() => setSelectedAvatarId(avatarOption.avatarId)}
-                            className={`relative h-16 w-16 rounded-full overflow-hidden border-2 transition-all duration-200 ${
-                              selected
-                                ? 'border-primary-green border-[3px] scale-105 shadow-[0_4px_16px_rgba(22,163,74,0.3)]'
-                                : 'border-transparent hover:border-[#86efac] hover:scale-[1.08] hover:shadow-[0_4px_12px_rgba(22,163,74,0.2)]'
+                            onClick={() => handleAvatarPackTabChange(pack.id)}
+                            className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                              isActiveTab
+                                ? 'bg-primary-green text-white'
+                                : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
                             }`}
                           >
-                            {!loaded ? (
-                              <span className="absolute inset-0 rounded-full avatar-shimmer" aria-hidden />
-                            ) : null}
-                            <img
-                              src={avatarOption.url}
-                              alt={`${avatarOption.seed} avatar`}
-                              className={`h-full w-full object-cover rounded-full ${loaded ? 'avatar-reveal-loaded' : 'opacity-0'}`}
-                              loading={index < PRELOAD_AVATAR_COUNT ? 'eager' : 'lazy'}
-                              onLoad={() =>
-                                setLoadedAvatarIds((prev) =>
-                                  prev[avatarOption.avatarId]
-                                    ? prev
-                                    : { ...prev, [avatarOption.avatarId]: true }
-                                )
-                              }
-                            />
-                            {selected ? (
-                              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-primary-green text-white flex items-center justify-center">
-                                <Check size={8} />
-                              </span>
-                            ) : null}
+                            {pack.name}
                           </button>
                         )
                       })}
                     </div>
-                    {!avatarOptions.length ? (
+                    {currentAvatarPackName && activePackName && currentAvatarPackName !== activePackName ? (
+                      <p className="mb-2 text-xs text-slate-500">
+                        Your current avatar is from <span className="font-semibold">{currentAvatarPackName}</span>.
+                      </p>
+                    ) : null}
+                    <div
+                      className={`transition-opacity duration-150 ${
+                        isSwitchingPack ? 'opacity-0' : 'opacity-100'
+                      }`}
+                    >
+                      {isSwitchingPack ? (
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                          {Array.from({ length: 10 }).map((_, index) => (
+                            <span key={`avatar-skeleton-${index}`} className="h-16 w-16 rounded-full avatar-shimmer" />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                          {activeAvatarOptions.map((avatarOption, index) => {
+                            const selected = selectedAvatarId === avatarOption.avatarId
+                            const loaded = Boolean(loadedAvatarIds[avatarOption.avatarId])
+                            return (
+                              <button
+                                key={avatarOption.avatarId}
+                                type="button"
+                                onClick={() => setSelectedAvatarId(avatarOption.avatarId)}
+                                className={`relative h-16 w-16 rounded-full overflow-hidden border-2 transition-all duration-200 ${
+                                  selected
+                                    ? 'border-primary-green border-[3px] scale-105 shadow-[0_4px_16px_rgba(22,163,74,0.3)]'
+                                    : 'border-transparent hover:border-[#86efac] hover:scale-[1.08] hover:shadow-[0_4px_12px_rgba(22,163,74,0.2)]'
+                                }`}
+                              >
+                                {!loaded ? (
+                                  <span className="absolute inset-0 rounded-full avatar-shimmer" aria-hidden />
+                                ) : null}
+                                <img
+                                  src={avatarOption.url}
+                                  alt={`${avatarOption.seed} avatar`}
+                                  className={`h-full w-full object-cover rounded-full ${loaded ? 'avatar-reveal-loaded' : 'opacity-0'}`}
+                                  loading={index < PRELOAD_AVATAR_COUNT ? 'eager' : 'lazy'}
+                                  onLoad={() =>
+                                    setLoadedAvatarIds((prev) =>
+                                      prev[avatarOption.avatarId]
+                                        ? prev
+                                        : { ...prev, [avatarOption.avatarId]: true }
+                                    )
+                                  }
+                                />
+                                {selected ? (
+                                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-primary-green text-white flex items-center justify-center">
+                                    <Check size={8} />
+                                  </span>
+                                ) : null}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {!activeAvatarOptions.length ? (
                       <p className="mt-3 text-xs text-slate-500">No avatar options available right now.</p>
                     ) : null}
                     <div className="mt-5 flex justify-end">
                       <Button
                         onClick={handleSaveAvatar}
-                        disabled={!hasAvatarSelectionChanged || isSavingAvatar || isProfileLoading || !avatarOptions.length}
+                        disabled={!hasAvatarSelectionChanged || isSavingAvatar || isProfileLoading || !activeAvatarOptions.length}
                         className="bg-primary-green hover:bg-green-700"
                       >
                         {isSavingAvatar ? 'Saving...' : 'Save Avatar'}

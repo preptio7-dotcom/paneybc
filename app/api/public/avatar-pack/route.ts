@@ -8,32 +8,60 @@ import {
   buildAvatarUrl,
   packAvatarId,
 } from '@/lib/avatar'
-import { getActiveAvatarPack } from '@/lib/avatar-pack-service'
+import { getActiveAvatarPack, getActiveAvatarPacks } from '@/lib/avatar-pack-service'
 
 export async function GET() {
   try {
-    const activePack = await getActiveAvatarPack()
-    const activeOptions = activePack.seeds.map((seed) => ({
-      seed,
-      avatarId: packAvatarId(activePack.id, seed),
-      url: buildAvatarUrl(activePack.dicebearStyle, seed),
+    const defaultPack = await getActiveAvatarPack()
+    const activePacks = await getActiveAvatarPacks()
+    const packs = activePacks.map((pack) => ({
+      id: pack.id,
+      name: pack.name,
+      source: pack.source,
+      dicebearStyle: pack.dicebearStyle,
+      variantsCount: pack.variantsCount,
+      isActive: pack.isActive,
+      isDefault: pack.id === defaultPack.id,
+      options: pack.seeds.map((seed) => ({
+        seed,
+        avatarId: packAvatarId(pack.id, seed),
+        url: buildAvatarUrl(pack.dicebearStyle, seed, pack.source),
+      })),
     }))
+
     const legacyOptions = LEGACY_AVATAR_SEEDS.map((seed) => ({
       seed,
       avatarId: packAvatarId(LEGACY_AVATAR_PACK_ID, seed),
-      url: buildAvatarUrl(LEGACY_AVATAR_STYLE, seed),
+      url: buildAvatarUrl(LEGACY_AVATAR_STYLE, seed, 'legacy'),
     }))
-    const options = [...activeOptions, ...legacyOptions]
+    const legacyPack = {
+      id: LEGACY_AVATAR_PACK_ID,
+      name: 'Classic Pack',
+      source: 'legacy',
+      dicebearStyle: LEGACY_AVATAR_STYLE,
+      variantsCount: legacyOptions.length,
+      isActive: true,
+      isDefault: false,
+      options: legacyOptions,
+    }
+
+    const allPacks = [...packs, legacyPack]
+    const options = allPacks.flatMap((pack) => pack.options)
+    const defaultPackFromResponse = allPacks.find((pack) => pack.isDefault) || packs[0] || legacyPack
 
     return NextResponse.json(
       {
-        pack: {
-          id: activePack.id,
-          name: activePack.name,
-          dicebearStyle: activePack.dicebearStyle,
-          variantsCount: activePack.variantsCount,
-          isActive: activePack.isActive,
-        },
+        pack: defaultPackFromResponse
+          ? {
+              id: defaultPackFromResponse.id,
+              name: defaultPackFromResponse.name,
+              source: defaultPackFromResponse.source,
+              dicebearStyle: defaultPackFromResponse.dicebearStyle,
+              variantsCount: defaultPackFromResponse.variantsCount,
+              isActive: defaultPackFromResponse.isActive,
+            }
+          : null,
+        packs: allPacks,
         options,
       },
       {

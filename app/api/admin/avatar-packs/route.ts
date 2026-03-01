@@ -9,15 +9,19 @@ import {
   toggleAvatarPackStatus,
   updateAvatarPack,
 } from '@/lib/avatar-pack-service'
-import { normalizeAvatarSeeds } from '@/lib/avatar'
+import { normalizeAvatarSeeds, normalizeAvatarSource } from '@/lib/avatar'
 
 function parseSeedInput(input: unknown, variantsCount: number) {
   if (Array.isArray(input)) {
-    return normalizeAvatarSeeds(input, variantsCount)
+    const sanitized = input.map((seed) => String(seed || '').trim()).filter(Boolean)
+    return sanitized.length ? normalizeAvatarSeeds(sanitized, variantsCount) : []
   }
   const raw = String(input || '').trim()
-  if (!raw) return normalizeAvatarSeeds([], variantsCount)
-  const split = raw.split(',').map((seed) => seed.trim())
+  if (!raw) return []
+  const split = raw
+    .split(/[\n,]/g)
+    .map((seed) => seed.trim())
+    .filter(Boolean)
   return normalizeAvatarSeeds(split, variantsCount)
 }
 
@@ -45,8 +49,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const variantsCount = Math.min(50, Math.max(5, Number(body.variantsCount) || 20))
     const seeds = parseSeedInput(body.seeds, variantsCount)
+    const source = normalizeAvatarSource(body.source)
     const pack = await createAvatarPack({
       name: String(body.name || ''),
+      source: source === 'legacy' ? 'dicebear' : source,
       dicebearStyle: String(body.dicebearStyle || 'avataaars'),
       variantsCount,
       seeds,
@@ -87,8 +93,10 @@ export async function PATCH(request: NextRequest) {
     if (action === 'edit') {
       const variantsCount = Math.min(50, Math.max(5, Number(body.variantsCount) || 20))
       const seeds = parseSeedInput(body.seeds, variantsCount)
+      const source = normalizeAvatarSource(body.source)
       const pack = await updateAvatarPack(packId, {
         name: typeof body.name === 'string' ? body.name : undefined,
+        source: source === 'legacy' ? 'dicebear' : source,
         dicebearStyle: typeof body.dicebearStyle === 'string' ? body.dicebearStyle : undefined,
         variantsCount,
         seeds,
@@ -109,4 +117,3 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message || 'Failed to update avatar pack' }, { status: 400 })
   }
 }
-

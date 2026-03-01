@@ -173,6 +173,7 @@ async function ensureActivePack() {
     activePack = await prisma.avatarPack.create({
       data: {
         name: 'Default Pack',
+        source: 'dicebear',
         dicebearStyle: DEFAULT_STYLE,
         variantsCount: DEFAULT_SEEDS.length,
         seeds: DEFAULT_SEEDS,

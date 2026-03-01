@@ -18,11 +18,20 @@ import { Loader2, Check, Star } from 'lucide-react'
 import Image from 'next/image'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { normalizePkPhone } from '@/lib/account-utils'
+import { parsePackedAvatarId } from '@/lib/avatar'
 
 type AvatarOption = {
   avatarId: string
   seed: string
   url: string
+}
+
+type AvatarPackOption = {
+  id: string
+  name: string
+  source: string
+  isDefault: boolean
+  options: AvatarOption[]
 }
 
 interface ProfileModalProps {
@@ -45,7 +54,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     degrees: ['CA'],
     levels: ['PRC', 'CAF'],
   })
-  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>([])
+  const [avatarPacks, setAvatarPacks] = useState<AvatarPackOption[]>([])
+  const [activeAvatarPackTab, setActiveAvatarPackTab] = useState('')
+  const [isSwitchingPack, setIsSwitchingPack] = useState(false)
   const [form, setForm] = useState({
     name: '',
     avatarId: '',
@@ -81,21 +92,36 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
         if (avatarPackResponse.ok) {
           const avatarPackData = await avatarPackResponse.json()
-          const options = Array.isArray(avatarPackData?.options)
-            ? avatarPackData.options
-                .map((item: any) => ({
-                  avatarId: String(item?.avatarId || '').trim(),
-                  seed: String(item?.seed || '').trim(),
-                  url: String(item?.url || '').trim(),
-                }))
-                .filter((item: AvatarOption) => item.avatarId && item.url)
+          const packs = Array.isArray(avatarPackData?.packs)
+            ? avatarPackData.packs
+                .map((pack: any) => {
+                  const options = Array.isArray(pack?.options)
+                    ? pack.options
+                        .map((item: any) => ({
+                          avatarId: String(item?.avatarId || '').trim(),
+                          seed: String(item?.seed || '').trim(),
+                          url: String(item?.url || '').trim(),
+                        }))
+                        .filter((item: AvatarOption) => item.avatarId && item.url)
+                    : []
+                  return {
+                    id: String(pack?.id || '').trim(),
+                    name: String(pack?.name || '').trim(),
+                    source: String(pack?.source || 'dicebear').trim(),
+                    isDefault: Boolean(pack?.isDefault),
+                    options,
+                  }
+                })
+                .filter((pack: AvatarPackOption) => pack.id && pack.options.length > 0)
             : []
-          setAvatarOptions(options)
-          if (options.length > 0) {
-            setForm((prev) => ({ ...prev, avatarId: prev.avatarId || options[0].avatarId }))
+          setAvatarPacks(packs)
+          const fallbackPack = packs.find((pack) => pack.isDefault) || packs[0] || null
+          if (fallbackPack) {
+            setActiveAvatarPackTab(fallbackPack.id)
+            setForm((prev) => ({ ...prev, avatarId: prev.avatarId || fallbackPack.options[0]?.avatarId || '' }))
           }
         } else {
-          setAvatarOptions([])
+          setAvatarPacks([])
         }
       } catch {
         // keep defaults
@@ -115,6 +141,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Failed to load profile')
         const profile = data.user || {}
+        const parsedAvatar = parsePackedAvatarId(String(profile.avatarId || user.avatarId || ''))
+        const avatarPackId = parsedAvatar?.packId || ''
+        if (avatarPackId) {
+          setActiveAvatarPackTab(avatarPackId)
+        }
         setForm((prev) => ({
           ...prev,
           name: profile.name || user.name || '',
@@ -149,11 +180,30 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }))
   }, [registrationOptions])
 
+  const activeAvatarPack =
+    avatarPacks.find((pack) => pack.id === activeAvatarPackTab) ||
+    avatarPacks.find((pack) => pack.isDefault) ||
+    avatarPacks[0] ||
+    null
+  const activeAvatarOptions = activeAvatarPack?.options || []
+
   useEffect(() => {
-    if (!avatarOptions.length) return
-    if (form.avatarId && avatarOptions.some((option) => option.avatarId === form.avatarId)) return
-    setForm((prev) => ({ ...prev, avatarId: avatarOptions[0].avatarId }))
-  }, [avatarOptions, form.avatarId])
+    if (!activeAvatarOptions.length) return
+    if (form.avatarId && activeAvatarOptions.some((option) => option.avatarId === form.avatarId)) return
+    setForm((prev) => ({ ...prev, avatarId: activeAvatarOptions[0].avatarId }))
+  }, [activeAvatarOptions, form.avatarId])
+
+  useEffect(() => {
+    if (!avatarPacks.length) return
+    if (!form.avatarId) return
+    const packed = parsePackedAvatarId(form.avatarId)
+    if (!packed?.packId) return
+    if (packed.packId === activeAvatarPackTab) return
+    const nextPack = avatarPacks.find((pack) => pack.id === packed.packId)
+    if (nextPack) {
+      setActiveAvatarPackTab(nextPack.id)
+    }
+  }, [avatarPacks, form.avatarId, activeAvatarPackTab])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -247,6 +297,19 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
   }
 
+  const handleAvatarPackTabChange = (packId: string) => {
+    if (!packId || packId === activeAvatarPackTab) return
+    const nextPack = avatarPacks.find((pack) => pack.id === packId)
+    setIsSwitchingPack(true)
+    setTimeout(() => {
+      setActiveAvatarPackTab(packId)
+      if (nextPack?.options?.[0]?.avatarId) {
+        setForm((prev) => ({ ...prev, avatarId: nextPack.options[0].avatarId }))
+      }
+      setIsSwitchingPack(false)
+    }, 150)
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-y-auto bg-white">
@@ -258,28 +321,54 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         <form onSubmit={handleUpdateProfile} className="space-y-6 py-2">
           <div className="space-y-3">
             <Label>Select Avatar</Label>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-              {avatarOptions.map((avatar) => (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {avatarPacks.map((pack) => (
                 <button
-                  key={avatar.avatarId}
+                  key={pack.id}
                   type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, avatarId: avatar.avatarId }))}
-                  className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
-                    form.avatarId === avatar.avatarId ? 'border-primary-green scale-105 shadow-md' : 'border-transparent hover:border-slate-200'
+                  onClick={() => handleAvatarPackTabChange(pack.id)}
+                  className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    activeAvatarPack?.id === pack.id
+                      ? 'bg-primary-green text-white'
+                      : 'bg-slate-50 text-slate-500 border border-slate-200'
                   }`}
                 >
-                  <Image src={avatar.url} alt={avatar.seed} fill className="object-cover" />
-                  {form.avatarId === avatar.avatarId && (
-                    <div className="absolute inset-0 bg-primary-green/20 flex items-center justify-center">
-                      <div className="bg-primary-green text-white rounded-full p-1">
-                        <Check size={16} />
-                      </div>
-                    </div>
-                  )}
+                  {pack.name}
                 </button>
               ))}
             </div>
-            {!avatarOptions.length ? (
+            <div className={`transition-opacity duration-150 ${isSwitchingPack ? 'opacity-0' : 'opacity-100'}`}>
+              {isSwitchingPack ? (
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <span key={`switching-avatar-${index}`} className="aspect-square rounded-2xl bg-slate-100 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                  {activeAvatarOptions.map((avatar) => (
+                    <button
+                      key={avatar.avatarId}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, avatarId: avatar.avatarId }))}
+                      className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
+                        form.avatarId === avatar.avatarId ? 'border-primary-green scale-105 shadow-md' : 'border-transparent hover:border-slate-200'
+                      }`}
+                    >
+                      <Image src={avatar.url} alt={avatar.seed} fill className="object-cover" />
+                      {form.avatarId === avatar.avatarId && (
+                        <div className="absolute inset-0 bg-primary-green/20 flex items-center justify-center">
+                          <div className="bg-primary-green text-white rounded-full p-1">
+                            <Check size={16} />
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {!activeAvatarOptions.length ? (
               <p className="text-xs text-slate-500">No avatar options available right now.</p>
             ) : null}
           </div>

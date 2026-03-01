@@ -397,6 +397,7 @@ model SystemSettings {
 model AvatarPack {
   id            String   @id @default(cuid())
   name          String
+  source        String   @default("dicebear")
   dicebearStyle String   @map("dicebear_style")
   variantsCount Int      @default(20) @map("variants_count")
   seeds         Json
@@ -408,6 +409,7 @@ model AvatarPack {
   activeInSettings SystemSettings[]
 
   @@index([isActive])
+  @@index([source])
   @@index([createdAt])
   @@map("avatar_packs")
 }
