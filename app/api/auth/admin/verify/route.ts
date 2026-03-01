@@ -6,6 +6,7 @@ import { hasValidSameOrigin } from '@/lib/csrf'
 import { detectSuspiciousInput, sanitizeEmail, sanitizePlainText } from '@/lib/security-input'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 import { getIpAccess, getRequestIpAddress, logSecurityEvent, maybeAutoBlockIp } from '@/lib/ip-security'
+import { resolveAvatarForUser } from '@/lib/avatar-pack-service'
 
 const MAX_OTP_ATTEMPTS = 3
 const ADMIN_VERIFY_ENDPOINT = '/api/auth/admin/verify'
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true, email: true, name: true, avatar: true, role: true, isBanned: true, adminOtpFailedAttempts: true },
+      select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, isBanned: true, adminOtpFailedAttempts: true },
     })
 
     if (!user || user.role !== 'admin') {
@@ -149,6 +150,8 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     )
 
+    const resolvedAvatar = await resolveAvatarForUser(user)
+
     const response = NextResponse.json(
       {
         message: 'Login successful',
@@ -156,7 +159,8 @@ export async function POST(request: NextRequest) {
           id: user.id,
           email: user.email,
           name: user.name,
-          avatar: user.avatar || '/avatars/boy_1.png',
+          avatarId: resolvedAvatar.avatarId,
+          avatar: resolvedAvatar.avatar,
           role: user.role,
         },
       },

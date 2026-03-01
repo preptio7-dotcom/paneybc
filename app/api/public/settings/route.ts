@@ -113,6 +113,7 @@ export async function GET(request: NextRequest) {
       {
         adsEnabled: settings.adsEnabled ?? false,
         welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
+        activeAvatarPackId: settings.activeAvatarPackId || null,
         adContent,
         testSettings: normalizedTestSettings,
       },
@@ -130,6 +131,7 @@ export async function GET(request: NextRequest) {
       {
         adsEnabled: true,
         welcomeMessageTemplate: 'Welcome back, {{name}}!',
+        activeAvatarPackId: null,
         testSettings: {
           fullBookTimeMinutes: 120,
           chapterTestDefaultMinutes: 30,

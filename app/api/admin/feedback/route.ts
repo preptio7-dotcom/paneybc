@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { resolveAvatarsForUsers } from '@/lib/avatar-pack-service'
 
 function isAdmin(request: NextRequest) {
   const user = getCurrentUser(request)
@@ -39,8 +40,10 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
         user: {
           select: {
+            id: true,
             name: true,
             avatar: true,
+            avatarId: true,
             city: true,
             level: true,
             email: true,
@@ -49,7 +52,18 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ feedback })
+    const resolvedAvatars = await resolveAvatarsForUsers(feedback.map((item) => item.user || {}))
+    const normalizedFeedback = feedback.map((item, index) => ({
+      ...item,
+      user: item.user
+        ? {
+            ...item.user,
+            avatar: resolvedAvatars[index]?.avatar || '',
+          }
+        : item.user,
+    }))
+
+    return NextResponse.json({ feedback: normalizedFeedback })
   } catch (error: any) {
     console.error('Admin feedback fetch error:', error)
     return NextResponse.json({ error: error.message || 'Failed to load feedback' }, { status: 500 })

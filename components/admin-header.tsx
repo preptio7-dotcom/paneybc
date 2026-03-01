@@ -18,6 +18,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Palette,
   Settings,
   Shield,
   Upload,
@@ -72,6 +73,12 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Demo Settings', href: '/admin/demo-settings', icon: Settings },
       { label: 'Beta', href: '/admin/beta-features', icon: FlaskConical },
+    ],
+  },
+  {
+    label: 'Customization',
+    items: [
+      { label: 'Avatar Packs', href: '/admin/avatar-packs', icon: Palette },
     ],
   },
   {
@@ -240,7 +247,7 @@ export function AdminHeader() {
               title={user?.name || 'Admin User'}
             >
               {user?.avatar ? (
-                <div className="relative h-8 w-8 overflow-hidden rounded-full border border-slate-700">
+                <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-[#dcfce7]">
                   <Image src={user.avatar} alt={user.name} fill className="object-cover" />
                 </div>
               ) : (
@@ -305,7 +312,7 @@ export function AdminHeader() {
               className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100"
             >
               {user?.avatar ? (
-                <div className="relative h-8 w-8 overflow-hidden rounded-full border border-slate-200">
+                <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-[#dcfce7]">
                   <Image src={user.avatar} alt={user.name} fill className="object-cover" />
                 </div>
               ) : (
@@ -370,7 +377,7 @@ export function AdminHeader() {
             <div className="absolute bottom-0 left-0 right-0 border-t border-slate-800 p-3">
               <div className="mb-2 flex items-center gap-3 rounded-lg bg-slate-800/70 px-3 py-2">
                 {user?.avatar ? (
-                  <div className="relative h-8 w-8 overflow-hidden rounded-full border border-slate-700">
+                  <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-[#dcfce7]">
                     <Image src={user.avatar} alt={user.name} fill className="object-cover" />
                   </div>
                 ) : (

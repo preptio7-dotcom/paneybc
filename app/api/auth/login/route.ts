@@ -21,6 +21,7 @@ import {
   shouldSendAccountSecurityAlert,
 } from '@/lib/login-security'
 import { sendSecurityAlertEmail } from '@/lib/email'
+import { resolveAvatarForUser } from '@/lib/avatar-pack-service'
 
 const LOGIN_ENDPOINT = '/api/auth/login'
 
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         avatar: true,
+        avatarId: true,
         role: true,
         studentRole: true,
         password: true,
@@ -237,6 +239,8 @@ export async function POST(request: NextRequest) {
       }
     )
 
+    const resolvedAvatar = await resolveAvatarForUser(user)
+
     const response = NextResponse.json(
       {
         message: 'Login successful',
@@ -244,7 +248,8 @@ export async function POST(request: NextRequest) {
           id: user.id,
           email: user.email,
           name: user.name,
-          avatar: user.avatar || '/avatars/boy_1.png',
+          avatarId: resolvedAvatar.avatarId,
+          avatar: resolvedAvatar.avatar,
           role: user.role,
           studentRole: user.studentRole,
         },

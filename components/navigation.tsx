@@ -300,7 +300,7 @@ export function Navigation() {
                 className="flex items-center gap-2 text-text-dark font-medium hover:text-primary-green transition-colors focus:outline-none"
               >
                 {user.avatar ? (
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200">
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-[#dcfce7]">
                     <Image src={user.avatar} alt={user.name} fill className="object-cover" />
                   </div>
                 ) : (
@@ -505,7 +505,7 @@ export function Navigation() {
                     className="flex items-center gap-2 px-2 py-3 text-text-dark font-medium mb-1 hover:text-primary-green transition-colors w-full text-left"
                   >
                     {user.avatar ? (
-                      <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200">
+                      <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#dcfce7]">
                         <Image src={user.avatar} alt={user.name} fill className="object-cover" />
                       </div>
                     ) : (

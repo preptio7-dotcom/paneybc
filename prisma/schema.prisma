@@ -130,6 +130,7 @@ model User {
   role                 UserRole @default(student)
   studentRole          StudentRole @default(unpaid)
   avatar               String   @default("/avatars/boy_1.png")
+  avatarId             String?  @map("avatar_id")
   isBanned             Boolean  @default(false)
   adminOtpFailedAttempts Int    @default(0)
   degree               String   @default("")
@@ -386,8 +387,29 @@ model SystemSettings {
   welcomeMessageTemplate String   @default("Welcome back, {{name}}!")
   adContent              Json?
   testSettings           Json?
+  activeAvatarPackId     String?  @map("active_avatar_pack_id")
   toggledBy              String?
   updatedAt              DateTime @updatedAt
+
+  activeAvatarPack       AvatarPack? @relation(fields: [activeAvatarPackId], references: [id])
+}
+
+model AvatarPack {
+  id            String   @id @default(cuid())
+  name          String
+  dicebearStyle String   @map("dicebear_style")
+  variantsCount Int      @default(20) @map("variants_count")
+  seeds         Json
+  isActive      Boolean  @default(false) @map("is_active")
+  createdBy     String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  activeInSettings SystemSettings[]
+
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("avatar_packs")
 }
 
 model FinancialStatementCase {

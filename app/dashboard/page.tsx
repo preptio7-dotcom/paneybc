@@ -662,7 +662,7 @@ export default function DashboardPage() {
                       <img
                         src={user.avatar}
                         alt={user.name}
-                        className="h-12 w-12 rounded-full object-cover border border-slate-200"
+                        className="h-12 w-12 rounded-full object-cover border-2 border-[#dcfce7]"
                       />
                     ) : (
                       <div className="h-12 w-12 rounded-full bg-primary-green/10 text-primary-green font-bold flex items-center justify-center">

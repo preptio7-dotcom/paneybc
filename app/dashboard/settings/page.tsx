@@ -2,13 +2,15 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +32,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-badges'
+import { PRELOAD_AVATAR_COUNT } from '@/lib/avatar'
 
 type BadgeProgress = {
   badgeType: StreakBadgeType
@@ -43,9 +46,39 @@ type BadgeProgress = {
   seen: boolean
 }
 
+const FALLBACK_CA_LEVELS = ['Foundation', 'Intermediate', 'Final', 'Already Qualified']
+
+type ProfileFormState = {
+  institute: string
+  level: string
+  city: string
+}
+
+type AvatarOption = {
+  avatarId: string
+  seed: string
+  url: string
+}
+
 export default function DashboardSettingsPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, setUser, loading: authLoading } = useAuth()
   const { toast } = useToast()
+
+  const [isProfileLoading, setIsProfileLoading] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false)
+  const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false)
+  const [caLevelOptions, setCaLevelOptions] = useState<string[]>(FALLBACK_CA_LEVELS)
+  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>([])
+  const [currentAvatarId, setCurrentAvatarId] = useState('')
+  const [selectedAvatarId, setSelectedAvatarId] = useState('')
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState('')
+  const [loadedAvatarIds, setLoadedAvatarIds] = useState<Record<string, boolean>>({})
+  const [profileForm, setProfileForm] = useState<ProfileFormState>({
+    institute: '',
+    level: '',
+    city: '',
+  })
 
   const [isResetting, setIsResetting] = useState(false)
   const [isResettingNotes, setIsResettingNotes] = useState(false)
@@ -84,6 +117,75 @@ export default function DashboardSettingsPage() {
   }, [user?.id])
 
   useEffect(() => {
+    const loadProfileAndSettings = async () => {
+      if (!user?.id) return
+
+      try {
+        setIsProfileLoading(true)
+        const [profileResponse, settingsResponse, avatarPackResponse] = await Promise.all([
+          fetch('/api/user/profile', { cache: 'no-store' }),
+          fetch('/api/public/settings', { cache: 'no-store' }),
+          fetch('/api/public/avatar-pack', { cache: 'no-store' }),
+        ])
+
+        if (settingsResponse.ok) {
+          const settingsData = await settingsResponse.json()
+          const levels = Array.isArray(settingsData?.testSettings?.registrationLevels)
+            ? settingsData.testSettings.registrationLevels
+                .map((value: unknown) => String(value || '').trim())
+                .filter(Boolean)
+            : []
+          setCaLevelOptions(levels.length ? levels : FALLBACK_CA_LEVELS)
+        } else {
+          setCaLevelOptions(FALLBACK_CA_LEVELS)
+        }
+
+        if (avatarPackResponse.ok) {
+          const avatarPackData = await avatarPackResponse.json()
+          const options = Array.isArray(avatarPackData?.options)
+            ? avatarPackData.options
+                .map((item: any) => ({
+                  avatarId: String(item?.avatarId || '').trim(),
+                  seed: String(item?.seed || '').trim(),
+                  url: String(item?.url || '').trim(),
+                }))
+                .filter((item: AvatarOption) => item.avatarId && item.url)
+            : []
+          setAvatarOptions(options)
+        } else {
+          setAvatarOptions([])
+        }
+
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json()
+          const profile = profileData?.user || {}
+          const avatarId = String(profile.avatarId || user.avatarId || '').trim()
+          const avatarUrl = String(profile.avatar || user.avatar || '').trim()
+
+          setCurrentAvatarId(avatarId)
+          setSelectedAvatarId(avatarId)
+          setCurrentAvatarUrl(avatarUrl)
+          setProfileForm({
+            institute: String(profile.institute || ''),
+            level: String(profile.level || ''),
+            city: String(profile.city || ''),
+          })
+        }
+      } catch (error) {
+        toast({
+          title: 'Profile load failed',
+          description: 'Unable to load your profile details right now.',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsProfileLoading(false)
+      }
+    }
+
+    void loadProfileAndSettings()
+  }, [user?.id, user?.name, user?.avatar, toast])
+
+  useEffect(() => {
     if (!deleteOpen) {
       setDeleteStep('password')
       setDeletePassword('')
@@ -94,10 +196,138 @@ export default function DashboardSettingsPage() {
   }, [deleteOpen])
 
   useEffect(() => {
+    if (!profileForm.level) return
+    if (caLevelOptions.includes(profileForm.level)) return
+    setCaLevelOptions((prev) => [...prev, profileForm.level])
+  }, [caLevelOptions, profileForm.level])
+
+  useEffect(() => {
+    if (!avatarOptions.length) return
+    const firstFour = avatarOptions.slice(0, PRELOAD_AVATAR_COUNT)
+    const links = firstFour.map((option) => {
+      const link = document.createElement('link')
+      link.rel = 'preload'
+      link.as = 'image'
+      link.href = option.url
+      document.head.appendChild(link)
+      return link
+    })
+
+    return () => {
+      links.forEach((link) => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link)
+        }
+      })
+    }
+  }, [avatarOptions])
+
+  useEffect(() => {
     if (resendCooldown <= 0) return
     const timer = setInterval(() => setResendCooldown((prev) => Math.max(0, prev - 1)), 1000)
     return () => clearInterval(timer)
   }, [resendCooldown])
+
+  useEffect(() => {
+    if (!avatarOptions.length) return
+    if (selectedAvatarId) return
+    setSelectedAvatarId(avatarOptions[0].avatarId)
+  }, [avatarOptions, selectedAvatarId])
+
+  const handleSaveAvatar = async () => {
+    if (!user?.id || selectedAvatarId === currentAvatarId) return
+
+    try {
+      setIsSavingAvatar(true)
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarId: selectedAvatarId }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to update avatar')
+
+      const nextUser = data.user
+      setCurrentAvatarId(selectedAvatarId)
+      setCurrentAvatarUrl((prev) => String(nextUser?.avatar || prev || user?.avatar || ''))
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              avatar: nextUser.avatar,
+              avatarId: nextUser.avatarId,
+              name: nextUser.name || prev.name,
+            }
+          : prev
+      )
+
+      toast({ title: 'Avatar updated', description: 'Avatar updated successfully!' })
+    } catch (error: any) {
+      toast({
+        title: 'Avatar update failed',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSavingAvatar(false)
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    if (!user?.id) return
+
+    if (!profileForm.institute.trim() || !profileForm.level.trim() || !profileForm.city.trim()) {
+      toast({
+        title: 'Missing fields',
+        description: 'Institute, CA level, and city are required.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setIsSavingProfile(true)
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          institute: profileForm.institute.trim(),
+          level: profileForm.level.trim(),
+          city: profileForm.city.trim(),
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to update profile')
+
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: data.user?.name || prev.name,
+              avatar: data.user?.avatar || prev.avatar,
+              avatarId: data.user?.avatarId || prev.avatarId,
+            }
+          : prev
+      )
+
+      setProfileForm((prev) => ({
+        ...prev,
+        institute: String(data.user?.institute || ''),
+        level: String(data.user?.level || prev.level),
+        city: String(data.user?.city || ''),
+      }))
+
+      toast({ title: 'Profile updated', description: 'Profile updated successfully!' })
+    } catch (error: any) {
+      toast({
+        title: 'Update failed',
+        description: error.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
 
   const handleResetProgress = async () => {
     try {
@@ -239,6 +469,13 @@ export default function DashboardSettingsPage() {
     )
   }
 
+  const selectedAvatarUrl =
+    avatarOptions.find((option) => option.avatarId === selectedAvatarId)?.url ||
+    currentAvatarUrl ||
+    user.avatar ||
+    ''
+  const hasAvatarSelectionChanged = selectedAvatarId !== currentAvatarId
+
   return (
     <main className="min-h-screen bg-[#f8fafc]">
       <Navigation />
@@ -250,6 +487,145 @@ export default function DashboardSettingsPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
+            <Card className="border border-slate-200 bg-white rounded-2xl">
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="relative h-24 w-24 rounded-full overflow-hidden border-[3px] border-primary-green shadow-[0_4px_16px_rgba(22,163,74,0.2)] bg-white">
+                    <img src={selectedAvatarUrl} alt={`${user.name} avatar`} className="h-full w-full object-cover rounded-full" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAvatarPickerOpen((prev) => !prev)}
+                    className="mt-3 text-sm font-medium text-primary-green hover:text-green-700 transition-colors"
+                  >
+                    {isAvatarPickerOpen ? 'Hide Avatar Picker' : 'Change Avatar'}
+                  </button>
+                </div>
+
+                {isAvatarPickerOpen ? (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-3">Choose Your Avatar</h3>
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                      {avatarOptions.map((avatarOption, index) => {
+                        const selected = selectedAvatarId === avatarOption.avatarId
+                        const loaded = Boolean(loadedAvatarIds[avatarOption.avatarId])
+                        return (
+                          <button
+                            key={avatarOption.avatarId}
+                            type="button"
+                            onClick={() => setSelectedAvatarId(avatarOption.avatarId)}
+                            className={`relative h-16 w-16 rounded-full overflow-hidden border-2 transition-all duration-200 ${
+                              selected
+                                ? 'border-primary-green border-[3px] scale-105 shadow-[0_4px_16px_rgba(22,163,74,0.3)]'
+                                : 'border-transparent hover:border-[#86efac] hover:scale-[1.08] hover:shadow-[0_4px_12px_rgba(22,163,74,0.2)]'
+                            }`}
+                          >
+                            {!loaded ? (
+                              <span className="absolute inset-0 rounded-full avatar-shimmer" aria-hidden />
+                            ) : null}
+                            <img
+                              src={avatarOption.url}
+                              alt={`${avatarOption.seed} avatar`}
+                              className={`h-full w-full object-cover rounded-full ${loaded ? 'avatar-reveal-loaded' : 'opacity-0'}`}
+                              loading={index < PRELOAD_AVATAR_COUNT ? 'eager' : 'lazy'}
+                              onLoad={() =>
+                                setLoadedAvatarIds((prev) =>
+                                  prev[avatarOption.avatarId]
+                                    ? prev
+                                    : { ...prev, [avatarOption.avatarId]: true }
+                                )
+                              }
+                            />
+                            {selected ? (
+                              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-primary-green text-white flex items-center justify-center">
+                                <Check size={8} />
+                              </span>
+                            ) : null}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {!avatarOptions.length ? (
+                      <p className="mt-3 text-xs text-slate-500">No avatar options available right now.</p>
+                    ) : null}
+                    <div className="mt-5 flex justify-end">
+                      <Button
+                        onClick={handleSaveAvatar}
+                        disabled={!hasAvatarSelectionChanged || isSavingAvatar || isProfileLoading || !avatarOptions.length}
+                        className="bg-primary-green hover:bg-green-700"
+                      >
+                        {isSavingAvatar ? 'Saving...' : 'Save Avatar'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+
+            <Card className="border border-slate-200 bg-white rounded-2xl">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-bold text-slate-900">Profile Details</h3>
+                    <p className="text-sm text-slate-500">Update your institute, CA level, and city details.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1 md:col-span-2">
+                      <Label htmlFor="profile-institute">Coaching Institute / Academy</Label>
+                      <Input
+                        id="profile-institute"
+                        placeholder="e.g. Skans, PAIB, Self Study"
+                        value={profileForm.institute}
+                        onChange={(event) =>
+                          setProfileForm((prev) => ({ ...prev, institute: event.target.value }))
+                        }
+                        disabled={isProfileLoading}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>CA Level</Label>
+                      <Select
+                        value={profileForm.level}
+                        onValueChange={(value) => setProfileForm((prev) => ({ ...prev, level: value }))}
+                        disabled={isProfileLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {caLevelOptions.map((levelOption) => (
+                            <SelectItem key={levelOption} value={levelOption}>
+                              {levelOption}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="profile-city">City</Label>
+                      <Input
+                        id="profile-city"
+                        value={profileForm.city}
+                        onChange={(event) =>
+                          setProfileForm((prev) => ({ ...prev, city: event.target.value }))
+                        }
+                        disabled={isProfileLoading}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleSaveProfile}
+                      disabled={isSavingProfile || isProfileLoading}
+                      className="bg-primary-green hover:bg-green-700"
+                    >
+                      {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="border border-slate-200 bg-white rounded-2xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between gap-3">
@@ -417,6 +793,35 @@ export default function DashboardSettingsPage() {
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        .avatar-shimmer {
+          background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+          background-size: 200% 100%;
+          animation: avatarShimmer 1.5s linear infinite;
+        }
+        .avatar-reveal-loaded {
+          animation: avatarReveal 200ms ease;
+        }
+        @keyframes avatarReveal {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes avatarShimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+      `}</style>
     </main>
   )
 }

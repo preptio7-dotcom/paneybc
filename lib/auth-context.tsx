@@ -7,6 +7,7 @@ interface User {
   email: string
   name: string
   avatar?: string
+  avatarId?: string
   role: 'student' | 'admin' | 'super_admin'
   studentRole?: 'user' | 'ambassador' | 'paid' | 'unpaid'
 }

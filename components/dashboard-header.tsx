@@ -36,7 +36,7 @@ export function DashboardHeader() {
             className="flex items-center gap-2 hover:bg-background-light p-1 rounded-lg transition-colors focus:outline-none"
           >
             {user?.avatar ? (
-              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-[#dcfce7]">
                 <Image src={user.avatar} alt={user.name} fill className="object-cover" />
               </div>
             ) : (

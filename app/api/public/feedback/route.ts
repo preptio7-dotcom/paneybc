@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { canAccessBetaFeature, extractBetaFeatureSettings } from '@/lib/beta-features'
+import { resolveAvatarsForUsers } from '@/lib/avatar-pack-service'
 
 const MAX_FEEDBACK_CARDS = 20
 const MAX_MESSAGE_LENGTH = 600
@@ -86,10 +87,12 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           user: {
             select: {
+              id: true,
               name: true,
               city: true,
               level: true,
               avatar: true,
+              avatarId: true,
             },
           },
         },
@@ -105,7 +108,10 @@ export async function GET(request: NextRequest) {
     const averageRatingRaw = Number(aggregate._avg.rating ?? 0)
     const averageRating = totalReviews > 0 ? Number(averageRatingRaw.toFixed(1)) : null
 
-    const reviews = feedbackRows.map((row) => ({
+    const resolvedAvatars = await resolveAvatarsForUsers(
+      feedbackRows.map((row) => row.user || {})
+    )
+    const reviews = feedbackRows.map((row, index) => ({
       id: row.id,
       rating: row.rating,
       message: sanitizeText(row.message, MAX_MESSAGE_LENGTH),
@@ -114,7 +120,7 @@ export async function GET(request: NextRequest) {
         name: sanitizeText(row.user?.name || 'Student', 120),
         city: sanitizeText(row.user?.city || '', 80),
         level: sanitizeText(row.user?.level || '', 60),
-        avatar: sanitizeText(row.user?.avatar || '', 500),
+        avatar: resolvedAvatars[index]?.avatar || '',
       },
     }))
 

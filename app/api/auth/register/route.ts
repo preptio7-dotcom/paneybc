@@ -9,6 +9,8 @@ import { hasValidSameOrigin } from '@/lib/csrf'
 import { detectSuspiciousInput } from '@/lib/security-input'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 import { getIpAccess, getRequestIpAddress, logSecurityEvent } from '@/lib/ip-security'
+import { getDeterministicSeedFromPool, packAvatarId } from '@/lib/avatar'
+import { getActiveAvatarPack, resolveAvatarForUser } from '@/lib/avatar-pack-service'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
 const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -179,7 +181,9 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcryptjs.hash(password, 10)
 
-    const user = await prisma.user.create({
+    const activePack = await getActiveAvatarPack()
+
+    const createdUser = await prisma.user.create({
       data: {
         email: normalizedEmail,
         password: hashedPassword,
@@ -195,25 +199,36 @@ export async function POST(request: NextRequest) {
         instituteRating: parsedRating,
         termsAcceptedAt: new Date(),
       },
-      select: { id: true, email: true, name: true, avatar: true, role: true, studentRole: true },
+      select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, studentRole: true },
     })
+
+    const deterministicSeed = getDeterministicSeedFromPool(createdUser.id, activePack.seeds)
+    const avatarId = packAvatarId(activePack.id, deterministicSeed)
+    const createdUserWithAvatar = await prisma.user.update({
+      where: { id: createdUser.id },
+      data: { avatarId },
+      select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, studentRole: true },
+    })
+
+    const resolvedAvatar = await resolveAvatarForUser(createdUserWithAvatar)
 
     const response = NextResponse.json(
       {
         message: 'User registered successfully',
         user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar || '/avatars/boy_1.png',
-          role: user.role,
-          studentRole: user.studentRole,
+          id: createdUserWithAvatar.id,
+          email: createdUserWithAvatar.email,
+          name: createdUserWithAvatar.name,
+          avatarId: resolvedAvatar.avatarId,
+          avatar: resolvedAvatar.avatar,
+          role: createdUserWithAvatar.role,
+          studentRole: createdUserWithAvatar.studentRole,
         },
       },
       { status: 201 }
     )
 
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, SESSION_JWT_SECRET, {
+    const token = jwt.sign({ userId: createdUserWithAvatar.id, email: createdUserWithAvatar.email, role: createdUserWithAvatar.role }, SESSION_JWT_SECRET, {
       expiresIn: '7d',
     })
 

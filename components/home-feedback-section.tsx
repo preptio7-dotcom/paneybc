@@ -87,6 +87,8 @@ function FeedbackCard({
 }) {
   const hasLongMessage = review.message.length > MAX_READ_MORE_LENGTH
   const levelTag = review.user.level || 'CA Student'
+  const [imageFailed, setImageFailed] = useState(false)
+  const showAvatarImage = Boolean(review.user.avatar) && !imageFailed
 
   return (
     <article
@@ -107,7 +109,7 @@ function FeedbackCard({
       <div className="relative z-[1] flex h-full flex-col">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            {review.user.avatar ? (
+            {showAvatarImage ? (
               <Image
                 src={review.user.avatar}
                 alt={review.user.name}
@@ -116,6 +118,7 @@ function FeedbackCard({
                 sizes="(max-width: 767px) 44px, 52px"
                 className="h-11 w-11 md:h-[52px] md:w-[52px] rounded-full object-cover border-[3px] border-[#dcfce7] shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
                 loading="lazy"
+                onError={() => setImageFailed(true)}
               />
             ) : (
               <div className="h-11 w-11 md:h-[52px] md:w-[52px] rounded-full bg-primary-green text-white font-bold flex items-center justify-center border-[3px] border-[#dcfce7] shadow-[0_2px_8px_rgba(0,0,0,0.1)]">

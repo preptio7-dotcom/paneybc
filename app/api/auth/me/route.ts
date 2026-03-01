@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { clearAuthCookie } from '@/lib/auth-cookie'
+import { resolveAvatarForUser } from '@/lib/avatar-pack-service'
 
 export const runtime = 'nodejs'
 
@@ -28,6 +29,8 @@ export async function GET(request: NextRequest) {
       return response
     }
 
+    const resolvedAvatar = await resolveAvatarForUser(user)
+
     return NextResponse.json(
       {
         message: 'User retrieved successfully',
@@ -35,7 +38,8 @@ export async function GET(request: NextRequest) {
           id: user.id,
           email: user.email,
           name: user.name,
-          avatar: user.avatar || '/avatars/boy_1.png',
+          avatarId: resolvedAvatar.avatarId,
+          avatar: resolvedAvatar.avatar,
           role: user.role,
           studentRole: user.studentRole,
         },

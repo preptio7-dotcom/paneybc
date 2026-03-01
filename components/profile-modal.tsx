@@ -19,14 +19,11 @@ import Image from 'next/image'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { normalizePkPhone } from '@/lib/account-utils'
 
-const avatars = [
-  { id: 'boy_1', path: '/avatars/boy_1.png' },
-  { id: 'boy_2', path: '/avatars/boy_2.png' },
-  { id: 'boy_3', path: '/avatars/boy_3.png' },
-  { id: 'girl_1', path: '/avatars/girl_1.png' },
-  { id: 'girl_2', path: '/avatars/girl_2.png' },
-  { id: 'girl_3', path: '/avatars/girl_3.png' },
-]
+type AvatarOption = {
+  avatarId: string
+  seed: string
+  url: string
+}
 
 interface ProfileModalProps {
   isOpen: boolean
@@ -48,9 +45,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     degrees: ['CA'],
     levels: ['PRC', 'CAF'],
   })
+  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>([])
   const [form, setForm] = useState({
     name: '',
-    avatar: '/avatars/boy_1.png',
+    avatarId: '',
     degree: 'CA',
     level: 'PRC',
     institute: '',
@@ -63,9 +61,13 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await fetch('/api/public/settings')
-        if (!response.ok) return
-        const data = await response.json()
+        const [settingsResponse, avatarPackResponse] = await Promise.all([
+          fetch('/api/public/settings'),
+          fetch('/api/public/avatar-pack'),
+        ])
+
+        if (!settingsResponse.ok) return
+        const data = await settingsResponse.json()
         const degrees = Array.isArray(data?.testSettings?.registrationDegrees)
           ? data.testSettings.registrationDegrees.map((item: string) => String(item).trim()).filter(Boolean)
           : ['CA']
@@ -76,6 +78,25 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           degrees: degrees.length ? degrees : ['CA'],
           levels: levels.length ? levels : ['PRC', 'CAF'],
         })
+
+        if (avatarPackResponse.ok) {
+          const avatarPackData = await avatarPackResponse.json()
+          const options = Array.isArray(avatarPackData?.options)
+            ? avatarPackData.options
+                .map((item: any) => ({
+                  avatarId: String(item?.avatarId || '').trim(),
+                  seed: String(item?.seed || '').trim(),
+                  url: String(item?.url || '').trim(),
+                }))
+                .filter((item: AvatarOption) => item.avatarId && item.url)
+            : []
+          setAvatarOptions(options)
+          if (options.length > 0) {
+            setForm((prev) => ({ ...prev, avatarId: prev.avatarId || options[0].avatarId }))
+          }
+        } else {
+          setAvatarOptions([])
+        }
       } catch {
         // keep defaults
       }
@@ -97,7 +118,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         setForm((prev) => ({
           ...prev,
           name: profile.name || user.name || '',
-          avatar: profile.avatar || user.avatar || '/avatars/boy_1.png',
+          avatarId: String(profile.avatarId || user.avatarId || prev.avatarId || ''),
           degree: profile.degree || prev.degree,
           level: profile.level || prev.level,
           institute: profile.institute || '',
@@ -128,9 +149,15 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }))
   }, [registrationOptions])
 
+  useEffect(() => {
+    if (!avatarOptions.length) return
+    if (form.avatarId && avatarOptions.some((option) => option.avatarId === form.avatarId)) return
+    setForm((prev) => ({ ...prev, avatarId: avatarOptions[0].avatarId }))
+  }, [avatarOptions, form.avatarId])
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.degree || !form.level || !form.institute.trim() || !form.city.trim() || !form.studentId.trim() || !form.phone.trim()) {
+    if (!form.name.trim() || !form.avatarId || !form.degree || !form.level || !form.institute.trim() || !form.city.trim() || !form.studentId.trim() || !form.phone.trim()) {
       toast({
         title: 'Missing fields',
         description: 'All profile fields are required.',
@@ -162,7 +189,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name.trim(),
-          avatar: form.avatar,
+          avatarId: form.avatarId,
           degree: form.degree,
           level: form.level,
           institute: form.institute.trim(),
@@ -231,18 +258,18 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         <form onSubmit={handleUpdateProfile} className="space-y-6 py-2">
           <div className="space-y-3">
             <Label>Select Avatar</Label>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-              {avatars.map((avatar) => (
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+              {avatarOptions.map((avatar) => (
                 <button
-                  key={avatar.id}
+                  key={avatar.avatarId}
                   type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, avatar: avatar.path }))}
+                  onClick={() => setForm((prev) => ({ ...prev, avatarId: avatar.avatarId }))}
                   className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
-                    form.avatar === avatar.path ? 'border-primary-green scale-105 shadow-md' : 'border-transparent hover:border-slate-200'
+                    form.avatarId === avatar.avatarId ? 'border-primary-green scale-105 shadow-md' : 'border-transparent hover:border-slate-200'
                   }`}
                 >
-                  <Image src={avatar.path} alt={avatar.id} fill className="object-cover" />
-                  {form.avatar === avatar.path && (
+                  <Image src={avatar.url} alt={avatar.seed} fill className="object-cover" />
+                  {form.avatarId === avatar.avatarId && (
                     <div className="absolute inset-0 bg-primary-green/20 flex items-center justify-center">
                       <div className="bg-primary-green text-white rounded-full p-1">
                         <Check size={16} />
@@ -252,6 +279,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </button>
               ))}
             </div>
+            {!avatarOptions.length ? (
+              <p className="text-xs text-slate-500">No avatar options available right now.</p>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -374,7 +404,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || isFetchingProfile} className="bg-primary-green hover:bg-primary-green/90">
+            <Button type="submit" disabled={isLoading || isFetchingProfile || !form.avatarId} className="bg-primary-green hover:bg-primary-green/90">
               {(isLoading || isFetchingProfile) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
@@ -384,4 +414,3 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     </Dialog>
   )
 }
-

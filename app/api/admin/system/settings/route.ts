@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
+      activeAvatarPackId: settings.activeAvatarPackId || null,
       adContent,
       testSettings: normalizedTestSettings,
     })
@@ -172,6 +173,7 @@ export async function POST(request: NextRequest) {
     const beforeSnapshot = {
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
+      activeAvatarPackId: settings.activeAvatarPackId || null,
       adContent: currentAdContent,
       testSettings: currentTestSettings,
     }
@@ -219,6 +221,9 @@ export async function POST(request: NextRequest) {
       data: {
         ...(typeof payload.adsEnabled === 'boolean' ? { adsEnabled: payload.adsEnabled } : {}),
         ...(typeof payload.welcomeMessageTemplate === 'string' ? { welcomeMessageTemplate: payload.welcomeMessageTemplate } : {}),
+        ...(typeof payload.activeAvatarPackId === 'string' || payload.activeAvatarPackId === null
+          ? { activeAvatarPackId: payload.activeAvatarPackId || null }
+          : {}),
         adContent: updatedAdContent,
         testSettings: updatedTestSettings,
       },
@@ -236,6 +241,7 @@ export async function POST(request: NextRequest) {
         after: {
           adsEnabled: settings.adsEnabled,
           welcomeMessageTemplate: settings.welcomeMessageTemplate,
+          activeAvatarPackId: settings.activeAvatarPackId || null,
           adContent: settings.adContent,
           testSettings: settings.testSettings,
         },
@@ -251,6 +257,7 @@ export async function POST(request: NextRequest) {
       success: true,
       adsEnabled: settings.adsEnabled,
       welcomeMessageTemplate: settings.welcomeMessageTemplate,
+      activeAvatarPackId: settings.activeAvatarPackId || null,
       adContent: settings.adContent,
       testSettings: settings.testSettings,
     })
