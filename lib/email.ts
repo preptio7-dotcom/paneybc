@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { resolveAppBaseUrl } from '@/lib/app-url'
 
 const smtpUser = process.env.SMTP_USER
 const smtpPass = process.env.SMTP_PASS
@@ -61,8 +62,13 @@ export async function sendAdminOTPEmail(email: string, code: string) {
 
   return transporter.sendMail(mailOptions)
 }
-export async function sendPasswordResetEmail(email: string, token: string) {
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password/${token}`
+export async function sendPasswordResetEmail(
+  email: string,
+  token: string,
+  options?: { baseUrl?: string | null }
+) {
+  const appBaseUrl = resolveAppBaseUrl(options?.baseUrl)
+  const resetUrl = `${appBaseUrl}/auth/reset-password/${token}`
 
   const mailOptions = {
     from: `"Preptio" <${process.env.SMTP_USER}>`,
@@ -132,7 +138,7 @@ export async function sendAccountDeletionOTPEmail(email: string, code: string) {
 }
 
 export async function sendReviewDueEmail(email: string, name: string, count: number) {
-  const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/review`
+  const reviewUrl = `${resolveAppBaseUrl()}/review`
 
   const mailOptions = {
     from: `"Preptio" <${process.env.SMTP_USER}>`,
@@ -479,7 +485,7 @@ export async function sendContactAdminEmail(payload: {
 }
 
 export async function sendSecurityAlertEmail(email: string, name?: string) {
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/forgot-password`
+  const resetUrl = `${resolveAppBaseUrl()}/auth/forgot-password`
 
   const mailOptions = {
     from: `"Preptio" <${process.env.SMTP_USER}>`,

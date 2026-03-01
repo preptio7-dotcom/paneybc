@@ -84,7 +84,8 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      await sendPasswordResetEmail(user.email, resetToken)
+      const requestOrigin = request.headers.get('origin') || request.nextUrl.origin
+      await sendPasswordResetEmail(user.email, resetToken, { baseUrl: requestOrigin })
       return NextResponse.json({ message: 'Reset link sent to your email.' })
     } catch (emailError: any) {
       console.error('Admin reset email error:', emailError)
