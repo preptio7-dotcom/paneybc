@@ -1,9 +1,25 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import {
+  AlertCircle,
+  ArrowRight,
+  BarChart2,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  FileText,
+  Flame,
+  Layers,
+  Loader2,
+  Plus,
+  Settings,
+  Target,
+  Trash2,
+  Zap,
+} from 'lucide-react'
 import { Navigation } from '@/components/navigation'
-import { WelcomeSection } from '@/components/welcome-section'
-import { SubjectCard } from '@/components/subject-card'
 import { RecentActivity } from '@/components/recent-activity'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,31 +28,12 @@ import { NotificationOptIn } from '@/components/notification-opt-in'
 import { AdSlot } from '@/components/ad-slot'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { betaFeatureDefinitions } from '@/data/beta-features'
 import { extractBetaFeatureSettings } from '@/lib/beta-features'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-badges'
+import { getDateKeyInTimezone, getStreakResetLabel, type StreakResetTimezone } from '@/lib/streak-settings'
 
 interface SubjectStat {
   code: string
@@ -49,9 +46,77 @@ interface SubjectStat {
   progressPercent: number
 }
 
+interface StreakInfo {
+  current: number
+  best: number
+  practicedToday: boolean
+  lastPracticeDate: string | null
+}
+
+interface BadgeProgress {
+  badgeType: StreakBadgeType
+  name: string
+  description: string
+  icon: string
+  colorClass: string
+  milestoneDays: number
+  earned: boolean
+  earnedAt: string | null
+  seen: boolean
+}
+
+const DEFAULT_CHECKLIST = [
+  { label: 'Practiced 50+ questions per subject', done: false },
+  { label: 'Completed 3 full mock exams', done: false },
+  { label: 'Reviewed all weak areas', done: false },
+  { label: 'Read past examiner reports', done: false },
+  { label: 'Memorized key formulas', done: false },
+  { label: 'Practiced time management', done: false },
+  { label: "Reviewed last year's paper", done: false },
+]
+
+const DAILY_QUOTES = [
+  'Success is the sum of small efforts repeated day in and day out.',
+  'The CA exam is tough, but so are you.',
+  "Practice like you've never won. Perform like you've never lost.",
+  'Every question you practice brings you one step closer.',
+  "Consistency beats talent when talent doesn't work hard.",
+  'Your future CA designation is worth every hour of practice.',
+  'Focus on progress, not perfection.',
+  'The harder you work, the luckier you get.',
+  "Don't wish it were easier. Wish you were better.",
+  'Champions keep playing until they get it right.',
+]
+
+const SUBJECT_ACCENTS: Record<string, string> = {
+  BAEIVI: '#16a34a',
+  BAEIV2E: '#2563eb',
+  FOA: '#7c3aed',
+  QAFB: '#ea580c',
+}
+
+const SUBJECT_SHORT_NAMES: Record<string, string> = {
+  BAEIVI: 'BEI Vol I',
+  BAEIV2E: 'BEI Vol II',
+  FOA: 'Fund. of Accounting',
+  QAFB: 'Quant. Analysis',
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
+function normalizeCode(code: string) {
+  return String(code || '').trim().toUpperCase()
+}
+
+function clampPercent(value: number) {
+  if (Number.isNaN(value)) return 0
+  return Math.max(0, Math.min(100, value))
+}
+
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
+
   const [authToastShown, setAuthToastShown] = useState(false)
   const [subjects, setSubjects] = useState<SubjectStat[]>([])
   const [globalStats, setGlobalStats] = useState<any>(null)
@@ -73,19 +138,21 @@ export default function DashboardPage() {
   const [newChecklistItem, setNewChecklistItem] = useState('')
   const [isSavingPlan, setIsSavingPlan] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [isResetting, setIsResetting] = useState(false)
-  const [isResettingNotes, setIsResettingNotes] = useState(false)
   const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false)
   const [feedbackStatusLoaded, setFeedbackStatusLoaded] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleteStep, setDeleteStep] = useState<'password' | 'otp' | 'confirm'>('password')
-  const [deletePassword, setDeletePassword] = useState('')
-  const [deleteOtp, setDeleteOtp] = useState('')
-  const [deleteToken, setDeleteToken] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [showGoodbye, setShowGoodbye] = useState(false)
-  const [resendCooldown, setResendCooldown] = useState(0)
   const [betaFeatureLinks, setBetaFeatureLinks] = useState<Array<{ label: string; href: string }>>([])
+  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null)
+  const [profileStreak, setProfileStreak] = useState<StreakInfo>({
+    current: 0,
+    best: 0,
+    practicedToday: false,
+    lastPracticeDate: null,
+  })
+  const [streakResetTimezone, setStreakResetTimezone] = useState<StreakResetTimezone>('UTC')
+  const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([])
+  const [celebrationBadge, setCelebrationBadge] = useState<BadgeProgress | null>(null)
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
+  const [isExamEditorOpen, setIsExamEditorOpen] = useState(false)
   const [fsSummary, setFsSummary] = useState<{
     totalCases: number
     totalQuestions: number
@@ -94,14 +161,11 @@ export default function DashboardPage() {
     averageScore: number
     bestScore: number
   } | null>(null)
-  const fsProgressPercent = fsSummary
-    ? Math.round((fsSummary.totalCases ? (fsSummary.completedCases / fsSummary.totalCases) * 100 : 0))
-    : 0
 
   useEffect(() => {
     if (authLoading || !user?.id) return
-    fetchDashboardData()
-  }, [authLoading, user?.id])
+    void fetchDashboardData()
+  }, [authLoading, user?.id, streakResetTimezone])
 
   useEffect(() => {
     if (!authLoading && !user && !authToastShown) {
@@ -113,24 +177,6 @@ export default function DashboardPage() {
       setAuthToastShown(true)
     }
   }, [authLoading, user, authToastShown, toast])
-
-  useEffect(() => {
-    if (!deleteOpen) {
-      setDeleteStep('password')
-      setDeletePassword('')
-      setDeleteOtp('')
-      setDeleteToken('')
-      setResendCooldown(0)
-    }
-  }, [deleteOpen])
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => Math.max(0, prev - 1))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [resendCooldown])
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -151,9 +197,11 @@ export default function DashboardPage() {
           setBetaFeatureLinks([])
           return
         }
+
         const data = await response.json()
         setAdsEnabled(Boolean(data.adsEnabled))
         setAdContent(data.adContent || fallbackAds)
+        setStreakResetTimezone(data?.testSettings?.streakResetTimezone === 'PKT' ? 'PKT' : 'UTC')
         if (user?.studentRole === 'ambassador') {
           const betaSettings = extractBetaFeatureSettings(data?.testSettings || {})
           const links = betaFeatureDefinitions
@@ -168,59 +216,85 @@ export default function DashboardPage() {
         setAdsEnabled(false)
         setAdContent(fallbackAds)
         setBetaFeatureLinks([])
+        setStreakResetTimezone('UTC')
       } finally {
         setAdsLoaded(true)
       }
     }
 
-    loadSettings()
+    void loadSettings()
   }, [user?.studentRole])
 
-  const defaultChecklist = [
-    { label: 'Practiced 50+ questions per subject', done: false },
-    { label: 'Completed 3 full mock exams', done: false },
-    { label: 'Reviewed all weak areas', done: false },
-    { label: 'Read past examiner reports', done: false },
-    { label: 'Memorized key formulas', done: false },
-    { label: 'Practiced time management', done: false },
-    { label: "Reviewed last year's paper", done: false },
-  ]
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const elements = Array.from(document.querySelectorAll<HTMLElement>('.dashboard-reveal'))
+    if (!elements.length) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.16 }
+    )
+
+    elements.forEach((element) => observer.observe(element))
+    return () => observer.disconnect()
+  }, [subjects.length, checklist.length, isLoading, fsSummary])
+
+  useEffect(() => {
+    if (celebrationBadge) return
+    const nextBadge = badgeProgress.find((badge) => badge.earned && !badge.seen)
+    if (nextBadge) {
+      setCelebrationBadge(nextBadge)
+    }
+  }, [badgeProgress, celebrationBadge])
+
+  useEffect(() => {
+    if (!celebrationBadge) return
+    const timer = window.setTimeout(() => {
+      void dismissBadgeCelebration()
+    }, 5000)
+    return () => window.clearTimeout(timer)
+  }, [celebrationBadge])
 
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true)
+      if (!user?.id) return
 
-      // 1. Fetch real subjects first
       const subResponse = await fetch('/api/admin/subjects')
       const subData = await subResponse.json()
       const dbSubjects = subData.subjects || []
 
-      // 2. Fetch stats
-      if (!user?.id) return
-
       const statsResponse = await fetch(`/api/dashboard/stats?userId=${user.id}`)
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
-        const statsMap = new Map<string, any>(statsData.stats.map((s: any) => [s.code, s]))
+        const statsMap = new Map<string, any>(statsData.stats.map((item: any) => [item.code, item]))
         setGlobalStats(statsData.globalStats)
 
-        // 3. Merge subjects with stats and real counts
-        const updatedSubjects = dbSubjects.map((sub: any) => {
-          const stats = statsMap.get(sub.code) || {}
+        const updatedSubjects = dbSubjects.map((subject: any) => {
+          const stats = statsMap.get(subject.code) || {}
           const diffCounts = stats.difficultyCounts || { total: 0, easy: 0, medium: 0, hard: 0 }
-
           return {
-            name: sub.name,
-            code: sub.code,
+            name: subject.name,
+            code: subject.code,
             totalQuestions: diffCounts.total || 0,
             easyQuestions: diffCounts.easy || 0,
             mediumQuestions: diffCounts.medium || 0,
             hardQuestions: diffCounts.hard || 0,
             completedQuestions: stats.completedQuestions || 0,
-            progressPercent: stats.progressPercent || 0
+            progressPercent: stats.progressPercent || 0,
           }
         })
-
         setSubjects(updatedSubjects)
       }
 
@@ -237,7 +311,55 @@ export default function DashboardPage() {
         setExamName(userProfile.examName || '')
         setExamDate(userProfile.examDate ? new Date(userProfile.examDate).toISOString().slice(0, 10) : '')
         setDailyQuestionGoal(userProfile.dailyQuestionGoal || 0)
-        setChecklist(userProfile.prepChecklist?.length ? userProfile.prepChecklist : defaultChecklist)
+        setChecklist(userProfile.prepChecklist?.length ? userProfile.prepChecklist : DEFAULT_CHECKLIST)
+        setProfileCreatedAt(userProfile.createdAt || null)
+        const lastPracticeDate = userProfile.practiceStreakLastDate
+          ? getDateKeyInTimezone(new Date(userProfile.practiceStreakLastDate), streakResetTimezone)
+          : null
+        setProfileStreak({
+          current: Number(userProfile.practiceStreakCurrent) || 0,
+          best: Number(userProfile.practiceStreakBest) || 0,
+          practicedToday: lastPracticeDate === getDateKeyInTimezone(new Date(), streakResetTimezone),
+          lastPracticeDate,
+        })
+      }
+
+      try {
+        const badgesResponse = await fetch('/api/user/badges', { cache: 'no-store' })
+        if (badgesResponse.ok) {
+          const badgesData = await badgesResponse.json()
+          const rows = Array.isArray(badgesData?.badges) ? badgesData.badges : []
+          if (rows.length) {
+            setBadgeProgress(rows)
+          } else {
+            setBadgeProgress(
+              STREAK_BADGE_DEFINITIONS.map((badge) => ({
+                ...badge,
+                earned: false,
+                earnedAt: null,
+                seen: true,
+              }))
+            )
+          }
+        } else {
+          setBadgeProgress(
+            STREAK_BADGE_DEFINITIONS.map((badge) => ({
+              ...badge,
+              earned: false,
+              earnedAt: null,
+              seen: true,
+            }))
+          )
+        }
+      } catch {
+        setBadgeProgress(
+          STREAK_BADGE_DEFINITIONS.map((badge) => ({
+            ...badge,
+            earned: false,
+            earnedAt: null,
+            seen: true,
+          }))
+        )
       }
 
       try {
@@ -281,11 +403,14 @@ export default function DashboardPage() {
           prepChecklist: checklist,
         }),
       })
-      if (!response.ok) {
-        throw new Error('Failed to save')
-      }
+      if (!response.ok) throw new Error('Failed to save plan')
+      toast({ title: 'Plan saved', description: 'Your exam planner updates were saved.' })
     } catch (error) {
-      console.error('Failed to save plan', error)
+      toast({
+        title: 'Save failed',
+        description: 'Unable to save your plan right now.',
+        variant: 'destructive',
+      })
     } finally {
       setIsSavingPlan(false)
     }
@@ -298,153 +423,183 @@ export default function DashboardPage() {
     setNewChecklistItem('')
   }
 
-  const handleResetProgress = async () => {
-    try {
-      setIsResetting(true)
-      const response = await fetch('/api/user/reset-progress', {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to reset progress')
-      }
-      toast({
-        title: 'Progress reset',
-        description: 'Your progress has been cleared.',
-      })
-      await fetchDashboardData()
-    } catch (error: any) {
-      toast({
-        title: 'Reset failed',
-        description: error.message || 'Unable to reset progress.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsResetting(false)
-    }
-  }
+  async function dismissBadgeCelebration() {
+    const badge = celebrationBadge
+    if (!badge) return
 
-  const handleResetNotes = async () => {
-    try {
-      setIsResettingNotes(true)
-      const response = await fetch('/api/user/reset-notes', {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to reset notes')
-      }
-      toast({
-        title: 'Notes cleared',
-        description: 'Your notes and flashcards have been deleted.',
-      })
-    } catch (error: any) {
-      toast({
-        title: 'Reset failed',
-        description: error.message || 'Unable to reset notes.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsResettingNotes(false)
-    }
-  }
+    setCelebrationBadge(null)
+    setBadgeProgress((prev) =>
+      prev.map((item) =>
+        item.badgeType === badge.badgeType
+          ? { ...item, seen: true }
+          : item
+      )
+    )
 
-  const handleDeleteRequest = async () => {
     try {
-      setIsDeleting(true)
-      const response = await fetch('/api/user/delete/request', {
-        method: 'POST',
+      await fetch('/api/user/badges', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: deletePassword }),
+        body: JSON.stringify({ badgeType: badge.badgeType }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to verify password')
-      setDeleteStep('otp')
-      toast({ title: 'Verification code sent', description: 'Check your email for the deletion code.' })
-    } catch (error: any) {
-      toast({ title: 'Verification failed', description: error.message, variant: 'destructive' })
-    } finally {
-      setIsDeleting(false)
+    } catch {
+      // ignore - UI already marked it as seen for this session
     }
   }
 
-  const handleVerifyDeleteCode = async () => {
-    try {
-      setIsDeleting(true)
-      const response = await fetch('/api/user/delete/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: deleteOtp }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Invalid code')
-      setDeleteToken(data.confirmToken)
-      setDeleteStep('confirm')
-    } catch (error: any) {
-      toast({ title: 'Invalid code', description: error.message, variant: 'destructive' })
-    } finally {
-      setIsDeleting(false)
-    }
+  const scrollToPractice = () => {
+    document.getElementById('practice-modes')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const handleResendDeleteCode = async () => {
-    try {
-      setIsDeleting(true)
-      const response = await fetch('/api/user/delete/request', {
-        method: 'PUT',
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to resend code')
-      setResendCooldown(60)
-      toast({ title: 'Code resent', description: 'A new verification code has been sent to your email.' })
-    } catch (error: any) {
-      toast({ title: 'Resend failed', description: error.message, variant: 'destructive' })
-    } finally {
-      setIsDeleting(false)
-    }
-  }
+  const timeBasedGreeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good Morning'
+    if (hour < 17) return 'Good Afternoon'
+    return 'Good Evening'
+  }, [])
 
-  const handleConfirmDelete = async () => {
-    try {
-      setIsDeleting(true)
-      const response = await fetch('/api/user/delete/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirmToken: deleteToken }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to delete account')
-      setDeleteOpen(false)
-      setShowGoodbye(true)
-      try {
-        localStorage.clear()
-        sessionStorage.clear()
-      } catch (error) {
-        // ignore storage errors
+  const todayDisplay = useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }).format(new Date()),
+    []
+  )
+
+  const quoteOfDay = useMemo(() => {
+    const day = new Date().getDate()
+    return DAILY_QUOTES[day % DAILY_QUOTES.length]
+  }, [])
+
+  const streakResetText = useMemo(
+    () => getStreakResetLabel(streakResetTimezone),
+    [streakResetTimezone]
+  )
+
+  const resolvedStreak: StreakInfo = useMemo(() => {
+    const apiStreak = globalStats?.streak
+    if (apiStreak) {
+      return {
+        current: Number(apiStreak.current) || 0,
+        best: Number(apiStreak.best) || 0,
+        practicedToday: Boolean(apiStreak.practicedToday),
+        lastPracticeDate: apiStreak.lastPracticeDate || null,
       }
-    } catch (error: any) {
-      toast({ title: 'Delete failed', description: error.message, variant: 'destructive' })
-    } finally {
-      setIsDeleting(false)
     }
-  }
+    return profileStreak
+  }, [globalStats?.streak, profileStreak])
 
-  const countdown = () => {
-    if (!examDate) return null
-    const today = new Date()
-    const target = new Date(examDate)
-    const diff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    return diff
-  }
+  const statsSummary = useMemo(() => {
+    const questionsPracticed = Number(globalStats?.totalQuestionsPracticed) || 0
+    const questionsToday = Number(globalStats?.todayQuestionsPracticed) || 0
+    const averageAccuracy = Number(globalStats?.averageAccuracy) || 0
+    const startedFromApi = Number(globalStats?.startedSubjects)
+    const subjectsStarted =
+      Number.isFinite(startedFromApi) && startedFromApi >= 0
+        ? startedFromApi
+        : subjects.filter((subject) => subject.completedQuestions > 0).length
 
-  const countdownDays = countdown()
-  const countdownColor = countdownDays === null
-    ? 'text-text-light'
-    : countdownDays > 60
+    return {
+      questionsPracticed,
+      questionsToday,
+      averageAccuracy,
+      subjectsStarted,
+      allZero:
+        questionsPracticed === 0 &&
+        averageAccuracy === 0 &&
+        resolvedStreak.current === 0 &&
+        subjectsStarted === 0,
+    }
+  }, [globalStats, subjects, resolvedStreak.current])
+
+  const accuracyValueColor =
+    statsSummary.averageAccuracy > 80
       ? 'text-emerald-600'
-      : countdownDays > 30
+      : statsSummary.averageAccuracy >= 60
         ? 'text-amber-600'
         : 'text-rose-600'
+
+  const fsProgressPercent = fsSummary
+    ? Math.round((fsSummary.totalCases ? (fsSummary.completedCases / fsSummary.totalCases) * 100 : 0))
+    : 0
+
+  const countdown = useMemo(() => {
+    if (!examDate) return null
+    const target = new Date(`${examDate}T23:59:59`)
+    if (Number.isNaN(target.getTime())) return null
+    const diff = Math.max(0, target.getTime() - currentTime)
+    const days = Math.floor(diff / ONE_DAY_MS)
+    const hours = Math.floor((diff % ONE_DAY_MS) / (60 * 60 * 1000))
+    const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000))
+    const seconds = Math.floor((diff % (60 * 1000)) / 1000)
+    return { days, hours, minutes, seconds, totalMs: diff }
+  }, [examDate, currentTime])
+
+  const prepProgressPercent = useMemo(() => {
+    if (!examDate) return 0
+    const target = new Date(`${examDate}T23:59:59`).getTime()
+    if (Number.isNaN(target)) return 0
+    const prepStart = profileCreatedAt ? new Date(profileCreatedAt).getTime() : Date.now()
+    if (Number.isNaN(prepStart) || target <= prepStart) return 0
+    const elapsed = Date.now() - prepStart
+    return clampPercent((elapsed / (target - prepStart)) * 100)
+  }, [examDate, profileCreatedAt, currentTime])
+
+  const checklistItems = useMemo(
+    () =>
+      checklist
+        .map((item, index) => ({ ...item, index }))
+        .sort((a, b) => Number(a.done) - Number(b.done)),
+    [checklist]
+  )
+  const checklistDoneCount = useMemo(() => checklist.filter((item) => item.done).length, [checklist])
+  const checklistTotal = checklist.length || 1
+  const checklistCompletionPercent = clampPercent((checklistDoneCount / checklistTotal) * 100)
+
+  const nextBadgeHint = useMemo(() => {
+    const allBadges = (badgeProgress.length
+      ? badgeProgress
+      : STREAK_BADGE_DEFINITIONS.map((badge) => ({
+          ...badge,
+          earned: false,
+          earnedAt: null,
+          seen: true,
+        }))).sort((a, b) => a.milestoneDays - b.milestoneDays)
+
+    const nextBadge = allBadges.find((badge) => !badge.earned)
+    const current = Math.max(0, Number(resolvedStreak.current) || 0)
+
+    if (!nextBadge) {
+      return {
+        text: "🎖️ You've earned all badges! You're a true CA champion!",
+        className: 'border border-[#86efac] bg-[#f0fdf4] text-[#166534]',
+      }
+    }
+
+    if (current <= 0) {
+      return {
+        text: `🔥 Start a ${nextBadge.milestoneDays} day streak to earn your first badge!`,
+        className: 'border border-[#86efac] bg-[#f0fdf4] text-[#166534]',
+      }
+    }
+
+    const remainingDays = Math.max(0, nextBadge.milestoneDays - current)
+
+    if (!resolvedStreak.practicedToday) {
+      return {
+        text: `⚠️ Practice today to keep your streak — only ${remainingDays} more days to ${nextBadge.name}!`,
+        className: 'border border-[#fcd34d] bg-[#fef9c3] text-[#854d0e]',
+      }
+    }
+
+    return {
+      text: `${nextBadge.icon} ${remainingDays} more days to earn ${nextBadge.name} badge!`,
+      className: 'border border-[#86efac] bg-[#f0fdf4] text-[#166534]',
+    }
+  }, [badgeProgress, resolvedStreak.current, resolvedStreak.practicedToday])
 
   if (authLoading) {
     return (
@@ -472,13 +627,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background-light">
+    <main className="dashboard-shell min-h-screen bg-[#f8fafc]">
       <Navigation />
 
-      <div className="pt-[70px] pb-12">
-        <div className="max-w-7xl mx-auto px-6">
+      <div className="pt-[74px] pb-24 md:pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {adsLoaded && adsEnabled && adContent?.dashboard && (
-            <div className="pt-8 mb-8">
+            <div className="pt-6 mb-6">
               <AdSlot
                 placement="dashboard"
                 headline={adContent.dashboard.headline}
@@ -488,486 +643,806 @@ export default function DashboardPage() {
               />
             </div>
           )}
-          {/* Welcome Section */}
-          <div className="pt-8 mb-12">
-            <WelcomeSection
-              statsData={globalStats}
-              reviewDueCount={reviewDueCount}
-              betaFeatures={betaFeatureLinks}
-            />
+
+          <div className="mb-4 flex items-center justify-end">
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-primary-green transition-colors"
+            >
+              <Settings size={15} />
+              Account Settings
+            </Link>
           </div>
 
-          {reviewDueCount > 0 && (
-            <Card className="border border-border mb-12 bg-white">
-              <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h3 className="font-heading text-xl font-bold text-text-dark">
-                    Review Due: {reviewDueCount} questions
-                  </h3>
-                  <p className="text-text-light">
-                    Strengthen memory with your spaced repetition queue.
+          <div className="grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)] gap-6">
+            <aside className="space-y-6 order-2 xl:order-1">
+              <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-12 w-12 rounded-full object-cover border border-slate-200"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-primary-green/10 text-primary-green font-bold flex items-center justify-center">
+                        {String(user.name || 'U').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900 truncate">{user.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-center">
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-200">
+                      <p className="text-xl font-black text-slate-900">{statsSummary.questionsPracticed}</p>
+                      <p className="text-[11px] text-slate-500">Practiced</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-200">
+                      <p className="text-xl font-black text-slate-900">{statsSummary.subjectsStarted}</p>
+                      <p className="text-[11px] text-slate-500">Subjects</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                className={`rounded-2xl border-0 text-white shadow-lg ${
+                  resolvedStreak.practicedToday
+                    ? 'bg-gradient-to-br from-orange-500 to-orange-600'
+                    : 'bg-gradient-to-br from-orange-500 to-orange-700 dashboard-streak-pulse'
+                }`}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Flame size={24} />
+                      <span className="text-sm font-semibold">Daily Streak</span>
+                    </div>
+                    {resolvedStreak.practicedToday ? (
+                      <CheckCircle2 size={18} className="text-emerald-100" />
+                    ) : null}
+                  </div>
+                  <p className="mt-3 text-4xl font-black leading-none">{resolvedStreak.current}</p>
+                  <p className="text-xs mt-1 text-orange-100">Best: {resolvedStreak.best} days</p>
+                  <p className="text-xs mt-3 text-orange-100">
+                    {resolvedStreak.practicedToday
+                      ? 'Streak safe for today.'
+                      : 'Practice today to keep your streak alive.'}
                   </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <Button onClick={() => window.location.assign('/review')}>
-                    Start Review
-                  </Button>
-                  <NotificationOptIn />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  <p className="text-[11px] mt-2 text-orange-100/90">{streakResetText}</p>
+                </CardContent>
+              </Card>
 
-          <div id="account-data" className="mb-12 space-y-4 scroll-mt-24">
-            <h3 className="font-heading text-2xl font-bold text-text-dark">Account & Data</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Card className="border border-border bg-white">
-                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading text-xl font-bold text-text-dark">
-                      Reset Progress
-                    </h3>
-                    <p className="text-text-light">
-                      This will clear your test history, weak-area data, and review progress.
-                    </p>
+              <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl">
+                <CardContent className="p-5 space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-900">Exam Snapshot</h3>
+                  {countdown ? (
+                    <>
+                      <p className="text-xs text-slate-500">{examName || 'Your upcoming exam'}</p>
+                      <p className="text-2xl font-black text-primary-green">{countdown.days} days</p>
+                      <Progress value={prepProgressPercent} className="h-2" />
+                      <p className="text-xs text-slate-500">{Math.round(prepProgressPercent)}% through prep timeline</p>
+                    </>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center">
+                      <CalendarDays size={18} className="mx-auto text-slate-500" />
+                      <p className="mt-2 text-xs text-slate-600">No exam date set yet.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {reviewDueCount > 0 && (
+                <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl">
+                  <CardContent className="p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-slate-900">Review Queue</h3>
+                    <p className="text-sm text-slate-600">{reviewDueCount} questions due now.</p>
+                    <Button className="w-full" onClick={() => window.location.assign('/review')}>
+                      Start Review
+                    </Button>
+                    <NotificationOptIn />
+                  </CardContent>
+                </Card>
+              )}
+
+              {betaFeatureLinks.length > 0 ? (
+                <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl">
+                  <CardContent className="p-5 space-y-2">
+                    <p className="text-xs uppercase tracking-[0.12em] text-slate-400 font-semibold">Beta Access</p>
+                    {betaFeatureLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="block text-sm text-slate-700 hover:text-primary-green transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </CardContent>
+                </Card>
+              ) : null}
+            </aside>
+
+            <section className="space-y-6 order-1 xl:order-2">
+              <Card className="border-0 overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f172a,#0d2137)] text-white shadow-xl">
+                <CardContent className="p-6 md:p-8 relative">
+                  <div className="pointer-events-none absolute inset-0">
+                    <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-green-400/10 blur-2xl" />
+                    <div className="absolute -bottom-16 right-0 h-44 w-44 rounded-full bg-green-300/10 blur-2xl" />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={isResetting}>
-                          {isResetting ? 'Resetting...' : 'Reset Progress'}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-white">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-error-red">
-                            Reset all progress?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete your test results, review queue, and study sessions.
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleResetProgress}>
-                            Reset
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" disabled={isResettingNotes}>
-                          {isResettingNotes ? 'Clearing...' : 'Clear Notes & Flashcards'}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-white">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-error-red">
-                            Delete notes and flashcards?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete all your notes and flashcards.
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleResetNotes}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                    <div>
+                      <h1 className="text-2xl md:text-3xl font-black">
+                        {timeBasedGreeting}, {user.name.split(' ')[0]}!
+                      </h1>
+                      <p className="text-sm text-white/70 mt-2">Ready to ace your CA exam today?</p>
+                      <p className="text-xs text-white/50 mt-1">{todayDisplay}</p>
+                    </div>
+                    <Button
+                      className="h-12 px-6 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold shadow-[0_4px_14px_rgba(22,163,74,0.4)]"
+                      onClick={scrollToPractice}
+                    >
+                      Start Practicing Now
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border border-border bg-white">
-                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading text-xl font-bold text-text-dark">
-                      Delete Account
-                    </h3>
-                    <p className="text-text-light">
-                      Permanently delete your account and all associated data.
-                    </p>
+              <div className="dashboard-reveal rounded-r-xl border-l-4 border-primary-green bg-[#f0fdf4] px-4 py-3">
+                <p className="text-sm italic text-[#166534]">{quoteOfDay}</p>
+              </div>
+
+              <Card
+                className={`dashboard-reveal rounded-2xl border-0 text-white shadow-lg ${
+                  resolvedStreak.practicedToday
+                    ? 'bg-gradient-to-br from-orange-500 to-orange-600'
+                    : 'bg-gradient-to-br from-orange-500 to-orange-700 dashboard-streak-pulse'
+                }`}
+              >
+                <CardContent className="p-5 md:p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Flame size={30} />
+                      <div>
+                        <p className="text-4xl md:text-5xl font-black leading-none">{resolvedStreak.current}</p>
+                        <p className="text-xs uppercase tracking-[0.1em] text-orange-100">Day Streak</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-orange-100">Best: {resolvedStreak.best} days</p>
+                      <p className="text-xs text-orange-100 mt-1">
+                        {resolvedStreak.practicedToday
+                          ? 'You are safe for today.'
+                          : 'Practice today to keep your streak alive!'}
+                      </p>
+                      <p className="text-[11px] text-orange-100/90 mt-2">{streakResetText}</p>
+                    </div>
                   </div>
-                  <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="destructive">Delete Account</Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-white">
-                      {deleteStep === 'password' && (
-                        <>
-                          <DialogHeader>
-                            <DialogTitle className="text-error-red">Confirm your password</DialogTitle>
-                            <DialogDescription>
-                              Enter your password to request a deletion verification code.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-3">
-                            <Input
-                              type="password"
-                              placeholder="Password"
-                              value={deletePassword}
-                              onChange={(e) => setDeletePassword(e.target.value)}
-                            />
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-reveal rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-slate-900">Streak Milestones</h3>
+                    <p className="text-xs text-slate-500">Earn badges as your streak grows</p>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {(badgeProgress.length ? badgeProgress : STREAK_BADGE_DEFINITIONS.map((badge) => ({
+                      ...badge,
+                      earned: false,
+                      earnedAt: null,
+                      seen: true,
+                    }))).map((badge) => {
+                      const earnedDate = badge.earnedAt
+                        ? new Intl.DateTimeFormat('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          }).format(new Date(badge.earnedAt))
+                        : null
+                      return (
+                        <div
+                          key={badge.badgeType}
+                          className={`rounded-xl border p-3 text-center transition-all ${
+                            badge.earned
+                              ? 'border-slate-200 bg-white shadow-sm'
+                              : 'border-slate-200 bg-slate-50 opacity-40'
+                          }`}
+                          title={
+                            badge.earned
+                              ? `${badge.name} - earned ${earnedDate}`
+                              : `${badge.name} - unlock at ${badge.milestoneDays} day streak`
+                          }
+                        >
+                          <div
+                            className={`mx-auto h-10 w-10 rounded-full text-lg flex items-center justify-center ${
+                              badge.earned ? `bg-gradient-to-br ${badge.colorClass} text-white shadow-[0_0_12px_rgba(22,163,74,0.35)]` : 'bg-slate-200 text-slate-500'
+                            }`}
+                          >
+                            {badge.icon}
                           </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                            <Button variant="destructive" onClick={handleDeleteRequest} disabled={isDeleting || !deletePassword}>
-                              {isDeleting ? 'Verifying...' : 'Send Code'}
-                            </Button>
-                          </DialogFooter>
-                        </>
-                      )}
-
-                      {deleteStep === 'otp' && (
-                        <>
-                          <DialogHeader>
-                            <DialogTitle className="text-error-red">Verify deletion code</DialogTitle>
-                            <DialogDescription>
-                              Enter the 6-digit code sent to your email.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-3">
-                            <Input
-                              placeholder="Verification code"
-                              value={deleteOtp}
-                              onChange={(e) => setDeleteOtp(e.target.value)}
-                            />
-                            <div className="text-xs text-slate-500">
-                              {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : 'Didn’t receive the code?'}
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <div className="flex flex-wrap gap-2 items-center">
-                              <Button variant="outline" onClick={() => setDeleteStep('password')}>Back</Button>
-                              <Button
-                                variant="outline"
-                                disabled={resendCooldown > 0 || isDeleting}
-                                onClick={handleResendDeleteCode}
-                              >
-                                {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend code'}
-                              </Button>
-                            </div>
-                            <Button variant="destructive" onClick={handleVerifyDeleteCode} disabled={isDeleting || !deleteOtp}>
-                              {isDeleting ? 'Verifying...' : 'Verify'}
-                            </Button>
-                          </DialogFooter>
-                        </>
-                      )}
-
-                      {deleteStep === 'confirm' && (
-                        <>
-                          <DialogHeader>
-                            <DialogTitle className="text-error-red">Final confirmation</DialogTitle>
-                            <DialogDescription>
-                              This action is permanent. Are you absolutely sure you want to delete your account?
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
-                              {isDeleting ? 'Deleting...' : 'Yes, delete my account'}
-                            </Button>
-                          </DialogFooter>
-                        </>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </CardContent>
-              </Card>
-
-              <Card className="border border-border bg-white">
-                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading text-xl font-bold text-text-dark">
-                      Feedback
-                    </h3>
-                    <p className="text-text-light">
-                      {hasSubmittedFeedback
-                        ? 'You already shared feedback. You can edit it anytime.'
-                        : 'Share quick feedback to help improve your experience.'}
-                    </p>
-                  </div>
-                  <Button
-                    variant={hasSubmittedFeedback ? 'outline' : 'default'}
-                    onClick={() => window.location.assign('/feedback?source=dashboard')}
-                  >
-                    {feedbackStatusLoaded
-                      ? hasSubmittedFeedback
-                        ? 'Manage Feedback'
-                        : 'Share Feedback'
-                      : 'Feedback'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          <div id="practice-modes" className="mb-12 space-y-4 scroll-mt-24">
-            <h3 className="font-heading text-2xl font-bold text-text-dark">Practice Modes</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="border border-border bg-white">
-                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading text-xl font-bold text-text-dark">
-                      Weak Area Intensive Mode
-                    </h3>
-                    <p className="text-text-light">
-                      Focus on your 3 weakest chapters and improve to 75% accuracy.
-                    </p>
-                  </div>
-                  <Button onClick={() => window.location.assign('/weak-area')}>
-                    Start Intensive
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="border border-border bg-white">
-                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading text-xl font-bold text-text-dark">
-                      Practice Wrong Answers
-                    </h3>
-                    <p className="text-text-light">
-                      Retry the questions you answered incorrectly, subject by subject.
-                    </p>
-                  </div>
-                  <Button onClick={() => window.location.assign('/wrong-answers')}>
-                    Start Practice
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="border border-border bg-white">
-                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h3 className="font-heading text-xl font-bold text-text-dark">
-                      Financial Statements Practice
-                    </h3>
-                    <p className="text-text-light">
-                      Trial balance cases with SOCI & SOFP dropdown selections.
-                    </p>
-                    {fsSummary ? (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-medium text-text-dark">Your Progress:</p>
-                          <p className="text-sm font-bold text-primary-green">{fsProgressPercent}%</p>
+                          <p className="mt-2 text-xs font-semibold text-slate-800">{badge.name}</p>
+                          <p className="text-[11px] text-slate-500">{badge.milestoneDays} days</p>
                         </div>
-                        <Progress value={fsProgressPercent} className="h-3" />
-                        <p className="text-xs text-text-light">
-                          {fsSummary.completedCases}/{fsSummary.totalCases} cases completed ·
-                          {' '}Questions: {fsSummary.totalQuestions}
-                        </p>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-3 flex justify-center">
+                    <p
+                      className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium ${nextBadgeHint.className}`}
+                    >
+                      {nextBadgeHint.text}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="dashboard-reveal">
+                <h2 className="dashboard-section-title">Quick Stats</h2>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <Card className="dashboard-stat-card">
+                    <CardContent className="p-5">
+                      <div className="dashboard-icon-circle bg-green-100 text-green-600">
+                        <BookOpen size={18} />
+                      </div>
+                      <p className="mt-3 text-2xl font-black text-slate-900">{statsSummary.questionsPracticed}</p>
+                      <p className="text-sm font-semibold text-slate-700">Questions Practiced</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {statsSummary.questionsToday > 0 ? `+${statsSummary.questionsToday} today` : 'No attempts today'}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-stat-card">
+                    <CardContent className="p-5">
+                      <div className="dashboard-icon-circle bg-orange-100 text-orange-600">
+                        <Zap size={18} />
+                      </div>
+                      <p className="mt-3 text-2xl font-black text-slate-900">{resolvedStreak.current}</p>
+                      <p className="text-sm font-semibold text-slate-700">Day Streak</p>
+                      <p className="text-xs text-slate-500 mt-1">Best {resolvedStreak.best} days</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-stat-card">
+                    <CardContent className="p-5">
+                      <div className="dashboard-icon-circle bg-purple-100 text-purple-600">
+                        <Layers size={18} />
+                      </div>
+                      <p className="mt-3 text-2xl font-black text-slate-900">
+                        {statsSummary.subjectsStarted}/{subjects.length || 4}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-700">Subjects Active</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              <div id="practice-modes" className="dashboard-reveal scroll-mt-24">
+                <h2 className="dashboard-section-title">Practice Modes</h2>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="dashboard-feature-card">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <BookOpen size={84} className="absolute -top-2 -right-2 text-green-500/5" />
+                      <div className="dashboard-mode-icon bg-green-100 text-green-600">
+                        <BookOpen size={24} />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">Weak Area Intensive Mode</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Focus on your 3 weakest chapters and improve to 75% accuracy.
+                      </p>
+                      <Button className="mt-4 w-full bg-green-600 hover:bg-green-700" onClick={() => window.location.assign('/weak-area')}>
+                        Start Intensive
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-feature-card">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <AlertCircle size={84} className="absolute -top-2 -right-2 text-rose-500/5" />
+                      <div className="dashboard-mode-icon bg-rose-100 text-rose-600">
+                        <AlertCircle size={24} />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">Practice Wrong Answers</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Retry the questions you answered incorrectly, subject by subject.
+                      </p>
+                      <Button className="mt-4 w-full bg-rose-600 hover:bg-rose-700" onClick={() => window.location.assign('/wrong-answers')}>
+                        Start Practice
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-feature-card md:col-span-2">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <FileText size={92} className="absolute -top-3 right-3 text-blue-500/5" />
+                      <div className="dashboard-mode-icon bg-blue-100 text-blue-600">
+                        <FileText size={24} />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">Financial Statements Practice</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Trial balance cases with SOCI and SOFP dropdown selections.
+                      </p>
+                      {fsSummary ? (
+                        <div className="mt-4 space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600">Your Progress</span>
+                            <span className="font-semibold text-blue-700">{fsProgressPercent}%</span>
+                          </div>
+                          <Progress value={fsProgressPercent} className="h-2.5" />
+                          <p className="text-xs text-slate-500">
+                            {fsSummary.completedCases}/{fsSummary.totalCases} cases completed - Questions: {fsSummary.totalQuestions}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="mt-4 text-xs text-slate-500">Loading your progress...</p>
+                      )}
+                      <Button className="mt-4 w-full md:w-auto bg-blue-600 hover:bg-blue-700" onClick={() => window.location.assign('/financial-statements')}>
+                        Start Practice
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              <div id="study-tools" className="dashboard-reveal scroll-mt-24">
+                <h2 className="dashboard-section-title">Study Tools</h2>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="dashboard-feature-card">
+                    <CardContent className="p-6">
+                      <div className="dashboard-mode-icon bg-green-100 text-green-600">
+                        <CalendarDays size={24} />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">Study Planner</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Plan your daily study sessions and stay on track.
+                      </p>
+                      <Button className="mt-4 w-full bg-green-600 hover:bg-green-700" onClick={() => window.location.assign('/study-planner')}>
+                        Open Planner
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-feature-card">
+                    <CardContent className="p-6">
+                      <div className="dashboard-mode-icon bg-blue-100 text-blue-600">
+                        <BarChart2 size={24} />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">My Analytics</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Track your performance and identify weak areas.
+                      </p>
+                      <Button className="mt-4 w-full bg-blue-600 hover:bg-blue-700" onClick={() => window.location.assign('/analytics')}>
+                        View Analytics
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => window.location.assign('/study-session')}>Study Session</Button>
+                  <Button variant="outline" onClick={() => window.location.assign('/notes')}>Notes & Flashcards</Button>
+                  <Button onClick={() => window.location.assign('/exam-simulator')}>Exam Simulator</Button>
+                </div>
+              </div>
+
+              <div id="subjects" className="dashboard-reveal scroll-mt-24">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="dashboard-section-title !mb-0">Your Subjects</h2>
+                  <Link href="/subjects" className="text-sm font-medium text-primary-green hover:text-green-700 transition-colors">
+                    View All →
+                  </Link>
+                </div>
+                <div className="mt-4 mb-4">
+                  <Button variant="outline" onClick={() => window.location.assign('/custom-quiz')}>
+                    Build Custom Quiz
+                  </Button>
+                </div>
+
+                {isLoading ? (
+                  <div className="flex justify-center p-12">
+                    <Loader2 className="animate-spin text-primary-green" size={36} />
+                  </div>
+                ) : subjects.length === 0 ? (
+                  <Card className="border border-slate-200 rounded-2xl bg-white">
+                    <CardContent className="p-10 text-center text-slate-500">No subjects found. Please contact admin.</CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="md:hidden -mx-1 px-1 flex gap-3 overflow-x-auto pb-1">
+                      {subjects.map((subject, index) => {
+                        const code = normalizeCode(subject.code)
+                        const accent = SUBJECT_ACCENTS[code] || ['#16a34a', '#2563eb', '#7c3aed', '#ea580c'][index % 4]
+                        const subjectLabel = SUBJECT_SHORT_NAMES[code] || subject.name || code
+                        return (
+                          <div
+                            key={`${subject.code}-${index}`}
+                            className="min-w-[220px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                            style={{ borderTop: `3px solid ${accent}` }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-semibold text-slate-900">{subjectLabel}</p>
+                              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{code}</span>
+                            </div>
+                            <div className="mt-3">
+                              <div className="flex items-center justify-between text-xs text-slate-500">
+                                <span>{subject.progressPercent}% progress</span>
+                                <span>{subject.completedQuestions}/{subject.totalQuestions}</span>
+                              </div>
+                              <div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${subject.progressPercent}%`, backgroundColor: accent }} />
+                              </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                              <Link href={`/subjects/${encodeURIComponent(subject.code)}/test?mode=full`} className="w-full">
+                                <Button variant="outline" className="w-full text-xs">Full Book</Button>
+                              </Link>
+                              <Link href={`/subjects/${encodeURIComponent(subject.code)}?mode=chapter`} className="w-full">
+                                <Button className="w-full text-xs">Chapter Wise</Button>
+                              </Link>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="hidden md:grid grid-cols-2 gap-4">
+                      {subjects.map((subject, index) => {
+                        const code = normalizeCode(subject.code)
+                        const accent = SUBJECT_ACCENTS[code] || ['#16a34a', '#2563eb', '#7c3aed', '#ea580c'][index % 4]
+                        const subjectLabel = SUBJECT_SHORT_NAMES[code] || subject.name || code
+                        return (
+                          <Card key={`${subject.code}-${index}`} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <CardContent className="p-5" style={{ borderTop: `3px solid ${accent}` }}>
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-semibold text-slate-900">{subjectLabel}</p>
+                                <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{code}</span>
+                              </div>
+                              <div className="mt-4">
+                                <div className="flex items-center justify-between text-xs text-slate-500">
+                                  <span>{subject.progressPercent}% progress</span>
+                                  <span>{subject.completedQuestions}/{subject.totalQuestions} completed</span>
+                                </div>
+                                <div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                                  <div className="h-full rounded-full" style={{ width: `${subject.progressPercent}%`, backgroundColor: accent }} />
+                                </div>
+                              </div>
+                              <div className="mt-4 grid grid-cols-2 gap-2">
+                                <Link href={`/subjects/${encodeURIComponent(subject.code)}/test?mode=full`} className="w-full">
+                                  <Button variant="outline" className="w-full text-xs">Full Book</Button>
+                                </Link>
+                                <Link href={`/subjects/${encodeURIComponent(subject.code)}?mode=chapter`} className="w-full">
+                                  <Button className="w-full text-xs">Chapter Wise</Button>
+                                </Link>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="dashboard-reveal grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <Card id="exam-countdown" className="rounded-2xl border border-slate-200 bg-white shadow-sm scroll-mt-24">
+                  <CardContent className="p-6">
+                    <h2 className="dashboard-section-title">Exam Countdown</h2>
+
+                    {!examDate && !isExamEditorOpen ? (
+                      <div className="mt-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                        <CalendarDays size={34} className="mx-auto text-slate-500" />
+                        <p className="mt-2 font-semibold text-slate-800">Set Your Exam Date</p>
+                        <p className="text-sm text-slate-500 mt-1">Track your countdown and stay on schedule.</p>
+                        <Button variant="outline" className="mt-4 border-primary-green text-primary-green hover:bg-primary-green/5" onClick={() => setIsExamEditorOpen(true)}>
+                          Set Exam Date
+                        </Button>
                       </div>
                     ) : (
-                      <p className="text-xs text-text-light mt-2">Loading progress...</p>
+                      <>
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="examName">Exam Name</Label>
+                            <Input id="examName" placeholder="e.g. CAF Exam" value={examName} onChange={(event) => setExamName(event.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="examDate">Exam Date</Label>
+                            <Input id="examDate" type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} />
+                          </div>
+                        </div>
+                        {countdown ? (
+                          <div className="mt-4 rounded-2xl bg-[linear-gradient(135deg,#0f172a,#1e3a5f)] p-5 text-white">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              {[
+                                { label: 'Days', value: countdown.days },
+                                { label: 'Hours', value: countdown.hours },
+                                { label: 'Mins', value: countdown.minutes },
+                                { label: 'Secs', value: countdown.seconds },
+                              ].map((item) => (
+                                <div key={item.label} className="rounded-xl bg-white/5 border border-white/10 p-3 text-center dashboard-second-tick">
+                                  <p className="text-2xl font-black text-green-300">{String(item.value).padStart(2, '0')}</p>
+                                  <p className="text-[10px] uppercase tracking-wider text-white/70">{item.label}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="mt-3 text-sm text-white/80">{examName || 'Your exam plan'}</p>
+                            <div className="mt-3">
+                              <Progress value={prepProgressPercent} className="h-2 bg-white/10" />
+                              <p className="text-xs text-white/70 mt-1">{Math.round(prepProgressPercent)}% into prep timeline</p>
+                            </div>
+                            <p className="mt-2 text-xs text-white/80">Keep going - you are making steady progress.</p>
+                          </div>
+                        ) : null}
+
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="dailyGoal" className="text-xs text-slate-500">Daily Target</Label>
+                            <Input id="dailyGoal" type="number" min="0" value={dailyQuestionGoal} onChange={(event) => setDailyQuestionGoal(Number(event.target.value) || 0)} className="w-24" />
+                          </div>
+                          <Button onClick={handleSavePlan} disabled={isSavingPlan}>{isSavingPlan ? 'Saving...' : 'Save Plan'}</Button>
+                        </div>
+                      </>
                     )}
-                  </div>
-                  <Button onClick={() => window.location.assign('/financial-statements')}>
-                    Start Practice
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                  </CardContent>
+                </Card>
 
-          <Card id="study-tools" className="border border-border mb-12 bg-white scroll-mt-24">
-            <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h3 className="font-heading text-xl font-bold text-text-dark">
-                  Study Tools
-                </h3>
-                <p className="text-text-light">Pomodoro, notes, planner, and analytics.</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={() => window.location.assign('/study-session')}>
-                  Study Session
-                </Button>
-                <Button variant="outline" onClick={() => window.location.assign('/notes')}>
-                  Notes & Flashcards
-                </Button>
-                <Button variant="outline" onClick={() => window.location.assign('/study-planner')}>
-                  Study Planner
-                </Button>
-                <Button variant="outline" onClick={() => window.location.assign('/analytics')}>
-                  Analytics
-                </Button>
-                <Button onClick={() => window.location.assign('/exam-simulator')}>
-                  Exam Simulator
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <Card id="pre-exam-checklist" className="rounded-2xl border border-slate-200 bg-white shadow-sm scroll-mt-24">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <h2 className="dashboard-section-title !mb-0">Pre-Exam Checklist</h2>
+                      <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 text-xs font-semibold px-3 py-1">
+                        {checklistDoneCount}/{checklist.length || 0} completed
+                      </span>
+                    </div>
 
-          {/* Subjects Section */}
-          <div id="subjects" className="mb-12 scroll-mt-24">
-            <h3 className="font-heading text-2xl font-bold text-text-dark mb-6">
-              Your Subjects
-            </h3>
-            <div className="mb-6">
-              <Button
-                variant="outline"
-                onClick={() => window.location.assign('/custom-quiz')}
-              >
-                Build Custom Quiz
-              </Button>
-            </div>
-            {isLoading ? (
-              <div className="flex justify-center p-12">
-                <Loader2 className="animate-spin text-primary-green" size={40} />
-              </div>
-            ) : subjects.length === 0 ? (
-              <div className="text-center p-12 bg-white rounded-xl border border-border">
-                <p className="text-text-light">No subjects found. Please contact an admin to add subjects.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {subjects.map((subject, index) => (
-                  <SubjectCard key={index} {...subject} />
-                ))}
-              </div>
-            )}
-          </div>
+                    <div className="mt-5 flex justify-center">
+                      <div className="relative h-24 w-24">
+                        <svg className="h-24 w-24 -rotate-90" viewBox="0 0 100 100" aria-hidden="true">
+                          <circle cx="50" cy="50" r="42" stroke="#e2e8f0" strokeWidth="8" fill="none" />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="42"
+                            stroke="#16a34a"
+                            strokeWidth="8"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray={`${(2 * Math.PI * 42 * checklistCompletionPercent) / 100} ${2 * Math.PI * 42}`}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-slate-800">
+                          {Math.round(checklistCompletionPercent)}%
+                        </div>
+                      </div>
+                    </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-            <Card id="exam-countdown" className="border border-border bg-white scroll-mt-24">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="font-heading text-xl font-bold text-text-dark">Exam Countdown</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="examName">Exam Name</Label>
-                    <Input
-                      id="examName"
-                      placeholder="e.g. CAF Exam"
-                      value={examName}
-                      onChange={(e) => setExamName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="examDate">Exam Date</Label>
-                    <Input
-                      id="examDate"
-                      type="date"
-                      value={examDate}
-                      onChange={(e) => setExamDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between bg-slate-50 rounded-xl p-4">
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase font-bold">Days Remaining</p>
-                    <p className={`text-2xl font-black ${countdownColor}`}>
-                      {countdownDays === null ? '--' : countdownDays}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase font-bold">Daily Target</p>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={dailyQuestionGoal}
-                      onChange={(e) => setDailyQuestionGoal(Number(e.target.value) || 0)}
-                      className="w-24 text-right"
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleSavePlan} disabled={isSavingPlan}>
-                  {isSavingPlan ? 'Saving...' : 'Save Plan'}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card id="pre-exam-checklist" className="border border-border bg-white scroll-mt-24">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="font-heading text-xl font-bold text-text-dark">Pre-Exam Checklist</h3>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    placeholder="Add your own checklist item..."
-                    value={newChecklistItem}
-                    onChange={(e) => setNewChecklistItem(e.target.value)}
-                  />
-                  <Button type="button" onClick={handleAddChecklistItem} className="gap-2">
-                    <Plus size={16} />
-                    Add
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {checklist.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3 text-sm text-text-dark">
-                      <input
-                        type="checkbox"
-                        checked={item.done}
-                        onChange={(e) => {
-                          const next = [...checklist]
-                          next[idx] = { ...item, done: e.target.checked }
-                          setChecklist(next)
-                        }}
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      <Input
-                        value={item.label}
-                        onChange={(e) => {
-                          const next = [...checklist]
-                          next[idx] = { ...item, label: e.target.value }
-                          setChecklist(next)
-                        }}
-                        className={item.done ? 'line-through text-text-light' : ''}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setChecklist((prev) => prev.filter((_, i) => i !== idx))
-                        }}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 size={16} />
+                    <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                      <Input placeholder="Add your own checklist item..." value={newChecklistItem} onChange={(event) => setNewChecklistItem(event.target.value)} />
+                      <Button type="button" onClick={handleAddChecklistItem} className="gap-2">
+                        <Plus size={16} />
+                        Add
                       </Button>
                     </div>
-                  ))}
-                </div>
-                <Button variant="outline" onClick={handleSavePlan} disabled={isSavingPlan}>
-                  {isSavingPlan ? 'Saving...' : 'Save Checklist'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setChecklist(defaultChecklist)}
-                  className="text-text-light"
-                >
-                  Reset to Default
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Recent Activity Section */}
-          <div id="performance-tracking" className="scroll-mt-24">
-            <h3 className="font-heading text-2xl font-bold text-text-dark mb-6">
-              Performance Tracking
-            </h3>
-            <RecentActivity />
+                    <div className="mt-4 space-y-2">
+                      {checklistItems.map((item) => (
+                        <div key={`${item.label}-${item.index}`} className="flex items-center gap-3 rounded-xl border border-slate-200 p-2.5">
+                          <input
+                            type="checkbox"
+                            checked={item.done}
+                            onChange={(event) => {
+                              const next = [...checklist]
+                              next[item.index] = { ...item, done: event.target.checked }
+                              setChecklist(next)
+                            }}
+                            className="h-4 w-4 rounded border-slate-300 accent-[#16a34a]"
+                          />
+                          <Input
+                            value={item.label}
+                            onChange={(event) => {
+                              const next = [...checklist]
+                              next[item.index] = { ...item, label: event.target.value }
+                              setChecklist(next)
+                            }}
+                            className={`flex-1 ${item.done ? 'line-through text-slate-400' : ''}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setChecklist((prev) => prev.filter((_, idx) => idx !== item.index))
+                            }}
+                            className="text-rose-500 hover:text-rose-600"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {checklist.length > 0 && checklistDoneCount === checklist.length ? (
+                      <div className="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                        You are ready for your exam.
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={handleSavePlan} disabled={isSavingPlan}>
+                        {isSavingPlan ? 'Saving...' : 'Save Checklist'}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setChecklist(DEFAULT_CHECKLIST)} className="text-slate-500">
+                        Reset to Default
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div id="performance-tracking" className="dashboard-reveal scroll-mt-24">
+                <h2 className="dashboard-section-title">Performance Tracking</h2>
+                <div className="mt-4">
+                  <RecentActivity />
+                </div>
+              </div>
+
+              <div className="dashboard-reveal py-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.assign('/feedback?source=dashboard')}
+                  className="text-sm text-slate-500 hover:text-primary-green transition-colors"
+                >
+                  {feedbackStatusLoaded
+                    ? hasSubmittedFeedback
+                      ? 'Manage Feedback about Preptio'
+                      : 'Share Feedback about Preptio'
+                    : 'Share Feedback about Preptio'}
+                </button>
+              </div>
+            </section>
           </div>
         </div>
       </div>
-      {showGoodbye && (
-        <div className="fixed inset-0 z-50 bg-slate-900/95 flex items-center justify-center px-6">
-          <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl p-10 text-center space-y-4">
-            <div className="text-6xl">😢</div>
-            <h2 className="text-3xl font-black text-slate-800">We are sad to see you go</h2>
-            <p className="text-slate-600">
-              Your account has been deleted. If you ever want to come back, we'll be here.
-            </p>
-            <Button onClick={() => window.location.assign('/')}>Go to Home</Button>
+
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden">
+        <div className="px-4 py-3">
+          <Button className="w-full h-11 rounded-xl bg-[#16a34a] hover:bg-[#15803d]" onClick={scrollToPractice}>
+            Start Practicing Now
+            <ArrowRight size={16} className="ml-1" />
+          </Button>
+        </div>
+      </div>
+
+      {celebrationBadge ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 px-4">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-8 text-center shadow-2xl">
+            <div className="pointer-events-none absolute inset-0">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <span
+                  key={index}
+                  className="badge-confetti"
+                  style={{
+                    left: `${(index * 8) % 90 + 5}%`,
+                    animationDelay: `${(index % 6) * 0.12}s`,
+                  }}
+                />
+              ))}
+            </div>
+            <div className="relative z-10">
+              <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br ${celebrationBadge.colorClass} text-4xl text-white badge-pop`}>
+                {celebrationBadge.icon}
+              </div>
+              <h3 className="mt-4 text-2xl font-black text-slate-900">New Badge Earned!</h3>
+              <p className="mt-2 text-lg font-bold text-slate-800">{celebrationBadge.name}</p>
+              <p className="mt-2 text-sm text-slate-600">
+                You have practiced for {celebrationBadge.milestoneDays} consecutive days. Keep it up!
+              </p>
+              <Button className="mt-6 bg-[#16a34a] hover:bg-[#15803d]" onClick={() => void dismissBadgeCelebration()}>
+                Awesome!
+              </Button>
+            </div>
           </div>
         </div>
-      )}
+      ) : null}
+
+      <style jsx global>{`
+        .dashboard-shell::-webkit-scrollbar { width: 6px; height: 6px; }
+        .dashboard-shell::-webkit-scrollbar-track { background: #f1f5f9; }
+        .dashboard-shell::-webkit-scrollbar-thumb { background: #86efac; border-radius: 3px; }
+        .dashboard-section-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0f172a;
+          border-left: 4px solid #16a34a;
+          padding-left: 12px;
+          line-height: 1.2;
+        }
+        .dashboard-reveal {
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 0.45s ease, transform 0.45s ease;
+        }
+        .dashboard-reveal.is-visible { opacity: 1; transform: translateY(0); }
+        .dashboard-stat-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          background: #fff;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dashboard-stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); }
+        .dashboard-icon-circle {
+          width: 38px;
+          height: 38px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dashboard-feature-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 20px;
+          background: #fff;
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+          transition: all 0.25s ease;
+        }
+        .dashboard-feature-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+          border-color: #86efac;
+        }
+        .dashboard-mode-icon {
+          width: 60px;
+          height: 60px;
+          border-radius: 16px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dashboard-second-tick { animation: dashboardTick 1s ease-in-out infinite; }
+        .dashboard-streak-pulse { animation: dashboardPulse 2s ease-in-out infinite; }
+        @keyframes dashboardTick {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.02); }
+        }
+        @keyframes dashboardPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.15); }
+          50% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+        }
+        .badge-pop {
+          animation: badgePop 0.55s cubic-bezier(.175,.885,.32,1.275) both;
+        }
+        .badge-confetti {
+          position: absolute;
+          top: -10px;
+          width: 6px;
+          height: 14px;
+          border-radius: 999px;
+          background: rgba(22, 163, 74, 0.28);
+          animation: badgeConfetti 1.9s ease-in-out infinite;
+        }
+        @keyframes badgePop {
+          0% { opacity: 0; transform: scale(0.5); }
+          70% { opacity: 1; transform: scale(1.06); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes badgeConfetti {
+          0% { opacity: 0; transform: translateY(0) rotate(0deg); }
+          25% { opacity: 1; }
+          100% { opacity: 0; transform: translateY(260px) rotate(180deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dashboard-reveal, .dashboard-stat-card, .dashboard-feature-card, .dashboard-second-tick, .dashboard-streak-pulse, .badge-pop, .badge-confetti {
+            animation: none !important;
+            transition: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
     </main>
   )
 }
+

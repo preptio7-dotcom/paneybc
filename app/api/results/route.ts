@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 import { getCurrentUser } from '@/lib/auth'
 import { buildReviewUpdate } from '@/lib/spaced-repetition'
 import { prisma } from '@/lib/prisma'
+import { updateUserPracticeStreak } from '@/lib/practice-streak'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (resolvedUserId) {
+    if (resolvedUserId && resolvedUserId !== 'guest') {
       const now = new Date()
       const questionIds = normalizedAnswers
         .map((answer: any) => answer.questionId)
@@ -149,6 +150,14 @@ export async function POST(request: NextRequest) {
         if (ops.length > 0) {
           await Promise.all(ops)
         }
+      }
+
+      if (totalQuestions > 0) {
+        void updateUserPracticeStreak(prisma, resolvedUserId, new Date(), {
+          endpoint: '/api/results',
+        }).catch((error: any) => {
+          console.error('Practice streak update failed:', error)
+        })
       }
     }
 

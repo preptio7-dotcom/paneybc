@@ -27,6 +27,9 @@ export async function POST(request: Request) {
           examDate: null,
           dailyQuestionGoal: 0,
           prepChecklist: [],
+          practiceStreakCurrent: 0,
+          practiceStreakBest: 0,
+          practiceStreakLastDate: null,
         },
       }),
     ])

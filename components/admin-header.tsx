@@ -12,6 +12,7 @@ import {
   FileText,
   FlaskConical,
   HelpCircle,
+  History,
   Layers,
   Lock,
   LogOut,
@@ -79,6 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Security', href: '/admin/security', icon: Shield },
       { label: 'IP Security', href: '/admin/ip-security', icon: Lock, badgeKey: 'activeThreatIpCount' },
       { label: 'Audit', href: '/admin/audit-logs', icon: ClipboardList },
+      { label: 'Streak Audit', href: '/admin/streak-audit', icon: History },
     ],
   },
 ]
@@ -400,4 +402,3 @@ export function AdminHeader() {
     </>
   )
 }
-

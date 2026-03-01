@@ -10,6 +10,10 @@ import {
   extractHomepageHeroMotionSettings,
   extractHomepageThemeSettings,
 } from '@/lib/homepage-theme'
+import {
+  extractStreakResetTimezone,
+  invalidateStreakSettingsCache,
+} from '@/lib/streak-settings'
 
 function isAuthorized(request: NextRequest) {
   const hasSuperAdminSession = request.headers.get('cookie')?.includes('super_admin_session')
@@ -72,6 +76,7 @@ export async function GET(request: NextRequest) {
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(savedTestSettings),
+      streakResetTimezone: extractStreakResetTimezone(savedTestSettings),
       ...savedTestSettings,
     }
     const normalizedBetaFeatures = extractBetaFeatureSettings(testSettings)
@@ -89,6 +94,7 @@ export async function GET(request: NextRequest) {
       betaFeatures: normalizedBetaFeatures,
       homepageThemes: extractHomepageThemeSettings(testSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(testSettings),
+      streakResetTimezone: extractStreakResetTimezone(testSettings),
       faq: {
         ...normalizedFaq,
         visibility: normalizedBetaFeatures.faq,
@@ -160,6 +166,7 @@ export async function POST(request: NextRequest) {
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(savedTestSettings),
+      streakResetTimezone: extractStreakResetTimezone(savedTestSettings),
       ...savedTestSettings,
     }
     const beforeSnapshot = {
@@ -197,6 +204,7 @@ export async function POST(request: NextRequest) {
       betaFeatures: mergedBetaFeatures,
       homepageThemes: extractHomepageThemeSettings(mergedTestSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(mergedTestSettings),
+      streakResetTimezone: extractStreakResetTimezone(mergedTestSettings),
       faq: {
         ...extractFaqSettings(mergedTestSettings),
         visibility: mergedBetaFeatures.faq,
@@ -215,6 +223,7 @@ export async function POST(request: NextRequest) {
         testSettings: updatedTestSettings,
       },
     })
+    invalidateStreakSettingsCache()
 
     if (admin && (admin.role === 'admin' || admin.role === 'super_admin')) {
       await createAdminAuditLog({

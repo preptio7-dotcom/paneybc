@@ -222,6 +222,15 @@ export default function WeakAreaPage() {
     })
     setCorrectCount(correct)
     setIsSubmitted(true)
+
+    // Mark weak-area session as practiced (fire-and-forget).
+    void fetch('/api/weak-areas/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answeredCount: questions.length }),
+    }).catch(() => {
+      // Streak update is non-blocking and should not interrupt user flow.
+    })
   }
 
   const accuracy = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0

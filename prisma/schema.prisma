@@ -107,6 +107,21 @@ enum IpBlockSource {
   admin
 }
 
+enum StreakAuditActionType {
+  increment
+  reset
+  no_change
+  first_time
+  reconciliation_reset
+}
+
+enum UserBadgeType {
+  week_warrior
+  fortnight_fighter
+  monthly_master
+  centurion
+}
+
 model User {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -129,6 +144,9 @@ model User {
   examDate             DateTime?
   dailyQuestionGoal    Int      @default(0)
   prepChecklist        Json?
+  practiceStreakCurrent Int     @default(0)
+  practiceStreakBest    Int     @default(0)
+  practiceStreakLastDate DateTime?
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
   createdAt            DateTime @default(now())
@@ -138,6 +156,8 @@ model User {
   userFsProgress            UserFsProgress?
   financialStatementReports FinancialStatementReport[]
   feedback                 UserFeedback?
+  streakAuditLogs          StreakAuditLog[]
+  badges                   UserBadge[]
 }
 
 model Subject {
@@ -594,4 +614,41 @@ model UserFeedback {
 
   @@index([createdAt])
   @@index([status, createdAt])
+}
+
+model StreakAuditLog {
+  id          String                @id @default(cuid())
+  userId      String                @map("user_id")
+  endpoint    String
+  creditedDate DateTime             @map("credited_date")
+  credited    Boolean
+  actionType  StreakAuditActionType @map("action_type")
+  streakBefore Int                  @default(0) @map("streak_before")
+  streakAfter Int                   @default(0) @map("streak_after")
+  createdAt   DateTime              @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, creditedDate])
+  @@index([createdAt])
+  @@index([actionType, createdAt])
+  @@map("streak_audit_log")
+}
+
+model UserBadge {
+  id        String        @id @default(cuid())
+  userId    String        @map("user_id")
+  badgeType UserBadgeType @map("badge_type")
+  earnedAt  DateTime      @default(now()) @map("earned_at")
+  seen      Boolean       @default(false)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeType])
+  @@index([userId])
+  @@index([seen, createdAt])
+  @@map("user_badges")
 }

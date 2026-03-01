@@ -55,7 +55,7 @@ export function Navigation() {
   ]
 
   const dashboardSectionLinks = [
-    { href: '/dashboard#account-data', label: 'Account & Data' },
+    { href: '/dashboard/settings', label: 'Account Settings' },
     { href: '/dashboard#subjects', label: 'Your Subjects' },
     { href: '/dashboard#performance-tracking', label: 'Performance Tracking' },
   ]

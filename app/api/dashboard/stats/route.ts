@@ -1,5 +1,7 @@
 export const runtime = 'nodejs'
 import { prisma } from '@/lib/prisma'
+import { computePracticeStreak } from '@/lib/practice-streak'
+import { getConfiguredStreakResetTimezone, getDateKeyInTimezone } from '@/lib/streak-settings'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
@@ -96,6 +98,45 @@ export async function GET(request: NextRequest) {
     })
 
     const globalAccuracy = globalTestCount > 0 ? Math.round(globalScoreSum / globalTestCount) : 0
+    const timezone = await getConfiguredStreakResetTimezone(prisma)
+    const todayKey = getDateKeyInTimezone(new Date(), timezone)
+    const questionsToday = results
+      .filter((result) => getDateKeyInTimezone(result.createdAt, timezone) === todayKey)
+      .reduce((sum, result) => sum + (result.totalQuestions || 0), 0)
+
+    const practiceDateKeys = results
+      .filter((result) => (result.totalQuestions || 0) > 0)
+      .map((result) => getDateKeyInTimezone(result.createdAt, timezone))
+    const computedFromResults = computePracticeStreak(practiceDateKeys)
+
+    const userStreak = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        practiceStreakCurrent: true,
+        practiceStreakBest: true,
+        practiceStreakLastDate: true,
+      },
+    })
+
+    const persistedLastPracticeKey = userStreak?.practiceStreakLastDate
+      ? getDateKeyInTimezone(userStreak.practiceStreakLastDate, timezone)
+      : null
+
+    const resolvedStreak = userStreak
+      ? {
+          current: Number(userStreak.practiceStreakCurrent) || 0,
+          best: Number(userStreak.practiceStreakBest) || 0,
+          lastPracticeDate: persistedLastPracticeKey,
+          practicedToday: persistedLastPracticeKey === todayKey,
+        }
+      : {
+          current: computedFromResults.current,
+          best: computedFromResults.best,
+          lastPracticeDate: computedFromResults.lastPracticeKey,
+          practicedToday: computedFromResults.lastPracticeKey === todayKey,
+        }
+
+    const startedSubjects = formattedStats.filter((item) => item.completedQuestions > 0).length
 
     return NextResponse.json({
       message: 'Dashboard stats retrieved successfully',
@@ -103,8 +144,17 @@ export async function GET(request: NextRequest) {
       globalStats: {
         totalTests: globalTestCount,
         totalQuestionsPracticed: globalTotalAttempted,
-        averageAccuracy: globalAccuracy
-      }
+        averageAccuracy: globalAccuracy,
+        todayQuestionsPracticed: questionsToday,
+        startedSubjects,
+        streak: {
+          current: resolvedStreak.current,
+          best: resolvedStreak.best,
+          practicedToday: resolvedStreak.practicedToday,
+          lastPracticeDate: resolvedStreak.lastPracticeDate,
+          timezone,
+        },
+      },
     })
   } catch (error: any) {
     console.error('Dashboard stats error:', error)

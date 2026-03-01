@@ -17,6 +17,7 @@ import {
     type HomepageSectionThemeSettings,
     type HomepageThemeVariant,
 } from '@/lib/homepage-theme'
+import { type StreakResetTimezone } from '@/lib/streak-settings'
 
 export default function AdminDashboardPage() {
     const { toast } = useToast()
@@ -33,6 +34,7 @@ export default function AdminDashboardPage() {
         chapterTestDefaultQuestions: 25,
         registrationDegrees: ['CA'],
         registrationLevels: ['PRC', 'CAF'],
+        streakResetTimezone: 'UTC' as StreakResetTimezone,
         homepageThemes: DEFAULT_HOMEPAGE_THEME_SETTINGS as HomepageSectionThemeSettings,
         homepageHeroMotion: DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS as HomepageHeroMotionSettings,
     })
@@ -61,6 +63,7 @@ export default function AdminDashboardPage() {
                         registrationLevels: Array.isArray(data.testSettings.registrationLevels) && data.testSettings.registrationLevels.length
                             ? data.testSettings.registrationLevels
                             : ['PRC', 'CAF'],
+                        streakResetTimezone: data.testSettings.streakResetTimezone === 'PKT' ? 'PKT' : 'UTC',
                         homepageThemes: {
                             hero: data.testSettings.homepageThemes?.hero || DEFAULT_HOMEPAGE_THEME_SETTINGS.hero,
                             whyChoose: data.testSettings.homepageThemes?.whyChoose || DEFAULT_HOMEPAGE_THEME_SETTINGS.whyChoose,
@@ -187,6 +190,12 @@ export default function AdminDashboardPage() {
             icon: FileText,
         },
         {
+            title: 'Streak Audit',
+            description: 'Inspect streak increment/reset history for support reviews.',
+            href: '/admin/streak-audit',
+            icon: Shield,
+        },
+        {
             title: 'User Management',
             description: 'View, ban, or delete registered users.',
             href: '/admin/users',
@@ -207,6 +216,7 @@ export default function AdminDashboardPage() {
                         chapterTestDefaultQuestions: testSettings.chapterTestDefaultQuestions,
                         registrationDegrees: testSettings.registrationDegrees,
                         registrationLevels: testSettings.registrationLevels,
+                        streakResetTimezone: testSettings.streakResetTimezone,
                         homepageThemes: testSettings.homepageThemes,
                         homepageHeroMotion: testSettings.homepageHeroMotion,
                     },
@@ -394,6 +404,29 @@ export default function AdminDashboardPage() {
                                         <Button type="button" variant="outline" onClick={() => addOption('level')}>Add</Button>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="border-t border-border pt-4 space-y-2">
+                                <Label>Streak Reset Timezone</Label>
+                                <Select
+                                    value={testSettings.streakResetTimezone}
+                                    onValueChange={(value) =>
+                                        setTestSettings((prev) => ({
+                                            ...prev,
+                                            streakResetTimezone: value === 'PKT' ? 'PKT' : 'UTC',
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger className="max-w-sm">
+                                        <SelectValue placeholder="Select timezone" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="UTC">UTC (default)</SelectItem>
+                                        <SelectItem value="PKT">Pakistan Standard Time (UTC+5)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-text-light">
+                                    This controls streak day boundaries and daily reconciliation logic.
+                                </p>
                             </div>
                             <div className="border-t border-border pt-4 space-y-4">
                                 <div>

@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 import { getCurrentUser } from '@/lib/auth'
 import { buildReviewUpdate } from '@/lib/spaced-repetition'
 import { prisma } from '@/lib/prisma'
+import { updateUserPracticeStreak } from '@/lib/practice-streak'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -60,6 +61,12 @@ export async function POST(request: NextRequest) {
     })
 
     await Promise.all(ops)
+
+    void updateUserPracticeStreak(prisma, user.userId, new Date(), {
+      endpoint: '/api/review/update',
+    }).catch((error: any) => {
+      console.error('Review streak update failed:', error)
+    })
 
     return NextResponse.json({ message: 'Review schedule updated' }, { status: 200 })
   } catch (error: any) {

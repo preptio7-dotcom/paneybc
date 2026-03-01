@@ -11,9 +11,11 @@ import {
   TableRow,
 } from './ui/table'
 import { Badge } from './ui/badge'
+import Link from 'next/link'
+import { Button } from './ui/button'
 import { useAuth } from '@/lib/auth-context'
 import { format } from 'date-fns'
-import { Loader2 } from 'lucide-react'
+import { BarChart2, Loader2 } from 'lucide-react'
 
 interface Activity {
   _id: string
@@ -60,36 +62,45 @@ export function RecentActivity() {
 
   if (activities.length === 0) {
     return (
-      <Card className="border border-border">
-        <CardContent className="p-12 text-center text-text-light">
-          No recent activity found. Take a test to see your performance!
+      <Card className="border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <CardContent className="p-10 text-center">
+          <div className="mx-auto h-16 w-16 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+            <BarChart2 size={28} />
+          </div>
+          <p className="mt-4 text-lg font-semibold text-slate-800">No activity yet</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Complete your first practice session to see detailed performance analytics here.
+          </p>
+          <Link href="/weak-area" className="inline-flex mt-5">
+            <Button className="bg-green-600 hover:bg-green-700">Start Your First Practice</Button>
+          </Link>
         </CardContent>
       </Card>
     )
   }
   return (
-    <Card className="border border-border">
+    <Card className="border border-slate-200 rounded-2xl bg-white shadow-sm">
       <CardHeader>
-        <CardTitle className="font-heading">Recent Performance</CardTitle>
+        <CardTitle className="font-heading text-slate-900">Recent Performance</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-text-dark font-semibold">Subject</TableHead>
-                <TableHead className="text-text-dark font-semibold">Accuracy</TableHead>
-                <TableHead className="text-text-dark font-semibold">Questions</TableHead>
-                <TableHead className="text-text-dark font-semibold">Date</TableHead>
+              <TableRow className="border-slate-200 hover:bg-transparent">
+                <TableHead className="text-slate-700 font-semibold">Subject</TableHead>
+                <TableHead className="text-slate-700 font-semibold">Accuracy</TableHead>
+                <TableHead className="text-slate-700 font-semibold">Questions</TableHead>
+                <TableHead className="text-slate-700 font-semibold">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {activities.map((activity, idx) => (
                 <TableRow
                   key={activity._id ?? `${activity.subject ?? 'activity'}-${activity.createdAt ?? idx}`}
-                  className="border-border hover:bg-background-light/50"
+                  className="border-slate-100 hover:bg-green-50/40"
                 >
-                  <TableCell className="font-medium text-text-dark">
+                  <TableCell className="font-medium text-slate-900">
                     {activity.subject}
                   </TableCell>
                   <TableCell>
@@ -100,10 +111,10 @@ export function RecentActivity() {
                       {activity.score}%
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-text-light">
+                  <TableCell className="text-slate-500">
                     {activity.correctAnswers}/{activity.totalQuestions}
                   </TableCell>
-                  <TableCell className="text-text-light">
+                  <TableCell className="text-slate-500">
                     {format(new Date(activity.createdAt), 'MMM dd')}
                   </TableCell>
                 </TableRow>

@@ -2,6 +2,8 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { getCaseById, submitAttempt } from '@/lib/db/financial-statements'
+import { prisma } from '@/lib/prisma'
+import { updateUserPracticeStreak } from '@/lib/practice-streak'
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,6 +89,11 @@ export async function POST(request: NextRequest) {
     const sofp = buildAnswerSet(caseData.sofpLineItems || [], sofpAnswers || [])
 
     const result = await submitAttempt(Number(attemptId), soci, sofp, Number(timeSpent) || 0)
+    void updateUserPracticeStreak(prisma, user.userId, new Date(), {
+      endpoint: '/api/financial-statements/submit',
+    }).catch((error: any) => {
+      console.error('Financial statements streak update failed:', error)
+    })
     return NextResponse.json({ result })
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to submit attempt' }, { status: 500 })

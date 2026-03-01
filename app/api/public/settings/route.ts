@@ -9,6 +9,7 @@ import {
   extractHomepageHeroMotionSettings,
   extractHomepageThemeSettings,
 } from '@/lib/homepage-theme'
+import { DEFAULT_STREAK_RESET_TIMEZONE, extractStreakResetTimezone } from '@/lib/streak-settings'
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(savedTestSettings),
+      streakResetTimezone: extractStreakResetTimezone(savedTestSettings),
       ...savedTestSettings,
     }
 
@@ -95,6 +97,7 @@ export async function GET(request: NextRequest) {
       betaFeatures,
       homepageThemes: extractHomepageThemeSettings(testSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(testSettings),
+      streakResetTimezone: extractStreakResetTimezone(testSettings),
       faq: {
         ...faqSettings,
         visibility: betaFeatures.faq,
@@ -140,6 +143,7 @@ export async function GET(request: NextRequest) {
           betaFeatures: fallbackBetaFeatures,
           homepageThemes: extractHomepageThemeSettings({}),
           homepageHeroMotion: extractHomepageHeroMotionSettings({}),
+          streakResetTimezone: DEFAULT_STREAK_RESET_TIMEZONE,
           faq: {
             ...extractFaqSettings({}),
             visibility: fallbackBetaFeatures.faq,

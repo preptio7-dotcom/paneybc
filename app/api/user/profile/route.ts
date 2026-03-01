@@ -32,6 +32,18 @@ export async function GET(request: NextRequest) {
                 examDate: true,
                 dailyQuestionGoal: true,
                 prepChecklist: true,
+                practiceStreakCurrent: true,
+                practiceStreakBest: true,
+                practiceStreakLastDate: true,
+                badges: {
+                    select: {
+                        badgeType: true,
+                        earnedAt: true,
+                        seen: true,
+                    },
+                    orderBy: { earnedAt: 'asc' },
+                },
+                createdAt: true,
             },
         })
         if (!user) {
@@ -152,6 +164,18 @@ export async function PATCH(request: NextRequest) {
                 examDate: true,
                 dailyQuestionGoal: true,
                 prepChecklist: true,
+                practiceStreakCurrent: true,
+                practiceStreakBest: true,
+                practiceStreakLastDate: true,
+                badges: {
+                    select: {
+                        badgeType: true,
+                        earnedAt: true,
+                        seen: true,
+                    },
+                    orderBy: { earnedAt: 'asc' },
+                },
+                createdAt: true,
             },
         })
 
@@ -175,6 +199,11 @@ export async function PATCH(request: NextRequest) {
                 examDate: user.examDate || null,
                 dailyQuestionGoal: user.dailyQuestionGoal || 0,
                 prepChecklist: user.prepChecklist || [],
+                practiceStreakCurrent: user.practiceStreakCurrent || 0,
+                practiceStreakBest: user.practiceStreakBest || 0,
+                practiceStreakLastDate: user.practiceStreakLastDate || null,
+                badges: user.badges || [],
+                createdAt: user.createdAt,
             }
         })
     } catch (error: any) {
