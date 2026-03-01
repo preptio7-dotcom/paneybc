@@ -145,7 +145,15 @@ async function ensurePresetAvatarPacks() {
         name: preset.name,
         source: preset.source,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        createdBy: true,
+        source: true,
+        dicebearStyle: true,
+        variantsCount: true,
+        seeds: true,
+        isActive: true,
+      },
     })
 
     if (!existing) {
@@ -161,6 +169,32 @@ async function ensurePresetAvatarPacks() {
           createdBy: SYSTEM_CREATED_BY,
         },
       })
+    } else if (existing.createdBy === SYSTEM_CREATED_BY) {
+      const normalizedPresetSeeds = normalizePackSeeds(preset.seeds, preset.variantsCount, preset.source)
+      const normalizedExistingSeeds = ensurePackSeeds({
+        source: existing.source,
+        seeds: existing.seeds,
+        variantsCount: existing.variantsCount,
+      })
+      const shouldUpdate =
+        existing.source !== preset.source ||
+        existing.dicebearStyle !== preset.dicebearStyle ||
+        existing.variantsCount !== normalizedPresetSeeds.length ||
+        existing.isActive !== preset.isActive ||
+        JSON.stringify(normalizedExistingSeeds) !== JSON.stringify(normalizedPresetSeeds)
+
+      if (shouldUpdate) {
+        await prisma.avatarPack.update({
+          where: { id: existing.id },
+          data: {
+            source: preset.source,
+            dicebearStyle: preset.dicebearStyle,
+            variantsCount: normalizedPresetSeeds.length,
+            seeds: normalizedPresetSeeds,
+            isActive: preset.isActive,
+          },
+        })
+      }
     }
   }
 }

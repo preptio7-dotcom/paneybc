@@ -71,16 +71,16 @@ export const MULTIAVATAR_PRESET_SEEDS = [
 ] as const
 
 export const READY_PLAYER_ME_STARTER_AVATAR_IDS = [
-  '6185a4acfb622cf1cdc49348',
-  '6699cef9365f0adda5015e39',
-  '669b2d54dcf0926abf5c0e3f',
-  '66ec2f7f9052e750706f30d9',
-  '66fcdeef3446eb2e2cdd7ce4',
-  '672f0084e6eb1e182f6f9f8f',
-  '67a90f21ef838f13e90f8b66',
-  '67da8bfc4cd1f2b7be1a1648',
-  '68108bde290294082e2aca2c',
-  '681f4b8ce652f70f0f5f123e',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&expression=happy',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&pose=power-stance',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&size=128',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&quality=80',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&expression=happy&pose=power-stance',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&expression=happy&size=128',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&pose=power-stance&size=128',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&quality=90&size=128',
+  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&quality=70&size=128',
 ] as const
 
 export const PRELOAD_AVATAR_COUNT = 4

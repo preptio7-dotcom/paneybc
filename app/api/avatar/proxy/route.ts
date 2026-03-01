@@ -54,6 +54,50 @@ function getResponseHeaders(contentType: string, fromCache: boolean) {
   }
 }
 
+function extractSeedFromTarget(url: URL) {
+  if (url.hostname === 'api.multiavatar.com') {
+    const segment = url.pathname.split('/').filter(Boolean).pop() || 'Preptio'
+    return segment.replace(/\.svg$/i, '') || 'Preptio'
+  }
+
+  if (url.hostname === 'models.readyplayer.me') {
+    const segment = url.pathname.split('/').filter(Boolean).pop() || 'Preptio'
+    return segment.replace(/\.(png|jpg|jpeg|webp)$/i, '') || 'Preptio'
+  }
+
+  if (url.hostname === 'api.dicebear.com') {
+    const seed = url.searchParams.get('seed')
+    if (seed) return seed
+  }
+
+  return 'Preptio'
+}
+
+function fallbackDicebearUrl(seed: string) {
+  return `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(seed || 'Preptio')}`
+}
+
+async function fetchExternalImage(targetUrl: string) {
+  const response = await fetch(targetUrl, {
+    cache: 'no-store',
+    headers: {
+      Accept: 'image/*',
+    },
+  })
+
+  if (!response.ok) {
+    return null
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/svg+xml'
+  if (!contentType.startsWith('image/')) {
+    return null
+  }
+
+  const body = await response.arrayBuffer()
+  return { body, contentType }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const encodedTarget = request.nextUrl.searchParams.get('url')
@@ -83,26 +127,19 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const upstream = await fetch(cacheKey, {
-      cache: 'no-store',
-      headers: {
-        Accept: 'image/*',
-      },
-    })
-
-    if (!upstream.ok) {
-      return NextResponse.json(
-        { error: 'Avatar image could not be fetched' },
-        { status: upstream.status || 502 }
-      )
+    let payload = await fetchExternalImage(cacheKey)
+    let usedFallback = false
+    if (!payload) {
+      const fallbackUrl = fallbackDicebearUrl(extractSeedFromTarget(targetUrl))
+      payload = await fetchExternalImage(fallbackUrl)
+      usedFallback = true
     }
 
-    const contentType = upstream.headers.get('content-type') || 'image/svg+xml'
-    if (!contentType.startsWith('image/')) {
-      return NextResponse.json({ error: 'Invalid avatar response' }, { status: 415 })
+    if (!payload) {
+      return NextResponse.json({ error: 'Avatar image could not be fetched' }, { status: 502 })
     }
 
-    const body = await upstream.arrayBuffer()
+    const { body, contentType } = payload
     cache.set(cacheKey, {
       body,
       contentType,
@@ -113,7 +150,10 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(body, {
       status: 200,
-      headers: getResponseHeaders(contentType, false),
+      headers: {
+        ...getResponseHeaders(contentType, false),
+        ...(usedFallback ? { 'X-Avatar-Proxy-Fallback': '1' } : {}),
+      },
     })
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Avatar proxy failed' }, { status: 500 })
