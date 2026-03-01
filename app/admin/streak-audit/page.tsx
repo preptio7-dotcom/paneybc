@@ -27,6 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 
 type ActionFilter =
   | 'all'
@@ -53,6 +61,16 @@ type StreakAuditRow = {
   }
 }
 
+type LastReconciliationRun = {
+  runAt: string
+  triggeredBy: 'cron_auto' | 'admin_manual' | string
+  usersAffected: number
+  status: 'success' | 'failed' | string
+} | null
+
+const RECONCILIATION_COOLDOWN_SECONDS = 60
+const RECONCILIATION_COOLDOWN_STORAGE_KEY = 'reconciliation_cooldown_until'
+
 const ACTION_BADGE_STYLES: Record<ActionFilter, string> = {
   all: '',
   increment: 'bg-emerald-600 text-white',
@@ -76,6 +94,9 @@ export default function AdminStreakAuditPage() {
   const [isRunningReconciliation, setIsRunningReconciliation] = useState(false)
   const [isExportingCsv, setIsExportingCsv] = useState(false)
   const [reconcileConfirmOpen, setReconcileConfirmOpen] = useState(false)
+  const [exportConfirmOpen, setExportConfirmOpen] = useState(false)
+  const [lastReconciliationRun, setLastReconciliationRun] = useState<LastReconciliationRun>(null)
+  const [cooldownRemainingSeconds, setCooldownRemainingSeconds] = useState(0)
 
   const filterQuery = useMemo(() => {
     const params = new URLSearchParams()
@@ -104,6 +125,7 @@ export default function AdminStreakAuditPage() {
       setRows(data.rows || [])
       setTotalPages(Number(data.totalPages) || 1)
       setTotal(Number(data.total) || 0)
+      setLastReconciliationRun(data.lastReconciliationRun || null)
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -123,6 +145,45 @@ export default function AdminStreakAuditPage() {
     setPage(1)
   }, [search, actionType, from, to])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const raw = window.localStorage.getItem(RECONCILIATION_COOLDOWN_STORAGE_KEY)
+    if (!raw) return
+    const until = Number(raw)
+    if (!Number.isFinite(until) || until <= Date.now()) {
+      window.localStorage.removeItem(RECONCILIATION_COOLDOWN_STORAGE_KEY)
+      return
+    }
+    setCooldownRemainingSeconds(Math.ceil((until - Date.now()) / 1000))
+  }, [])
+
+  useEffect(() => {
+    if (cooldownRemainingSeconds <= 0) {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(RECONCILIATION_COOLDOWN_STORAGE_KEY)
+      }
+      return
+    }
+
+    const interval = window.setInterval(() => {
+      const raw = window.localStorage.getItem(RECONCILIATION_COOLDOWN_STORAGE_KEY)
+      if (!raw) {
+        setCooldownRemainingSeconds(0)
+        return
+      }
+      const until = Number(raw)
+      const remaining = Math.ceil((until - Date.now()) / 1000)
+      if (!Number.isFinite(remaining) || remaining <= 0) {
+        window.localStorage.removeItem(RECONCILIATION_COOLDOWN_STORAGE_KEY)
+        setCooldownRemainingSeconds(0)
+        return
+      }
+      setCooldownRemainingSeconds(remaining)
+    }, 1000)
+
+    return () => window.clearInterval(interval)
+  }, [cooldownRemainingSeconds])
+
   const runReconciliationNow = async () => {
     try {
       setIsRunningReconciliation(true)
@@ -139,8 +200,19 @@ export default function AdminStreakAuditPage() {
         title: 'Reconciliation complete',
         description: `${Number(data.usersAffected ?? data.affectedCount ?? 0)} users affected.`,
       })
+      const cooldownUntil = Date.now() + RECONCILIATION_COOLDOWN_SECONDS * 1000
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(RECONCILIATION_COOLDOWN_STORAGE_KEY, String(cooldownUntil))
+      }
+      setCooldownRemainingSeconds(RECONCILIATION_COOLDOWN_SECONDS)
       setReconcileConfirmOpen(false)
       await loadRows()
+      setLastReconciliationRun({
+        runAt: String(data.runAt || new Date().toISOString()),
+        triggeredBy: String(data.triggeredBy || 'admin_manual'),
+        usersAffected: Number(data.usersAffected ?? data.affectedCount ?? 0),
+        status: 'success',
+      })
     } catch (error: any) {
       toast({
         title: 'Reconciliation failed',
@@ -188,6 +260,75 @@ export default function AdminStreakAuditPage() {
     }
   }
 
+  const hasFilters = Boolean(search.trim() || actionType !== 'all' || from || to)
+  const filtersSummary = useMemo(() => {
+    const tokens: string[] = []
+    if (search.trim()) tokens.push(search.trim())
+    if (from || to) {
+      tokens.push(`${from || '...'} to ${to || '...'}`)
+    }
+    if (actionType !== 'all') {
+      tokens.push(actionType)
+    }
+    return tokens.join(' · ')
+  }, [search, from, to, actionType])
+
+  const exportFilename = useMemo(
+    () => `streak-audit-${new Date().toISOString().slice(0, 10)}.csv`,
+    []
+  )
+
+  const lastRunDisplay = useMemo(() => {
+    if (!lastReconciliationRun?.runAt) return 'Never'
+    const date = new Date(lastReconciliationRun.runAt)
+    if (Number.isNaN(date.getTime())) return 'Never'
+    const formatted = new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
+    }).format(date)
+    return `${formatted} UTC`
+  }, [lastReconciliationRun])
+
+  const triggerBadgeStyle = !lastReconciliationRun
+    ? 'bg-slate-100 text-slate-600'
+    : lastReconciliationRun.triggeredBy === 'admin_manual'
+      ? 'bg-[#dbeafe] text-[#1d4ed8]'
+      : 'bg-[#dcfce7] text-[#166534]'
+
+  const triggerLabel = !lastReconciliationRun
+    ? '—'
+    : lastReconciliationRun.triggeredBy === 'admin_manual'
+      ? 'Admin Manual'
+      : 'Automated (Daily)'
+
+  const statusLabel = !lastReconciliationRun
+    ? 'Never'
+    : lastReconciliationRun.status === 'failed'
+      ? '❌ Failed'
+      : '✅ Success'
+  const statusClass = !lastReconciliationRun
+    ? 'text-slate-500'
+    : lastReconciliationRun.status === 'failed'
+      ? 'text-red-600'
+      : 'text-green-600'
+
+  const isReconciliationDisabled = isRunningReconciliation || cooldownRemainingSeconds > 0
+  const cooldownProgressPercent =
+    cooldownRemainingSeconds > 0
+      ? Math.max(0, Math.min(100, (cooldownRemainingSeconds / RECONCILIATION_COOLDOWN_SECONDS) * 100))
+      : 0
+
+  const reconciliationButtonText = isRunningReconciliation
+    ? '⏳ Running...'
+    : cooldownRemainingSeconds > 0
+      ? `⏳ Available in ${cooldownRemainingSeconds}s`
+      : '⚙️ Run Reconciliation Now'
+
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
@@ -201,24 +342,61 @@ export default function AdminStreakAuditPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <div className="min-w-[220px]">
+                <Button
+                  variant="outline"
+                  className="w-full rounded-[10px] border border-[#e2e8f0] bg-white px-[18px] py-[10px] text-[13px] font-semibold text-[#0f172a] hover:bg-[#f8fafc] hover:border-[#94a3b8] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                  onClick={() => setReconcileConfirmOpen(true)}
+                  disabled={isReconciliationDisabled}
+                >
+                  {reconciliationButtonText}
+                </Button>
+                {cooldownRemainingSeconds > 0 ? (
+                  <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-[#f1f5f9]">
+                    <div
+                      className="h-full bg-primary-green transition-[width] duration-1000 ease-linear"
+                      style={{ width: `${cooldownProgressPercent}%` }}
+                    />
+                  </div>
+                ) : null}
+              </div>
               <Button
                 variant="outline"
                 className="rounded-[10px] border border-[#e2e8f0] bg-white px-[18px] py-[10px] text-[13px] font-semibold text-[#0f172a] hover:bg-[#f8fafc] hover:border-[#94a3b8]"
-                onClick={() => setReconcileConfirmOpen(true)}
-                disabled={isRunningReconciliation}
-              >
-                {isRunningReconciliation ? '⏳ Running...' : '⚙️ Run Reconciliation Now'}
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-[10px] border border-[#e2e8f0] bg-white px-[18px] py-[10px] text-[13px] font-semibold text-[#0f172a] hover:bg-[#f8fafc] hover:border-[#94a3b8]"
-                onClick={handleExportCsv}
+                onClick={() => setExportConfirmOpen(true)}
                 disabled={isExportingCsv}
               >
                 {isExportingCsv ? '⏳ Preparing CSV...' : '⬇️ Export CSV'}
               </Button>
             </div>
           </div>
+
+          <Card className="border border-[#e2e8f0] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <CardContent className="p-4 sm:p-5">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-8">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Last Run</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{lastRunDisplay}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Triggered By</p>
+                  <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${triggerBadgeStyle}`}>
+                    {triggerLabel}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Users Affected</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">
+                    {lastReconciliationRun ? (lastReconciliationRun.usersAffected > 0 ? `${lastReconciliationRun.usersAffected} users` : 'No users affected') : 'No users affected'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</p>
+                  <p className={`mt-1 text-sm font-semibold ${statusClass}`}>{statusLabel}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card className="border-border">
             <CardHeader>
@@ -367,6 +545,70 @@ export default function AdminStreakAuditPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={exportConfirmOpen} onOpenChange={setExportConfirmOpen}>
+        <DialogContent className="max-w-[400px] rounded-2xl bg-white p-7">
+          <DialogHeader className="items-center text-center">
+            <div className="text-[40px] leading-none">📊</div>
+            <DialogTitle className="text-[18px] font-bold text-slate-900">Ready to Export</DialogTitle>
+            {total > 0 ? (
+              <DialogDescription className="text-sm text-slate-600">
+                About to export <span className="font-bold text-primary-green">{total}</span> rows
+              </DialogDescription>
+            ) : (
+              <DialogDescription className="text-sm text-slate-600">
+                No data to export
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {total > 0 ? (
+            <div className="space-y-3 text-center">
+              <p className="text-xs text-slate-500">
+                {hasFilters ? `Filtered by: ${filtersSummary}` : 'Showing all records (last 10,000 rows max)'}
+              </p>
+              <p className="text-xs text-slate-500">📄 File: {exportFilename}</p>
+              {total > 5000 ? (
+                <div className="rounded-lg bg-[#fef9c3] px-3 py-2 text-xs text-[#854d0e]">
+                  ⚠️ Large export — this may take a few seconds to generate.
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-center text-sm text-slate-500">
+              There are no records matching your current filters.
+            </p>
+          )}
+
+          <DialogFooter className="mt-2">
+            {total > 0 ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setExportConfirmOpen(false)}
+                  disabled={isExportingCsv}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-[#16a34a] text-white hover:bg-[#15803d]"
+                  onClick={async () => {
+                    setExportConfirmOpen(false)
+                    await handleExportCsv()
+                  }}
+                  disabled={isExportingCsv}
+                >
+                  ⬇️ Download CSV
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setExportConfirmOpen(false)}>
+                Close
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

@@ -8,7 +8,6 @@ import {
   BarChart2,
   BookOpen,
   CalendarDays,
-  CheckCircle2,
   FileText,
   Flame,
   Layers,
@@ -688,34 +687,6 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card
-                className={`rounded-2xl border-0 text-white shadow-lg ${
-                  resolvedStreak.practicedToday
-                    ? 'bg-gradient-to-br from-orange-500 to-orange-600'
-                    : 'bg-gradient-to-br from-orange-500 to-orange-700 dashboard-streak-pulse'
-                }`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Flame size={24} />
-                      <span className="text-sm font-semibold">Daily Streak</span>
-                    </div>
-                    {resolvedStreak.practicedToday ? (
-                      <CheckCircle2 size={18} className="text-emerald-100" />
-                    ) : null}
-                  </div>
-                  <p className="mt-3 text-4xl font-black leading-none">{resolvedStreak.current}</p>
-                  <p className="text-xs mt-1 text-orange-100">Best: {resolvedStreak.best} days</p>
-                  <p className="text-xs mt-3 text-orange-100">
-                    {resolvedStreak.practicedToday
-                      ? 'Streak safe for today.'
-                      : 'Practice today to keep your streak alive.'}
-                  </p>
-                  <p className="text-[11px] mt-2 text-orange-100/90">{streakResetText}</p>
-                </CardContent>
-              </Card>
-
               <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl">
                 <CardContent className="p-5 space-y-3">
                   <h3 className="text-sm font-semibold text-slate-900">Exam Snapshot</h3>
@@ -821,102 +792,115 @@ export default function DashboardPage() {
                       <p className="text-[11px] text-orange-100/90 mt-2">{streakResetText}</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card className="dashboard-reveal rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold text-slate-900">Streak Milestones</h3>
-                    <p className="text-xs text-slate-500">Earn badges as your streak grows</p>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {(badgeProgress.length ? badgeProgress : STREAK_BADGE_DEFINITIONS.map((badge) => ({
-                      ...badge,
-                      earned: false,
-                      earnedAt: null,
-                      seen: true,
-                    }))).map((badge) => {
-                      const earnedDate = badge.earnedAt
-                        ? new Intl.DateTimeFormat('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          }).format(new Date(badge.earnedAt))
-                        : null
-                      return (
-                        <div
-                          key={badge.badgeType}
-                          className={`rounded-xl border p-3 text-center transition-all ${
-                            badge.earned
-                              ? 'border-slate-200 bg-white shadow-sm'
-                              : 'border-slate-200 bg-slate-50 opacity-40'
-                          }`}
-                          title={
-                            badge.earned
-                              ? `${badge.name} - earned ${earnedDate}`
-                              : `${badge.name} - unlock at ${badge.milestoneDays} day streak`
-                          }
-                        >
+                  <div className="mt-5 border-t border-white/20 pt-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-orange-50">Streak Milestones</h3>
+                      <p className="text-xs text-orange-100/90">Earn badges as your streak grows</p>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {(badgeProgress.length ? badgeProgress : STREAK_BADGE_DEFINITIONS.map((badge) => ({
+                        ...badge,
+                        earned: false,
+                        earnedAt: null,
+                        seen: true,
+                      }))).map((badge) => {
+                        const earnedDate = badge.earnedAt
+                          ? new Intl.DateTimeFormat('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }).format(new Date(badge.earnedAt))
+                          : null
+                        return (
                           <div
-                            className={`mx-auto h-10 w-10 rounded-full text-lg flex items-center justify-center ${
-                              badge.earned ? `bg-gradient-to-br ${badge.colorClass} text-white shadow-[0_0_12px_rgba(22,163,74,0.35)]` : 'bg-slate-200 text-slate-500'
+                            key={badge.badgeType}
+                            className={`rounded-xl border p-3 text-center transition-all ${
+                              badge.earned
+                                ? 'border-white/30 bg-white/20 shadow-sm'
+                                : 'border-white/20 bg-black/10 opacity-70'
                             }`}
+                            title={
+                              badge.earned
+                                ? `${badge.name} - earned ${earnedDate}`
+                                : `${badge.name} - unlock at ${badge.milestoneDays} day streak`
+                            }
                           >
-                            {badge.icon}
+                            <div
+                              className={`mx-auto h-10 w-10 rounded-full text-lg flex items-center justify-center ${
+                                badge.earned ? `bg-gradient-to-br ${badge.colorClass} text-white shadow-[0_0_12px_rgba(22,163,74,0.35)]` : 'bg-white/25 text-white/80'
+                              }`}
+                            >
+                              {badge.icon}
+                            </div>
+                            <p className="mt-2 text-xs font-semibold text-white">{badge.name}</p>
+                            <p className="text-[11px] text-orange-100">{badge.milestoneDays} days</p>
                           </div>
-                          <p className="mt-2 text-xs font-semibold text-slate-800">{badge.name}</p>
-                          <p className="text-[11px] text-slate-500">{badge.milestoneDays} days</p>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="mt-3 flex justify-center">
-                    <p
-                      className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium ${nextBadgeHint.className}`}
-                    >
-                      {nextBadgeHint.text}
-                    </p>
+                        )
+                      })}
+                    </div>
+                    <div className="mt-3 flex justify-center">
+                      <p
+                        className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium ${nextBadgeHint.className}`}
+                      >
+                        {nextBadgeHint.text}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               <div className="dashboard-reveal">
                 <h2 className="dashboard-section-title">Quick Stats</h2>
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="mt-4 grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                   <Card className="dashboard-stat-card">
-                    <CardContent className="p-5">
-                      <div className="dashboard-icon-circle bg-green-100 text-green-600">
+                    <CardContent className="p-4 sm:p-5 text-center sm:text-left">
+                      <div className="dashboard-icon-circle mx-auto sm:mx-0 bg-green-100 text-green-600">
                         <BookOpen size={18} />
                       </div>
-                      <p className="mt-3 text-2xl font-black text-slate-900">{statsSummary.questionsPracticed}</p>
-                      <p className="text-sm font-semibold text-slate-700">Questions Practiced</p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="mt-3 text-xl sm:text-2xl font-black text-slate-900">{statsSummary.questionsPracticed}</p>
+                      <p className="text-[11px] sm:text-sm font-semibold text-slate-700">Questions Practiced</p>
+                      <p className="text-[11px] text-slate-500 mt-1">
                         {statsSummary.questionsToday > 0 ? `+${statsSummary.questionsToday} today` : 'No attempts today'}
                       </p>
                     </CardContent>
                   </Card>
 
                   <Card className="dashboard-stat-card">
-                    <CardContent className="p-5">
-                      <div className="dashboard-icon-circle bg-orange-100 text-orange-600">
+                    <CardContent className="p-4 sm:p-5 text-center sm:text-left">
+                      <div className="dashboard-icon-circle mx-auto sm:mx-0 bg-orange-100 text-orange-600">
                         <Zap size={18} />
                       </div>
-                      <p className="mt-3 text-2xl font-black text-slate-900">{resolvedStreak.current}</p>
-                      <p className="text-sm font-semibold text-slate-700">Day Streak</p>
-                      <p className="text-xs text-slate-500 mt-1">Best {resolvedStreak.best} days</p>
+                      <p className="mt-3 text-xl sm:text-2xl font-black text-slate-900">{resolvedStreak.current}</p>
+                      <p className="text-[11px] sm:text-sm font-semibold text-slate-700">Day Streak</p>
+                      <p className="text-[11px] text-slate-500 mt-1">Best {resolvedStreak.best} days</p>
                     </CardContent>
                   </Card>
 
                   <Card className="dashboard-stat-card">
-                    <CardContent className="p-5">
-                      <div className="dashboard-icon-circle bg-purple-100 text-purple-600">
+                    <CardContent className="p-4 sm:p-5 text-center sm:text-left">
+                      <div className="dashboard-icon-circle mx-auto sm:mx-0 bg-blue-100 text-blue-600">
+                        <Target size={18} />
+                      </div>
+                      <p className={`mt-3 text-xl sm:text-2xl font-black ${accuracyValueColor}`}>
+                        {statsSummary.allZero ? '--' : `${statsSummary.averageAccuracy}%`}
+                      </p>
+                      <p className="text-[11px] sm:text-sm font-semibold text-slate-700">Avg Accuracy</p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        {statsSummary.allZero ? 'Start practicing to see your stats!' : 'Across all attempts'}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-stat-card">
+                    <CardContent className="p-4 sm:p-5 text-center sm:text-left">
+                      <div className="dashboard-icon-circle mx-auto sm:mx-0 bg-purple-100 text-purple-600">
                         <Layers size={18} />
                       </div>
-                      <p className="mt-3 text-2xl font-black text-slate-900">
+                      <p className="mt-3 text-xl sm:text-2xl font-black text-slate-900">
                         {statsSummary.subjectsStarted}/{subjects.length || 4}
                       </p>
-                      <p className="text-sm font-semibold text-slate-700">Subjects Active</p>
+                      <p className="text-[11px] sm:text-sm font-semibold text-slate-700">Subjects Active</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -941,17 +925,18 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="dashboard-feature-card">
+                  <Card className="dashboard-feature-card dashboard-feature-card-orange">
                     <CardContent className="p-6 relative overflow-hidden">
-                      <AlertCircle size={84} className="absolute -top-2 -right-2 text-rose-500/5" />
-                      <div className="dashboard-mode-icon bg-rose-100 text-rose-600">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-[#ea580c]" />
+                      <AlertCircle size={84} className="absolute -top-2 -right-2 text-[#ea580c]/10" />
+                      <div className="dashboard-mode-icon bg-[#fff7ed] text-[#ea580c]">
                         <AlertCircle size={24} />
                       </div>
                       <h3 className="mt-4 text-base font-bold text-slate-900">Practice Wrong Answers</h3>
                       <p className="mt-2 text-sm text-slate-500 leading-relaxed">
                         Retry the questions you answered incorrectly, subject by subject.
                       </p>
-                      <Button className="mt-4 w-full bg-rose-600 hover:bg-rose-700" onClick={() => window.location.assign('/wrong-answers')}>
+                      <Button className="mt-4 w-full bg-[#ea580c] hover:bg-[#c2410c]" onClick={() => window.location.assign('/wrong-answers')}>
                         Start Practice
                       </Button>
                     </CardContent>
@@ -993,7 +978,9 @@ export default function DashboardPage() {
                 <h2 className="dashboard-section-title">Study Tools</h2>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card className="dashboard-feature-card">
-                    <CardContent className="p-6">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-green-600" />
+                      <CalendarDays size={84} className="absolute -top-2 -right-2 text-green-500/5" />
                       <div className="dashboard-mode-icon bg-green-100 text-green-600">
                         <CalendarDays size={24} />
                       </div>
@@ -1008,7 +995,9 @@ export default function DashboardPage() {
                   </Card>
 
                   <Card className="dashboard-feature-card">
-                    <CardContent className="p-6">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-blue-600" />
+                      <BarChart2 size={84} className="absolute -top-2 -right-2 text-blue-500/5" />
                       <div className="dashboard-mode-icon bg-blue-100 text-blue-600">
                         <BarChart2 size={24} />
                       </div>
@@ -1051,26 +1040,22 @@ export default function DashboardPage() {
                     <CardContent className="p-10 text-center text-slate-500">No subjects found. Please contact admin.</CardContent>
                   </Card>
                 ) : (
-                  <>
-                    <div className="md:hidden -mx-1 px-1 flex gap-3 overflow-x-auto pb-1">
-                      {subjects.map((subject, index) => {
-                        const code = normalizeCode(subject.code)
-                        const accent = SUBJECT_ACCENTS[code] || ['#16a34a', '#2563eb', '#7c3aed', '#ea580c'][index % 4]
-                        const subjectLabel = SUBJECT_SHORT_NAMES[code] || subject.name || code
-                        return (
-                          <div
-                            key={`${subject.code}-${index}`}
-                            className="min-w-[220px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                            style={{ borderTop: `3px solid ${accent}` }}
-                          >
-                            <div className="flex items-center justify-between">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                    {subjects.map((subject, index) => {
+                      const code = normalizeCode(subject.code)
+                      const accent = SUBJECT_ACCENTS[code] || ['#16a34a', '#2563eb', '#7c3aed', '#ea580c'][index % 4]
+                      const subjectLabel = SUBJECT_SHORT_NAMES[code] || subject.name || code
+                      return (
+                        <Card key={`${subject.code}-${index}`} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                          <CardContent className="p-4 md:p-5" style={{ borderTop: `3px solid ${accent}` }}>
+                            <div className="flex items-center justify-between gap-3">
                               <p className="text-sm font-semibold text-slate-900">{subjectLabel}</p>
                               <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{code}</span>
                             </div>
-                            <div className="mt-3">
+                            <div className="mt-4">
                               <div className="flex items-center justify-between text-xs text-slate-500">
                                 <span>{subject.progressPercent}% progress</span>
-                                <span>{subject.completedQuestions}/{subject.totalQuestions}</span>
+                                <span>{subject.completedQuestions}/{subject.totalQuestions} completed</span>
                               </div>
                               <div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden">
                                 <div className="h-full rounded-full" style={{ width: `${subject.progressPercent}%`, backgroundColor: accent }} />
@@ -1084,46 +1069,11 @@ export default function DashboardPage() {
                                 <Button className="w-full text-xs">Chapter Wise</Button>
                               </Link>
                             </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    <div className="hidden md:grid grid-cols-2 gap-4">
-                      {subjects.map((subject, index) => {
-                        const code = normalizeCode(subject.code)
-                        const accent = SUBJECT_ACCENTS[code] || ['#16a34a', '#2563eb', '#7c3aed', '#ea580c'][index % 4]
-                        const subjectLabel = SUBJECT_SHORT_NAMES[code] || subject.name || code
-                        return (
-                          <Card key={`${subject.code}-${index}`} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <CardContent className="p-5" style={{ borderTop: `3px solid ${accent}` }}>
-                              <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm font-semibold text-slate-900">{subjectLabel}</p>
-                                <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{code}</span>
-                              </div>
-                              <div className="mt-4">
-                                <div className="flex items-center justify-between text-xs text-slate-500">
-                                  <span>{subject.progressPercent}% progress</span>
-                                  <span>{subject.completedQuestions}/{subject.totalQuestions} completed</span>
-                                </div>
-                                <div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${subject.progressPercent}%`, backgroundColor: accent }} />
-                                </div>
-                              </div>
-                              <div className="mt-4 grid grid-cols-2 gap-2">
-                                <Link href={`/subjects/${encodeURIComponent(subject.code)}/test?mode=full`} className="w-full">
-                                  <Button variant="outline" className="w-full text-xs">Full Book</Button>
-                                </Link>
-                                <Link href={`/subjects/${encodeURIComponent(subject.code)}?mode=chapter`} className="w-full">
-                                  <Button className="w-full text-xs">Chapter Wise</Button>
-                                </Link>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
-                    </div>
-                  </>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
 
@@ -1394,6 +1344,9 @@ export default function DashboardPage() {
           box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
           border-color: #86efac;
         }
+        .dashboard-feature-card-orange:hover {
+          border-color: #fed7aa;
+        }
         .dashboard-mode-icon {
           width: 60px;
           height: 60px;
@@ -1401,6 +1354,16 @@ export default function DashboardPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
+        }
+        @media (max-width: 767px) {
+          .dashboard-icon-circle {
+            width: 36px;
+            height: 36px;
+          }
+          .dashboard-mode-icon {
+            width: 52px;
+            height: 52px;
+          }
         }
         .dashboard-second-tick { animation: dashboardTick 1s ease-in-out infinite; }
         .dashboard-streak-pulse { animation: dashboardPulse 2s ease-in-out infinite; }

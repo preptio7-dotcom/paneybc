@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const [total, rows] = await Promise.all([
+    const [total, rows, lastReconciliationLog] = await Promise.all([
       prisma.streakAuditLog.count({ where }),
       prisma.streakAuditLog.findMany({
         where,
@@ -70,7 +70,27 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
+      prisma.adminAuditLog.findFirst({
+        where: { action: 'STREAK_RECONCILIATION_RUN' },
+        orderBy: { createdAt: 'desc' },
+      }),
     ])
+
+    const metadata =
+      lastReconciliationLog?.metadata &&
+      typeof lastReconciliationLog.metadata === 'object' &&
+      !Array.isArray(lastReconciliationLog.metadata)
+        ? (lastReconciliationLog.metadata as Record<string, any>)
+        : {}
+
+    const lastReconciliationRun = lastReconciliationLog
+      ? {
+          runAt: String(metadata.runAt || lastReconciliationLog.createdAt.toISOString()),
+          triggeredBy: String(metadata.triggeredBy || 'cron_auto'),
+          usersAffected: Number(metadata.usersAffected || 0),
+          status: String(metadata.status || 'success'),
+        }
+      : null
 
     return NextResponse.json({
       page,
@@ -78,6 +98,7 @@ export async function GET(request: NextRequest) {
       total,
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
       rows,
+      lastReconciliationRun,
     })
   } catch (error: any) {
     return NextResponse.json(
