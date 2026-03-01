@@ -9,6 +9,7 @@ import {
   extractBetaFeatureSettings,
   type BetaFeatureVisibility,
 } from '@/lib/beta-features'
+import { type HomepageThemeVariant } from '@/lib/homepage-theme'
 
 type HomeFaqState = {
   visibility: BetaFeatureVisibility
@@ -22,7 +23,13 @@ const defaultFaqState: HomeFaqState = {
   featuredIds: faqData.slice(0, 5).map((item) => item.id),
 }
 
-export function HomeFaqSection() {
+export function HomeFaqSection({
+  themeVariant = 'light',
+  reduceMotion = false,
+}: {
+  themeVariant?: HomepageThemeVariant
+  reduceMotion?: boolean
+}) {
   const { user, loading } = useAuth()
   const [faqState, setFaqState] = useState<HomeFaqState>(defaultFaqState)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -30,7 +37,7 @@ export function HomeFaqSection() {
   useEffect(() => {
     const loadFaqSettings = async () => {
       try {
-        const response = await fetch('/api/public/settings')
+        const response = await fetch('/api/public/settings', { cache: 'no-store' })
         if (!response.ok) return
         const data = await response.json()
         const testSettings = data?.testSettings || {}
@@ -101,6 +108,8 @@ export function HomeFaqSection() {
       initialVisibleCount={Math.min(5, faqState.featuredIds.length || 5)}
       showMoreLabel="View More Questions"
       showLessLabel="Show Less Questions"
+      themeVariant={themeVariant}
+      reduceMotion={reduceMotion}
     />
   )
 }

@@ -5,6 +5,7 @@ import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { getCurrentUser } from '@/lib/auth'
 import { canAccessBetaFeature, extractBetaFeatureSettings } from '@/lib/beta-features'
+import { extractHomepageThemeSettings } from '@/lib/homepage-theme'
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
       },
       results: {
         headline: 'Boost your score with targeted mock reviews',
-        body: 'Short, focused revision plans built for CA students—improve accuracy before your next exam.',
+        body: 'Short, focused revision plans built for CA students - improve accuracy before your next exam.',
         cta: 'See plans',
         href: '#',
       },
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       registrationLevels: DEFAULT_LEVELS,
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
+      homepageThemes: extractHomepageThemeSettings(savedTestSettings),
       ...savedTestSettings,
     }
 
@@ -87,6 +89,7 @@ export async function GET(request: NextRequest) {
         return next.length ? next : DEFAULT_LEVELS
       })(),
       betaFeatures,
+      homepageThemes: extractHomepageThemeSettings(testSettings),
       faq: {
         ...faqSettings,
         visibility: betaFeatures.faq,
@@ -130,6 +133,7 @@ export async function GET(request: NextRequest) {
           registrationDegrees: DEFAULT_DEGREES,
           registrationLevels: DEFAULT_LEVELS,
           betaFeatures: fallbackBetaFeatures,
+          homepageThemes: extractHomepageThemeSettings({}),
           faq: {
             ...extractFaqSettings({}),
             visibility: fallbackBetaFeatures.faq,

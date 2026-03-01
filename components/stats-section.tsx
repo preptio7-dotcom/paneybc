@@ -1,116 +1,322 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { BookOpen, Layers, Zap, Clock3, type LucideIcon } from 'lucide-react'
+import { type HomepageThemeVariant } from '@/lib/homepage-theme'
 
-interface Stat {
-  number: number
-  label: string
-  suffix?: string
+type NumericStats = {
+  totalQuestions: number
+  totalSubjects: number
 }
 
-const defaultStats: Stat[] = [
-  { number: 2000, label: 'Questions Available', suffix: '+' },
-  { number: 0, label: 'Active Students' },
-  { number: 95, label: 'Pass Rate', suffix: '%' },
-  { number: 5, label: 'Subjects Covered' }
-]
+type StatItem =
+  | {
+      type: 'numeric'
+      icon: LucideIcon
+      value: number
+      suffix: string
+      label: string
+    }
+  | {
+      type: 'static'
+      icon: LucideIcon
+      value: string
+      label: string
+    }
 
-interface AnimatedCounterProps {
-  end: number
-  suffix?: string
+const FALLBACK_STATS: NumericStats = {
+  totalQuestions: 4000,
+  totalSubjects: 4,
 }
 
-function AnimatedCounter({ end, suffix = '' }: AnimatedCounterProps) {
-  const [count, setCount] = useState(0)
+const COUNT_ANIMATION_MS = 1500
+
+function easeOutCubic(progress: number) {
+  return 1 - Math.pow(1 - progress, 3)
+}
+
+function useCountUp(end: number, shouldAnimate: boolean) {
+  const [value, setValue] = useState(0)
 
   useEffect(() => {
-    const duration = 2000
-    const steps = 60
-    const increment = end / steps
-    let current = 0
+    if (!shouldAnimate) {
+      setValue(end)
+      return
+    }
 
-    const timer = setInterval(() => {
-      current += increment
-      if (current >= end) {
-        setCount(end)
-        clearInterval(timer)
-      } else {
-        setCount(Math.floor(current))
+    let rafId = 0
+    const startTime = performance.now()
+
+    const step = (time: number) => {
+      const elapsed = time - startTime
+      const progress = Math.min(1, elapsed / COUNT_ANIMATION_MS)
+      const eased = easeOutCubic(progress)
+      setValue(Math.round(end * eased))
+      if (progress < 1) {
+        rafId = window.requestAnimationFrame(step)
       }
-    }, duration / steps)
+    }
 
-    return () => clearInterval(timer)
-  }, [end])
+    rafId = window.requestAnimationFrame(step)
+    return () => window.cancelAnimationFrame(rafId)
+  }, [end, shouldAnimate])
+
+  return value
+}
+
+function NumericStatCard({
+  icon: Icon,
+  endValue,
+  label,
+  suffix = '',
+  isVisible,
+  animateCount,
+  delayMs,
+  darkMode,
+}: {
+  icon: LucideIcon
+  endValue: number
+  label: string
+  suffix?: string
+  isVisible: boolean
+  animateCount: boolean
+  delayMs: number
+  darkMode: boolean
+}) {
+  const animatedValue = useCountUp(endValue, animateCount)
 
   return (
-    <span className="font-heading font-bold text-4xl md:text-5xl text-primary-green">
-      {count.toLocaleString()}{suffix}
-    </span>
+    <div
+      className={`rounded-2xl border p-8 text-center transition-all duration-200 md:hover:-translate-y-1 ${
+        darkMode
+          ? 'border-white/10 bg-white/5 shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+          : 'border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] md:hover:border-[#86efac] md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
+      } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+      style={{ transitionDelay: `${delayMs}ms` }}
+    >
+      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary-green/10">
+        <Icon size={22} className="text-primary-green" />
+      </div>
+      <p
+        className="font-heading text-4xl md:text-5xl font-bold text-[#22c55e]"
+        style={{ textShadow: darkMode ? '0 0 20px rgba(34,197,94,0.3)' : 'none' }}
+      >
+        {animatedValue.toLocaleString()}
+        {suffix}
+      </p>
+      <p className={`mt-3 font-medium ${darkMode ? 'text-white/80' : 'text-text-light'}`}>{label}</p>
+    </div>
   )
 }
 
-export function StatsSection() {
-  const [stats, setStats] = useState<Stat[]>(defaultStats)
+function StaticStatCard({
+  icon: Icon,
+  value,
+  label,
+  isVisible,
+  delayMs,
+  darkMode,
+}: {
+  icon: LucideIcon
+  value: string
+  label: string
+  isVisible: boolean
+  delayMs: number
+  darkMode: boolean
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-8 text-center transition-all duration-200 md:hover:-translate-y-1 ${
+        darkMode
+          ? 'border-white/10 bg-white/5 shadow-[0_1px_3px_rgba(0,0,0,0.20),0_8px_24px_rgba(0,0,0,0.25)] md:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+          : 'border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] md:hover:border-[#86efac] md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
+      } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+      style={{ transitionDelay: `${delayMs}ms` }}
+    >
+      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary-green/10">
+        <Icon size={22} className="text-primary-green" />
+      </div>
+      <p
+        className="font-heading text-4xl md:text-5xl font-bold text-[#22c55e]"
+        style={{ textShadow: darkMode ? '0 0 20px rgba(34,197,94,0.3)' : 'none' }}
+      >
+        {value}
+      </p>
+      <p className={`mt-3 font-medium ${darkMode ? 'text-white/80' : 'text-text-light'}`}>{label}</p>
+    </div>
+  )
+}
+
+function getStatsSectionTheme(variant: HomepageThemeVariant) {
+  if (variant === 'dark') {
+    return {
+      sectionClass: 'bg-[#0f172a]',
+      headingClass: 'text-white',
+      subtextClass: 'text-slate-300',
+      darkMode: true,
+    }
+  }
+
+  if (variant === 'gray') {
+    return {
+      sectionClass: 'bg-[#f8fafc]',
+      headingClass: 'text-text-dark',
+      subtextClass: 'text-text-light',
+      darkMode: false,
+    }
+  }
+
+  return {
+    sectionClass: 'bg-white',
+    headingClass: 'text-text-dark',
+    subtextClass: 'text-text-light',
+    darkMode: false,
+  }
+}
+
+export function StatsSection({
+  themeVariant = 'dark',
+  reduceMotion = false,
+}: {
+  themeVariant?: HomepageThemeVariant
+  reduceMotion?: boolean
+}) {
+  const [stats, setStats] = useState<NumericStats>(FALLBACK_STATS)
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const [isInView, setIsInView] = useState(false)
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch('/api/public/stats')
-        if (!response.ok) return
+        const response = await fetch('/api/stats', { cache: 'no-store' })
+        if (!response.ok) {
+          setStats(FALLBACK_STATS)
+          return
+        }
         const data = await response.json()
-        const totalQuestions = Number(data.totalQuestions) || 0
-        const totalSubjects = Number(data.totalSubjects) || 0
-        const totalUsers = Number(data.totalUsers) || 0
-        const roundedQuestions = totalQuestions >= 1000
-          ? Math.floor(totalQuestions / 1000) * 1000
-          : totalQuestions
+        const totalQuestions = Math.max(0, Number(data?.totalQuestions) || 0)
+        const totalSubjects = Math.max(0, Number(data?.totalSubjects) || 0)
 
-        setStats((prev) => prev.map((stat) => {
-          if (stat.label === 'Questions Available') {
-            return { ...stat, number: roundedQuestions, suffix: '+' }
-          }
-          if (stat.label === 'Subjects Covered' && totalSubjects > 0) {
-            return { ...stat, number: totalSubjects, suffix: stat.suffix }
-          }
-          if (stat.label === 'Active Students') {
-            return { ...stat, number: totalUsers, suffix: '' }
-          }
-          return stat
-        }))
-      } catch (error) {
-        // ignore, keep defaults
+        setStats({
+          totalQuestions: totalQuestions > 0 ? totalQuestions : FALLBACK_STATS.totalQuestions,
+          totalSubjects: totalSubjects > 0 ? totalSubjects : FALLBACK_STATS.totalSubjects,
+        })
+      } catch {
+        setStats(FALLBACK_STATS)
       }
     }
 
-    loadStats()
+    void loadStats()
   }, [])
 
+  useEffect(() => {
+    if (reduceMotion) {
+      setIsInView(true)
+      return
+    }
+
+    const element = sectionRef.current
+    if (!element) return
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsInView(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsInView(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.25 }
+    )
+
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [reduceMotion])
+
+  const renderedStats = useMemo<StatItem[]>(
+    () => [
+      {
+        type: 'numeric',
+        icon: BookOpen,
+        value: stats.totalQuestions,
+        suffix: '+',
+        label: 'Questions Available',
+      },
+      {
+        type: 'numeric',
+        icon: Layers,
+        value: stats.totalSubjects,
+        suffix: '',
+        label: 'Subjects Covered',
+      },
+      {
+        type: 'static',
+        icon: Zap,
+        value: 'Free',
+        label: 'Always Free to Use',
+      },
+      {
+        type: 'static',
+        icon: Clock3,
+        value: '24/7',
+        label: 'Practice Anytime',
+      },
+    ],
+    [stats.totalQuestions, stats.totalSubjects]
+  )
+
+  const theme = getStatsSectionTheme(themeVariant)
+
   return (
-    <section className="w-full bg-background-light py-20">
+    <section ref={sectionRef} className={`w-full py-[48px] md:py-[72px] lg:py-[96px] ${theme.sectionClass}`}>
       <div className="max-w-7xl mx-auto w-full px-6">
-        {/* Section Title */}
-        <div className="text-center mb-16">
-          <h2 className="font-heading text-3xl md:text-4xl font-bold text-text-dark mb-4">
+        <div
+          className={`text-center mb-12 transition-all duration-500 ${
+            isInView || reduceMotion ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}
+        >
+          <span className="inline-flex items-center rounded-full bg-[#dcfce7] px-4 py-1 text-[11px] font-bold tracking-[0.08em] text-[#166534] uppercase">
+            Platform Snapshot
+          </span>
+          <h2 className={`font-heading text-3xl md:text-4xl font-bold mt-4 ${theme.headingClass}`}>
             Built for ICAP Students, by People Who Understand the Exam
           </h2>
-          <p className="text-text-light text-lg">
-            We're a new platform and proud of it — growing fast with students who want a smarter way to prepare.
+          <div className="mx-auto mt-4 h-[3px] w-10 rounded bg-primary-green" />
+          <p className={`mt-4 text-lg ${theme.subtextClass}`}>
+            We&apos;re a new platform and proud of it - growing fast with students who want a smarter way to prepare.
           </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl p-8 text-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-border"
-            >
-              <AnimatedCounter end={stat.number} suffix={stat.suffix} />
-              <p className="text-text-light text-base mt-4 font-medium">
-                {stat.label}
-              </p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {renderedStats.map((stat, index) =>
+            stat.type === 'numeric' ? (
+              <NumericStatCard
+                key={stat.label}
+                icon={stat.icon}
+                endValue={stat.value}
+                suffix={stat.suffix}
+                label={stat.label}
+                isVisible={isInView || reduceMotion}
+                animateCount={isInView && !reduceMotion}
+                delayMs={index * 100}
+                darkMode={theme.darkMode}
+              />
+            ) : (
+              <StaticStatCard
+                key={stat.label}
+                icon={stat.icon}
+                value={stat.value}
+                label={stat.label}
+                isVisible={isInView || reduceMotion}
+                delayMs={index * 100}
+                darkMode={theme.darkMode}
+              />
+            )
+          )}
         </div>
       </div>
     </section>

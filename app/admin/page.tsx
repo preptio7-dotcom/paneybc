@@ -5,10 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle, Shield, X } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import {
+    DEFAULT_HOMEPAGE_THEME_SETTINGS,
+    type HomepageSectionThemeSettings,
+    type HomepageThemeVariant,
+} from '@/lib/homepage-theme'
 
 export default function AdminDashboardPage() {
     const { toast } = useToast()
@@ -25,6 +31,7 @@ export default function AdminDashboardPage() {
         chapterTestDefaultQuestions: 25,
         registrationDegrees: ['CA'],
         registrationLevels: ['PRC', 'CAF'],
+        homepageThemes: DEFAULT_HOMEPAGE_THEME_SETTINGS as HomepageSectionThemeSettings,
     })
     const [newDegree, setNewDegree] = useState('')
     const [newLevel, setNewLevel] = useState('')
@@ -51,6 +58,15 @@ export default function AdminDashboardPage() {
                         registrationLevels: Array.isArray(data.testSettings.registrationLevels) && data.testSettings.registrationLevels.length
                             ? data.testSettings.registrationLevels
                             : ['PRC', 'CAF'],
+                        homepageThemes: {
+                            hero: data.testSettings.homepageThemes?.hero || DEFAULT_HOMEPAGE_THEME_SETTINGS.hero,
+                            whyChoose: data.testSettings.homepageThemes?.whyChoose || DEFAULT_HOMEPAGE_THEME_SETTINGS.whyChoose,
+                            howItWorks: data.testSettings.homepageThemes?.howItWorks || DEFAULT_HOMEPAGE_THEME_SETTINGS.howItWorks,
+                            stats: data.testSettings.homepageThemes?.stats || DEFAULT_HOMEPAGE_THEME_SETTINGS.stats,
+                            cta: data.testSettings.homepageThemes?.cta || DEFAULT_HOMEPAGE_THEME_SETTINGS.cta,
+                            feedback: data.testSettings.homepageThemes?.feedback || DEFAULT_HOMEPAGE_THEME_SETTINGS.feedback,
+                            faq: data.testSettings.homepageThemes?.faq || DEFAULT_HOMEPAGE_THEME_SETTINGS.faq,
+                        },
                     })
                 }
             } catch (error) {
@@ -181,6 +197,7 @@ export default function AdminDashboardPage() {
                         chapterTestDefaultQuestions: testSettings.chapterTestDefaultQuestions,
                         registrationDegrees: testSettings.registrationDegrees,
                         registrationLevels: testSettings.registrationLevels,
+                        homepageThemes: testSettings.homepageThemes,
                     },
                 }),
             })
@@ -192,6 +209,16 @@ export default function AdminDashboardPage() {
                 title: 'Saved',
                 description: 'Test settings updated successfully.',
             })
+            if (typeof window !== 'undefined') {
+                try {
+                    const channel = new BroadcastChannel('preptio-system-settings')
+                    channel.postMessage({ type: 'homepage-themes-updated', at: Date.now() })
+                    channel.close()
+                } catch {
+                    // ignore
+                }
+                window.dispatchEvent(new Event('preptio-homepage-themes-updated'))
+            }
         } catch (error: any) {
             toast({
                 title: 'Error',
@@ -201,6 +228,16 @@ export default function AdminDashboardPage() {
         } finally {
             setIsSavingTestSettings(false)
         }
+    }
+
+    const updateHomepageTheme = (section: keyof HomepageSectionThemeSettings, variant: HomepageThemeVariant) => {
+        setTestSettings((prev) => ({
+            ...prev,
+            homepageThemes: {
+                ...prev.homepageThemes,
+                [section]: variant,
+            },
+        }))
     }
 
     const addOption = (type: 'degree' | 'level') => {
@@ -335,6 +372,47 @@ export default function AdminDashboardPage() {
                                         <Input value={newLevel} placeholder="Add level (e.g. CAF)" onChange={(e) => setNewLevel(e.target.value)} />
                                         <Button type="button" variant="outline" onClick={() => addOption('level')}>Add</Button>
                                     </div>
+                                </div>
+                            </div>
+                            <div className="border-t border-border pt-4 space-y-4">
+                                <div>
+                                    <Label className="text-base font-semibold">Homepage Section Themes</Label>
+                                    <p className="text-xs text-text-light mt-1">
+                                        Control section background variants: light, gray, or dark.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {[
+                                        { key: 'hero', label: 'Hero Section' },
+                                        { key: 'whyChoose', label: 'Why Choose' },
+                                        { key: 'howItWorks', label: 'How It Works' },
+                                        { key: 'stats', label: 'Stats Section' },
+                                        { key: 'cta', label: 'CTA Section' },
+                                        { key: 'feedback', label: 'Student Feedback' },
+                                        { key: 'faq', label: 'FAQ Section' },
+                                    ].map((item) => (
+                                        <div key={item.key} className="space-y-2">
+                                            <Label>{item.label}</Label>
+                                            <Select
+                                                value={testSettings.homepageThemes[item.key as keyof HomepageSectionThemeSettings]}
+                                                onValueChange={(value) =>
+                                                    updateHomepageTheme(
+                                                        item.key as keyof HomepageSectionThemeSettings,
+                                                        value as HomepageThemeVariant
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select theme" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="light">Light</SelectItem>
+                                                    <SelectItem value="gray">Grey</SelectItem>
+                                                    <SelectItem value="dark">Dark</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                             <Button onClick={handleSaveTestSettings} disabled={isSavingTestSettings}>

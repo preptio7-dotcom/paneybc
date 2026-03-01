@@ -1,14 +1,6 @@
 import { Navigation } from '@/components/navigation'
-import { HeroSection } from '@/components/hero-section'
-import { FeaturesSection } from '@/components/features-section'
-import { HowItWorksSection } from '@/components/how-it-works-section'
-import { StatsSection } from '@/components/stats-section'
-import { CTABanner } from '@/components/cta-banner'
-import { Footer } from '@/components/footer'
-import { HomeAdBanner } from '@/components/home-ad-banner'
 import { LogoutToast } from '@/components/logout-toast'
-import { HomeFaqSection } from '@/components/home-faq-section'
-import { HomeFeedbackSection } from '@/components/home-feedback-section'
+import { HomepageContent } from '@/components/homepage-content'
 import { Suspense } from 'react'
 
 export default function Home() {
@@ -18,15 +10,7 @@ export default function Home() {
       <Suspense fallback={null}>
         <LogoutToast />
       </Suspense>
-      <HeroSection />
-      <HomeAdBanner />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <StatsSection />
-      <CTABanner />
-      <HomeFeedbackSection />
-      <HomeFaqSection />
-      <Footer />
+      <HomepageContent />
     </main>
   )
 }

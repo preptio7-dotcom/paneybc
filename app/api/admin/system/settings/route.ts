@@ -6,6 +6,7 @@ import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { extractBetaFeatureSettings } from '@/lib/beta-features'
 import { createAdminAuditLog } from '@/lib/admin-audit'
+import { extractHomepageThemeSettings } from '@/lib/homepage-theme'
 
 function isAuthorized(request: NextRequest) {
   const hasSuperAdminSession = request.headers.get('cookie')?.includes('super_admin_session')
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
       },
       results: {
         headline: 'Boost your score with targeted mock reviews',
-        body: 'Short, focused revision plans built for CA students—improve accuracy before your next exam.',
+        body: 'Short, focused revision plans built for CA students - improve accuracy before your next exam.',
         cta: 'See plans',
         href: '#',
       },
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
       registrationLevels: DEFAULT_LEVELS,
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
+      homepageThemes: extractHomepageThemeSettings(savedTestSettings),
       ...savedTestSettings,
     }
     const normalizedBetaFeatures = extractBetaFeatureSettings(testSettings)
@@ -81,6 +83,7 @@ export async function GET(request: NextRequest) {
         return next.length ? next : DEFAULT_LEVELS
       })(),
       betaFeatures: normalizedBetaFeatures,
+      homepageThemes: extractHomepageThemeSettings(testSettings),
       faq: {
         ...normalizedFaq,
         visibility: normalizedBetaFeatures.faq,
@@ -132,7 +135,7 @@ export async function POST(request: NextRequest) {
       },
       results: {
         headline: 'Boost your score with targeted mock reviews',
-        body: 'Short, focused revision plans built for CA studentsâ€”improve accuracy before your next exam.',
+        body: 'Short, focused revision plans built for CA students - improve accuracy before your next exam.',
         cta: 'See plans',
         href: '#',
       },
@@ -150,6 +153,7 @@ export async function POST(request: NextRequest) {
       registrationLevels: DEFAULT_LEVELS,
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
+      homepageThemes: extractHomepageThemeSettings(savedTestSettings),
       ...savedTestSettings,
     }
     const beforeSnapshot = {
@@ -185,6 +189,7 @@ export async function POST(request: NextRequest) {
         return next.length ? next : DEFAULT_LEVELS
       })(),
       betaFeatures: mergedBetaFeatures,
+      homepageThemes: extractHomepageThemeSettings(mergedTestSettings),
       faq: {
         ...extractFaqSettings(mergedTestSettings),
         visibility: mergedBetaFeatures.faq,
