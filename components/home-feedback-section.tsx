@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { type HomepageThemeVariant } from '@/lib/homepage-theme'
+import { useAuth } from '@/lib/auth-context'
+import { canAccessBetaFeature } from '@/lib/beta-features'
 
 type FeedbackReview = {
   id: string
@@ -171,6 +173,7 @@ export function HomeFeedbackSection({
   themeVariant?: HomepageThemeVariant
   reduceMotion?: boolean
 }) {
+  const { user, loading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [payload, setPayload] = useState<FeedbackPayload | null>(null)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
@@ -212,24 +215,37 @@ export function HomeFeedbackSection({
   }, [])
 
   useEffect(() => {
+    if (authLoading) return
+
+    let isMounted = true
     const loadFeedback = async () => {
       try {
-        const response = await fetch('/api/public/feedback', { cache: 'no-store' })
+        const response = await fetch(`/api/public/feedback?t=${Date.now()}`, {
+          cache: 'no-store',
+          credentials: 'include',
+          headers: {
+            'cache-control': 'no-cache',
+            pragma: 'no-cache',
+          },
+        })
         if (!response.ok) {
-          setPayload(null)
+          if (isMounted) setPayload(null)
           return
         }
         const data = await response.json()
-        setPayload(data && typeof data === 'object' ? data : null)
+        if (isMounted) setPayload(data && typeof data === 'object' ? data : null)
       } catch {
-        setPayload(null)
+        if (isMounted) setPayload(null)
       } finally {
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
     }
 
     void loadFeedback()
-  }, [])
+    return () => {
+      isMounted = false
+    }
+  }, [authLoading, user?.id, user?.studentRole])
 
   useEffect(() => {
     if (reduceMotion) {
@@ -263,7 +279,9 @@ export function HomeFeedbackSection({
   }, [payload])
 
   const useCarousel = reviews.length >= 3
-  const sectionVisible = Boolean(payload?.sectionVisible && reviews.length > 0)
+  const visibility = payload?.visibility ?? 'public'
+  const canViewForRole = canAccessBetaFeature(visibility, user?.studentRole) || user?.role === 'admin' || user?.role === 'super_admin'
+  const sectionVisible = Boolean(payload?.sectionVisible && reviews.length > 0 && canViewForRole)
   const isBeta = payload?.visibility === 'beta_ambassador'
   const isDark = themeVariant === 'dark'
   const autoplayDelay = isSmall375 ? AUTO_SCROLL_MS_375 : isSmall414 ? AUTO_SCROLL_MS_414 : AUTO_SCROLL_MS
