@@ -51,14 +51,6 @@ function getFirstInitial(name: string) {
   return value.charAt(0).toUpperCase()
 }
 
-function isDemoFeedback(review: FeedbackReview) {
-  const name = String(review.user?.name || '')
-    .trim()
-    .toLowerCase()
-  const message = String(review.message || '').trim().toLowerCase()
-  return name === 'demo' || message.includes('demo msg')
-}
-
 function getAverageRating(reviews: FeedbackReview[]) {
   if (!reviews.length) return null
   const total = reviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0)
@@ -275,7 +267,7 @@ export function HomeFeedbackSection({
 
   const reviews = useMemo(() => {
     if (!payload?.reviews) return []
-    return payload.reviews.filter((review) => !isDemoFeedback(review)).slice(0, 20)
+    return payload.reviews.slice(0, 20)
   }, [payload])
 
   const useCarousel = reviews.length >= 3
