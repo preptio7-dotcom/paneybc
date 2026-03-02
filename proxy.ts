@@ -1,16 +1,9 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { applySecurityHeaders } from '@/lib/security-headers'
 
 const BLOCKED_MESSAGE =
   'Access Denied. Your IP address has been blocked due to suspicious activity. If you believe this is an error, contact support@preptio.com'
-
-function applySecurityHeaders(response: NextResponse) {
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  return response
-}
 
 async function fetchMaintenanceMode(request: NextRequest) {
   try {
@@ -99,7 +92,7 @@ export default async function proxy(request: NextRequest) {
     pathname.startsWith('/api/public/maintenance-status') || pathname.startsWith('/api/public/ip-security/access')
 
   if (isInternalBypassRoute) {
-    return applySecurityHeaders(NextResponse.next())
+    return applySecurityHeaders(NextResponse.next(), request)
   }
 
   // Global blocked-IP enforcement for all routes and endpoints.
@@ -113,11 +106,12 @@ export default async function proxy(request: NextRequest) {
               error: BLOCKED_MESSAGE,
             },
             { status: 403 }
-          )
+          ),
+          request
         )
       }
 
-      return applySecurityHeaders(blockedHtmlResponse())
+      return applySecurityHeaders(blockedHtmlResponse(), request)
     }
   }
 
@@ -128,16 +122,16 @@ export default async function proxy(request: NextRequest) {
 
   if (!isApiRoute && !isSecretAdminRoute && !isMaintenancePage && !isUnsupportedPage && !isPublicApi && !isStaticAsset) {
     if (isMaintenanceMode) {
-      return applySecurityHeaders(NextResponse.rewrite(new URL('/maintenance', request.url)))
+      return applySecurityHeaders(NextResponse.rewrite(new URL('/maintenance', request.url)), request)
     }
   }
 
   if (!isApiRoute && isAuthPage && !pathname.startsWith('/auth/reset-password') && token) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)))
+    return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)), request)
   }
 
   if (!isApiRoute && isProtectedRoute && !token) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)))
+    return applySecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)), request)
   }
 
   if (!isApiRoute && isAdminRoute && token) {
@@ -151,28 +145,28 @@ export default async function proxy(request: NextRequest) {
         },
       })
       if (!meResponse.ok) {
-        return applySecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)))
+        return applySecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)), request)
       }
       const meData = await meResponse.json()
       const role = meData?.user?.role
       if (role !== 'admin' && role !== 'super_admin') {
-        return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)))
+        return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)), request)
       }
     } catch (error) {
       console.error('Admin role check failed', error)
-      return applySecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)))
+      return applySecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)), request)
     }
   }
 
   if (!isApiRoute && isSecretAdminRoute && !isSecretAdminLoginPage && !isSecretAdminLogoutPage && !superAdminToken) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/sKy9108-3~620_admin/login', request.url)))
+    return applySecurityHeaders(NextResponse.redirect(new URL('/sKy9108-3~620_admin/login', request.url)), request)
   }
 
   if (!isApiRoute && isSecretAdminLoginPage && superAdminToken) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/sKy9108-3~620_admin/dashboard', request.url)))
+    return applySecurityHeaders(NextResponse.redirect(new URL('/sKy9108-3~620_admin/dashboard', request.url)), request)
   }
 
-  return applySecurityHeaders(NextResponse.next())
+  return applySecurityHeaders(NextResponse.next(), request)
 }
 
 export const config = {

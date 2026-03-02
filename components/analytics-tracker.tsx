@@ -22,11 +22,14 @@ export function AnalyticsTracker() {
                     screenResolution: `${window.screen.width}x${window.screen.height}`,
                 }
 
-                await fetch('/api/analytics', {
+                const response = await fetch('/api/analytics', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
                 })
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`)
+                }
             } catch (error) {
                 // Silently fail to not interrupt user experience
                 console.error('Analytics logging failed:', error)

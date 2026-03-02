@@ -100,6 +100,8 @@ import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { AnalyticsTracker } from "@/components/analytics-tracker"
 import { ContactPopup } from "@/components/contact-popup"
 import { AdExperienceGuard } from "@/components/ad-experience-guard"
+import { TrustedTypesBootstrap } from "@/components/trusted-types-bootstrap"
+import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 
 export default function RootLayout({
   children,
@@ -108,12 +110,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://api.dicebear.com" />
+        <link rel="preconnect" href="https://api.multiavatar.com" />
+        <link rel="preconnect" href="https://models.readyplayer.me" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://api.dicebear.com" />
+        <link rel="dns-prefetch" href="https://api.multiavatar.com" />
+        <link rel="dns-prefetch" href="https://models.readyplayer.me" />
+      </head>
       <body className={`font-sans antialiased`} suppressHydrationWarning>
+        <TrustedTypesBootstrap />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-X801R2C3NS"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="gtag-init" strategy="afterInteractive">
+        <Script id="gtag-init" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -128,6 +142,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <AnalyticsTracker />
           </Suspense>
+          <GlobalRuntimeMonitor />
           {children}
           <ContactPopup />
         </AuthProvider>

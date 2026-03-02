@@ -198,7 +198,7 @@ export function AdExperienceGuard() {
           async
           src={ADSENSE_SRC}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           onLoad={() => setScriptStatus('loaded')}
           onError={() => setScriptStatus('error')}
         />

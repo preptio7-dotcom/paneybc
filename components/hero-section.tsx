@@ -390,6 +390,7 @@ export function HeroSection({
             max-width: 340px;
             margin: 0 auto;
             animation: heroFloatMobile var(--hero-float-duration) ease-in-out infinite;
+            animation-duration: 6s;
             transform-origin: center;
           }
           .hero-primary-btn::after {
@@ -400,6 +401,10 @@ export function HeroSection({
           }
           .hero-card-glow::before {
             display: none;
+          }
+          .hero-badge-float-1,
+          .hero-badge-float-2 {
+            animation: none;
           }
           @keyframes heroFloatMobile {
             0%,

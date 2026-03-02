@@ -14,23 +14,33 @@ import { Share, MoreVertical, PlusSquare, Download, X } from 'lucide-react'
 
 type OSType = 'ios' | 'android' | 'other'
 
+function detectMobileOsByFeatures(): OSType {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+        return 'other'
+    }
+
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+    const smallViewport = window.matchMedia('(max-width: 900px)').matches
+    const touchCapable = navigator.maxTouchPoints > 0
+    const isLikelyMobile = coarsePointer && (smallViewport || touchCapable)
+    if (!isLikelyMobile) return 'other'
+
+    const isStandaloneCapable = 'standalone' in navigator
+    const isAppleVendor = /apple/i.test(navigator.vendor || '')
+    if (isStandaloneCapable && isAppleVendor) {
+        return 'ios'
+    }
+
+    return 'android'
+}
+
 export function PWAInstallPrompt() {
     const [isOpen, setIsOpen] = useState(false)
     const [os, setOs] = useState<OSType>('other')
 
     useEffect(() => {
-        // 1. Detect OS and device type
-        const userAgent = window.navigator.userAgent.toLowerCase()
-        const isMobile = /iphone|ipad|ipod|android|blackberry|iemobile|opera mini/.test(userAgent)
-
-        if (!isMobile) return
-
-        let detectedOs: OSType = 'other'
-        if (/iphone|ipad|ipod/.test(userAgent)) {
-            detectedOs = 'ios'
-        } else if (/android/.test(userAgent)) {
-            detectedOs = 'android'
-        }
+        const detectedOs = detectMobileOsByFeatures()
+        if (detectedOs === 'other') return
         setOs(detectedOs)
 
         // 2. Check if already installed or dismissed
