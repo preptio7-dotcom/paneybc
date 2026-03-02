@@ -28,7 +28,6 @@ import {
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { useAuth } from '@/lib/auth-context'
-import { ProfileModal } from './profile-modal'
 
 type AdminBadgeState = {
   activeThreatIpCount: number
@@ -160,7 +159,6 @@ function NavItemLink({
 export function AdminHeader() {
   const { user, logout } = useAuth()
   const pathname = usePathname()
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [badges, setBadges] = useState<AdminBadgeState>({
     activeThreatIpCount: 0,
@@ -240,9 +238,8 @@ export function AdminHeader() {
           </nav>
 
           <div className="border-t border-slate-800 p-2">
-            <button
-              type="button"
-              onClick={() => setIsProfileOpen(true)}
+            <Link
+              href="/admin/users"
               className="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-slate-200 transition-colors hover:bg-slate-800 md:justify-center xl:justify-start"
               title={user?.name || 'Admin User'}
             >
@@ -264,7 +261,7 @@ export function AdminHeader() {
               <span className="pointer-events-none absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 rounded-md bg-slate-800 px-2 py-1 text-xs text-white shadow md:group-hover:block xl:hidden">
                 {user?.name || 'Admin User'}
               </span>
-            </button>
+            </Link>
 
             <Button
               variant="ghost"
@@ -307,8 +304,8 @@ export function AdminHeader() {
               <span className="sr-only">Notifications</span>
             </Button>
 
-            <button
-              onClick={() => setIsProfileOpen(true)}
+            <Link
+              href="/admin/users"
               className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100"
             >
               {user?.avatar ? (
@@ -326,7 +323,7 @@ export function AdminHeader() {
                   {user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}
                 </p>
               </div>
-            </button>
+            </Link>
           </div>
         </div>
       </header>
@@ -405,7 +402,6 @@ export function AdminHeader() {
         </div>
       ) : null}
 
-      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>
   )
 }

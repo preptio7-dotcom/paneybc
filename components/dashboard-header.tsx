@@ -5,13 +5,11 @@ import { Bell, LogOut, User } from 'lucide-react'
 import { Button } from './ui/button'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
-import { ProfileModal } from './profile-modal'
 import Image from 'next/image'
 import { NotificationOptIn } from './notification-opt-in'
 
 export function DashboardHeader() {
   const { user, logout } = useAuth()
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
 
   return (
@@ -31,8 +29,8 @@ export function DashboardHeader() {
 
         {/* Right - User Actions */}
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsProfileOpen(true)}
+          <Link
+            href="/dashboard/settings"
             className="flex items-center gap-2 hover:bg-background-light p-1 rounded-lg transition-colors focus:outline-none"
           >
             {user?.avatar ? (
@@ -45,7 +43,7 @@ export function DashboardHeader() {
               </div>
             )}
             <span className="text-sm font-medium text-text-dark hidden sm:inline">{user?.name}</span>
-          </button>
+          </Link>
 
           <div className="relative">
             <button
@@ -80,10 +78,6 @@ export function DashboardHeader() {
           </Button>
         </div>
       </div>
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Check, Loader2 } from 'lucide-react'
+import { Check, Loader2, Star } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-badges'
 import { PRELOAD_AVATAR_COUNT, parsePackedAvatarId } from '@/lib/avatar'
+import { normalizePkPhone } from '@/lib/account-utils'
 
 type BadgeProgress = {
   badgeType: StreakBadgeType
@@ -47,11 +48,17 @@ type BadgeProgress = {
 }
 
 const FALLBACK_CA_LEVELS = ['Foundation', 'Intermediate', 'Final', 'Already Qualified']
+const FALLBACK_DEGREES = ['CA']
 
 type ProfileFormState = {
+  name: string
+  degree: string
   institute: string
   level: string
   city: string
+  studentId: string
+  phone: string
+  instituteRating: number
 }
 
 type AvatarOption = {
@@ -76,6 +83,8 @@ export default function DashboardSettingsPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isSavingAvatar, setIsSavingAvatar] = useState(false)
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false)
+  const isStudentProfile = user?.role === 'student'
+  const [degreeOptions, setDegreeOptions] = useState<string[]>(FALLBACK_DEGREES)
   const [caLevelOptions, setCaLevelOptions] = useState<string[]>(FALLBACK_CA_LEVELS)
   const [avatarPacks, setAvatarPacks] = useState<AvatarPackOption[]>([])
   const [activeAvatarPackTab, setActiveAvatarPackTab] = useState('')
@@ -86,9 +95,14 @@ export default function DashboardSettingsPage() {
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState('')
   const [loadedAvatarIds, setLoadedAvatarIds] = useState<Record<string, boolean>>({})
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
+    name: '',
+    degree: 'CA',
     institute: '',
     level: '',
     city: '',
+    studentId: '',
+    phone: '',
+    instituteRating: 0,
   })
 
   const [isResetting, setIsResetting] = useState(false)
@@ -141,13 +155,20 @@ export default function DashboardSettingsPage() {
 
         if (settingsResponse.ok) {
           const settingsData = await settingsResponse.json()
+          const degrees = Array.isArray(settingsData?.testSettings?.registrationDegrees)
+            ? settingsData.testSettings.registrationDegrees
+                .map((value: unknown) => String(value || '').trim())
+                .filter(Boolean)
+            : []
           const levels = Array.isArray(settingsData?.testSettings?.registrationLevels)
             ? settingsData.testSettings.registrationLevels
                 .map((value: unknown) => String(value || '').trim())
                 .filter(Boolean)
             : []
+          setDegreeOptions(degrees.length ? degrees : FALLBACK_DEGREES)
           setCaLevelOptions(levels.length ? levels : FALLBACK_CA_LEVELS)
         } else {
+          setDegreeOptions(FALLBACK_DEGREES)
           setCaLevelOptions(FALLBACK_CA_LEVELS)
         }
 
@@ -200,9 +221,14 @@ export default function DashboardSettingsPage() {
             parsedAvatarPacks.find((pack) => pack.id === currentPackId)?.name || ''
           )
           setProfileForm({
+            name: String(profile.name || user.name || ''),
+            degree: String(profile.degree || 'CA'),
             institute: String(profile.institute || ''),
             level: String(profile.level || ''),
             city: String(profile.city || ''),
+            studentId: String(profile.studentId || ''),
+            phone: String(profile.phone || ''),
+            instituteRating: Number(profile.instituteRating || 0),
           })
         }
       } catch (error) {
@@ -234,6 +260,12 @@ export default function DashboardSettingsPage() {
     if (caLevelOptions.includes(profileForm.level)) return
     setCaLevelOptions((prev) => [...prev, profileForm.level])
   }, [caLevelOptions, profileForm.level])
+
+  useEffect(() => {
+    if (!profileForm.degree) return
+    if (degreeOptions.includes(profileForm.degree)) return
+    setDegreeOptions((prev) => [...prev, profileForm.degree])
+  }, [degreeOptions, profileForm.degree])
 
   const activePack =
     avatarPacks.find((pack) => pack.id === activeAvatarPackTab) ||
@@ -345,25 +377,68 @@ export default function DashboardSettingsPage() {
   const handleSaveProfile = async () => {
     if (!user?.id) return
 
-    if (!profileForm.institute.trim() || !profileForm.level.trim() || !profileForm.city.trim()) {
+    if (
+      !profileForm.name.trim() ||
+      !profileForm.degree.trim() ||
+      !profileForm.level.trim() ||
+      !profileForm.city.trim() ||
+      !profileForm.studentId.trim()
+    ) {
       toast({
         title: 'Missing fields',
-        description: 'Institute, CA level, and city are required.',
+        description: 'Name, degree, CA level, city, and student ID are required.',
         variant: 'destructive',
       })
       return
     }
 
+    if (isStudentProfile) {
+      if (!profileForm.institute.trim() || !profileForm.studentId.trim() || !profileForm.phone.trim()) {
+        toast({
+          title: 'Missing fields',
+          description: 'Institute, student ID, and phone are required for student profiles.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (!normalizePkPhone(profileForm.phone.trim())) {
+        toast({
+          title: 'Invalid number',
+          description: 'Please enter a valid Pakistani mobile number.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (!profileForm.instituteRating || profileForm.instituteRating < 1 || profileForm.instituteRating > 5) {
+        toast({
+          title: 'Missing rating',
+          description: 'Please rate your institute from 1 to 5 stars.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     try {
       setIsSavingProfile(true)
+      const payload: Record<string, any> = {
+        name: profileForm.name.trim(),
+        degree: profileForm.degree.trim(),
+        level: profileForm.level.trim(),
+        city: profileForm.city.trim(),
+        studentId: profileForm.studentId.trim(),
+      }
+
+      if (isStudentProfile) {
+        payload.institute = profileForm.institute.trim()
+        payload.phone = profileForm.phone.trim()
+        payload.instituteRating = profileForm.instituteRating
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          institute: profileForm.institute.trim(),
-          level: profileForm.level.trim(),
-          city: profileForm.city.trim(),
-        }),
+        body: JSON.stringify(payload),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Failed to update profile')
@@ -381,9 +456,14 @@ export default function DashboardSettingsPage() {
 
       setProfileForm((prev) => ({
         ...prev,
+        name: String(data.user?.name || prev.name),
+        degree: String(data.user?.degree || prev.degree),
         institute: String(data.user?.institute || ''),
         level: String(data.user?.level || prev.level),
         city: String(data.user?.city || ''),
+        studentId: String(data.user?.studentId || ''),
+        phone: String(data.user?.phone || ''),
+        instituteRating: Number(data.user?.instituteRating || 0),
       }))
 
       toast({ title: 'Profile updated', description: 'Profile updated successfully!' })
@@ -678,17 +758,48 @@ export default function DashboardSettingsPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-bold text-slate-900">Profile Details</h3>
-                    <p className="text-sm text-slate-500">Update your institute, CA level, and city details.</p>
+                    <p className="text-sm text-slate-500">Update your academic and contact details.</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1 md:col-span-2">
-                      <Label htmlFor="profile-institute">Coaching Institute / Academy</Label>
+                      <Label htmlFor="profile-name">Full Name</Label>
                       <Input
-                        id="profile-institute"
-                        placeholder="e.g. Skans, PAIB, Self Study"
-                        value={profileForm.institute}
+                        id="profile-name"
+                        value={profileForm.name}
                         onChange={(event) =>
-                          setProfileForm((prev) => ({ ...prev, institute: event.target.value }))
+                          setProfileForm((prev) => ({ ...prev, name: event.target.value }))
+                        }
+                        disabled={isProfileLoading}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Degree</Label>
+                      <Select
+                        value={profileForm.degree}
+                        onValueChange={(value) =>
+                          setProfileForm((prev) => ({ ...prev, degree: value }))
+                        }
+                        disabled={isProfileLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select degree" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {degreeOptions.map((degreeOption) => (
+                            <SelectItem key={degreeOption} value={degreeOption}>
+                              {degreeOption}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label htmlFor="profile-student-id">Student ID</Label>
+                      <Input
+                        id="profile-student-id"
+                        value={profileForm.studentId}
+                        onChange={(event) =>
+                          setProfileForm((prev) => ({ ...prev, studentId: event.target.value }))
                         }
                         disabled={isProfileLoading}
                       />
@@ -723,6 +834,67 @@ export default function DashboardSettingsPage() {
                         disabled={isProfileLoading}
                       />
                     </div>
+                    {isStudentProfile ? (
+                      <div className="space-y-1 md:col-span-2">
+                        <Label htmlFor="profile-institute">Coaching Institute / Academy</Label>
+                        <Input
+                          id="profile-institute"
+                          placeholder="e.g. Skans, PAIB, Self Study"
+                          value={profileForm.institute}
+                          onChange={(event) =>
+                            setProfileForm((prev) => ({ ...prev, institute: event.target.value }))
+                          }
+                          disabled={isProfileLoading}
+                        />
+                      </div>
+                    ) : null}
+                    {isStudentProfile ? (
+                      <div className="space-y-1 md:col-span-2">
+                        <Label htmlFor="profile-phone">Pakistani Phone Number</Label>
+                        <Input
+                          id="profile-phone"
+                          placeholder="+923001234567 or 03001234567"
+                          value={profileForm.phone}
+                          onChange={(event) =>
+                            setProfileForm((prev) => ({ ...prev, phone: event.target.value }))
+                          }
+                          disabled={isProfileLoading}
+                        />
+                      </div>
+                    ) : null}
+                    {isStudentProfile ? (
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Institute Rating</Label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() =>
+                                setProfileForm((prev) => ({ ...prev, instituteRating: star }))
+                              }
+                              className="rounded-md p-1 transition-colors hover:bg-amber-50"
+                              disabled={isProfileLoading}
+                              aria-label={`Rate ${star} star`}
+                            >
+                              <Star
+                                size={20}
+                                className={
+                                  star <= profileForm.instituteRating
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : 'text-slate-300'
+                                }
+                              />
+                            </button>
+                          ))}
+                          <span className="text-xs text-slate-500">
+                            {profileForm.instituteRating
+                              ? `${profileForm.instituteRating}/5`
+                              : 'Select rating'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex justify-end">
                     <Button

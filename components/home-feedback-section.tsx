@@ -282,7 +282,6 @@ export function HomeFeedbackSection({
   const autoplayDelay = isSmall375 ? AUTO_SCROLL_MS_375 : isSmall414 ? AUTO_SCROLL_MS_414 : AUTO_SCROLL_MS
 
   const averageRating = useMemo(() => getAverageRating(reviews), [reviews])
-  const totalReviews = reviews.length
 
   useEffect(() => {
     if (!emblaApi || !useCarousel) return
@@ -369,7 +368,6 @@ export function HomeFeedbackSection({
                 <RatingStars rating={averageRating} size={16} />
                 <span>{averageRating.toFixed(1)} out of 5</span>
               </div>
-              <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-[#64748b]'}`}>Based on {totalReviews} reviews</p>
             </div>
           ) : null}
         </div>

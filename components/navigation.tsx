@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Bell, Menu, X, LogOut, User as UserIcon } from 'lucide-react'
 import { Button } from './ui/button'
 import { useAuth } from '@/lib/auth-context'
-import { ProfileModal } from './profile-modal'
 import Image from 'next/image'
 import { NotificationOptIn } from './notification-opt-in'
 import { usePathname } from 'next/navigation'
@@ -19,7 +18,6 @@ import { betaFeatureDefinitions } from '@/data/beta-features'
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isPracticeOpen, setIsPracticeOpen] = useState(false)
   const [isStudyOpen, setIsStudyOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
@@ -140,6 +138,7 @@ export function Navigation() {
   }, [betaFeatures, user?.studentRole])
   const showBetaLinks = betaNavItems.length > 0
   const useFrostedNavbar = isScrolled || isMenuOpen
+  const profileHref = user?.role === 'student' ? '/dashboard/settings' : '/admin/users'
 
   return (
     <nav
@@ -295,8 +294,8 @@ export function Navigation() {
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => setIsProfileOpen(true)}
+              <Link
+                href={profileHref}
                 className="flex items-center gap-2 text-text-dark font-medium hover:text-primary-green transition-colors focus:outline-none"
               >
                 {user.avatar ? (
@@ -307,7 +306,7 @@ export function Navigation() {
                   <UserIcon size={18} className="text-primary-green" />
                 )}
                 <span>{user.name}</span>
-              </button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
@@ -497,11 +496,9 @@ export function Navigation() {
                   >
                     {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
                   </Link>
-                  <button
-                    onClick={() => {
-                      setIsProfileOpen(true)
-                      setIsMenuOpen(false)
-                    }}
+                  <Link
+                    href={profileHref}
+                    onClick={() => setIsMenuOpen(false)}
                     className="flex items-center gap-2 px-2 py-3 text-text-dark font-medium mb-1 hover:text-primary-green transition-colors w-full text-left"
                   >
                     {user.avatar ? (
@@ -512,7 +509,7 @@ export function Navigation() {
                       <UserIcon size={20} className="text-primary-green" />
                     )}
                     <span>{user.name}</span>
-                  </button>
+                  </Link>
                   <Button
                     variant="outline"
                     className="w-full flex items-center justify-center gap-2"
@@ -551,10 +548,6 @@ export function Navigation() {
           </div>
         </div>
       )}
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
       <style jsx>{`
         .navbar-frosted {
           background: rgba(255, 255, 255, 0.85);
