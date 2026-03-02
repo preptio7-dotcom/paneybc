@@ -4,6 +4,43 @@ import { computePracticeStreak } from '@/lib/practice-streak'
 import { getConfiguredStreakResetTimezone, getDateKeyInTimezone } from '@/lib/streak-settings'
 import { NextRequest, NextResponse } from 'next/server'
 
+function getAnswerKey(answer: any) {
+  if (!answer) return null
+  const questionId = String(answer.questionId || '').trim()
+  if (questionId) return `id:${questionId}`
+  const subject = String(answer.subject || '').trim()
+  const questionNumber = Number(answer.questionNumber)
+  if (subject && Number.isFinite(questionNumber)) {
+    return `num:${subject}::${questionNumber}`
+  }
+  return null
+}
+
+function estimateWrongAnswersSessionCount(results: any[]) {
+  let sessions = 0
+  const activeWrongKeys = new Set<string>()
+
+  for (const result of results) {
+    const answers = Array.isArray((result as any).answers) ? (result as any).answers : []
+    const sessionKeys = Array.from(new Set(answers.map((answer: any) => getAnswerKey(answer)).filter(Boolean)))
+    if (sessionKeys.length > 0 && sessionKeys.every((key) => activeWrongKeys.has(String(key)))) {
+      sessions += 1
+    }
+
+    for (const answer of answers) {
+      const key = getAnswerKey(answer)
+      if (!key) continue
+      if (answer?.isCorrect === false) {
+        activeWrongKeys.add(key)
+      } else if (answer?.isCorrect === true) {
+        activeWrongKeys.delete(key)
+      }
+    }
+  }
+
+  return sessions
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -14,7 +51,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. Get all results for user
-    const results = await prisma.testResult.findMany({ where: { userId } })
+    const results = await prisma.testResult.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+    })
 
     // 2. Get total questions count per subject and difficulty
     const statsBySubjectAndDifficulty = await prisma.question.groupBy({
@@ -35,7 +75,8 @@ export async function GET(request: NextRequest) {
         correct: 0,
         scoreSum: 0,
         testCount: 0,
-        counts: { total: 0, easy: 0, medium: 0, hard: 0 }
+        counts: { total: 0, easy: 0, medium: 0, hard: 0 },
+        lastPracticedAt: null as Date | null,
       }
     })
 
@@ -59,13 +100,20 @@ export async function GET(request: NextRequest) {
           correct: 0,
           scoreSum: 0,
           testCount: 0,
-          counts: { total: 0, easy: 0, medium: 0, hard: 0 }
+          counts: { total: 0, easy: 0, medium: 0, hard: 0 },
+          lastPracticedAt: null as Date | null,
         }
       }
       subjectStats[res.subject].totalAttempted += res.totalQuestions
       subjectStats[res.subject].correct += res.correctAnswers
       subjectStats[res.subject].scoreSum += res.score
       subjectStats[res.subject].testCount += 1
+      if (
+        !subjectStats[res.subject].lastPracticedAt ||
+        res.createdAt > subjectStats[res.subject].lastPracticedAt
+      ) {
+        subjectStats[res.subject].lastPracticedAt = res.createdAt
+      }
     })
 
     // Calculate final stats
@@ -80,7 +128,8 @@ export async function GET(request: NextRequest) {
         totalQuestions: subjectTotal,
         difficultyCounts: stats.counts,
         progressPercent: subjectTotal > 0 ? Math.min(Math.round((stats.totalAttempted / subjectTotal) * 100), 100) : 0,
-        testCount: stats.testCount
+        testCount: stats.testCount,
+        lastPracticedAt: stats.lastPracticedAt || null,
       }
     })
 
@@ -137,6 +186,21 @@ export async function GET(request: NextRequest) {
         }
 
     const startedSubjects = formattedStats.filter((item) => item.completedQuestions > 0).length
+    const wrongAnswersSessions = estimateWrongAnswersSessionCount(results)
+    const [weakAreaCompletions, financialStatementsCompletions] = await Promise.all([
+      prisma.streakAuditLog.count({
+        where: {
+          userId,
+          endpoint: '/api/weak-areas/complete',
+        },
+      }),
+      prisma.financialStatementAttempt.count({
+        where: {
+          userId,
+          status: 'completed',
+        },
+      }),
+    ])
 
     return NextResponse.json({
       message: 'Dashboard stats retrieved successfully',
@@ -153,6 +217,11 @@ export async function GET(request: NextRequest) {
           practicedToday: resolvedStreak.practicedToday,
           lastPracticeDate: resolvedStreak.lastPracticeDate,
           timezone,
+        },
+        modeCompletions: {
+          weekIntensive: weakAreaCompletions,
+          wrongAnswers: wrongAnswersSessions,
+          financialStatements: financialStatementsCompletions,
         },
       },
     })
