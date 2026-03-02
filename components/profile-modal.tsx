@@ -329,7 +329,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-y-auto bg-white">
+      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full sm:max-w-[760px] max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
           <DialogDescription>Update your academic and contact details.</DialogDescription>
@@ -338,7 +338,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         <form onSubmit={handleUpdateProfile} className="space-y-6 py-2">
           <div className="space-y-3">
             <Label>Select Avatar</Label>
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
               {avatarPacks.map((pack) => (
                 <button
                   key={pack.id}
@@ -356,13 +356,13 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
             <div className={`transition-opacity duration-150 ${isSwitchingPack ? 'opacity-0' : 'opacity-100'}`}>
               {isSwitchingPack ? (
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 sm:gap-3">
                   {Array.from({ length: 10 }).map((_, index) => (
                     <span key={`switching-avatar-${index}`} className="aspect-square rounded-2xl bg-slate-100 animate-pulse" />
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 sm:gap-3">
                   {activeAvatarOptions.map((avatar) => (
                     <button
                       key={avatar.avatarId}
@@ -512,11 +512,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+            <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || isFetchingProfile || !form.avatarId} className="bg-primary-green hover:bg-primary-green/90">
+            <Button type="submit" disabled={isLoading || isFetchingProfile || !form.avatarId} className="bg-primary-green hover:bg-primary-green/90 w-full sm:w-auto">
               {(isLoading || isFetchingProfile) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>

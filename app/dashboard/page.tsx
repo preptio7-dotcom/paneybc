@@ -1404,7 +1404,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => window.location.assign('/feedback?source=dashboard')}
-                  className="text-sm text-slate-500 hover:text-primary-green transition-colors"
+                  className="w-full text-left text-sm text-slate-500 hover:text-primary-green transition-colors break-words"
                 >
                   {feedbackStatusLoaded
                     ? hasSubmittedFeedback

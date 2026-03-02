@@ -133,7 +133,7 @@ export default function FeedbackClient() {
     return (
       <div className="min-h-screen bg-background-light">
         <Navigation />
-        <div className="pt-24 pb-16 px-6 flex items-center justify-center">
+        <div className="pt-24 pb-16 px-4 sm:px-6 flex items-center justify-center">
           <Loader2 className="animate-spin text-primary-green" size={32} />
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function FeedbackClient() {
     return (
       <div className="min-h-screen bg-background-light">
         <Navigation />
-        <div className="pt-24 pb-16 px-6 max-w-xl mx-auto">
+        <div className="pt-24 pb-16 px-4 sm:px-6 max-w-xl mx-auto">
           <Card className="border-border">
             <CardHeader>
               <CardTitle>Login Required</CardTitle>
@@ -164,9 +164,9 @@ export default function FeedbackClient() {
   return (
     <div className="min-h-screen bg-background-light">
       <Navigation />
-      <div className="pt-20 md:pt-28 pb-16 px-6 max-w-3xl mx-auto space-y-6">
+      <div className="pt-20 md:pt-28 pb-16 px-4 sm:px-6 max-w-3xl mx-auto space-y-6">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-text-dark">Share Feedback</h1>
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-text-dark">Share Feedback</h1>
           <p className="text-text-light">
             {hasSubmitted
               ? 'You can edit your previous feedback anytime.'
@@ -194,7 +194,7 @@ export default function FeedbackClient() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Your Rating *</label>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
@@ -204,7 +204,7 @@ export default function FeedbackClient() {
                     aria-label={`Rate ${star} star`}
                   >
                     <Star
-                      size={22}
+                      size={20}
                       className={star <= form.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
                     />
                   </button>
@@ -226,11 +226,11 @@ export default function FeedbackClient() {
               />
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button onClick={handleSave} disabled={isSaving}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
                 {isSaving ? 'Saving...' : hasSubmitted ? 'Update Feedback' : 'Submit Feedback'}
               </Button>
-              <Button variant="outline" onClick={() => window.location.assign('/dashboard')}>
+              <Button variant="outline" onClick={() => window.location.assign('/dashboard')} className="w-full sm:w-auto">
                 Back to Dashboard
               </Button>
             </div>
