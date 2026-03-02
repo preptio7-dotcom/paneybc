@@ -170,6 +170,7 @@ export async function PATCH(request: NextRequest) {
       const existingProfile = await prisma.user.findUnique({
         where: { id: currentUser.userId },
         select: {
+          role: true,
           name: true,
           degree: true,
           level: true,
@@ -184,6 +185,8 @@ export async function PATCH(request: NextRequest) {
       if (!existingProfile) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 })
       }
+
+      const isStudentProfile = existingProfile.role === 'student'
 
       const normalizedName = sanitizeText(
         Object.prototype.hasOwnProperty.call(body, 'name') ? body.name : existingProfile.name || '',
@@ -222,16 +225,19 @@ export async function PATCH(request: NextRequest) {
         !normalizedName ||
         !normalizedDegree ||
         !normalizedLevel ||
-        !normalizedInstitute ||
         !normalizedCity ||
-        !normalizedStudentId ||
-        !normalizedPhone
+        !normalizedStudentId
       ) {
         return NextResponse.json({ error: 'Please complete all required profile fields' }, { status: 400 })
       }
 
-      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-        return NextResponse.json({ error: 'Institute rating must be between 1 and 5' }, { status: 400 })
+      if (isStudentProfile) {
+        if (!normalizedInstitute || !normalizedPhone) {
+          return NextResponse.json({ error: 'Please complete all required profile fields' }, { status: 400 })
+        }
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+          return NextResponse.json({ error: 'Institute rating must be between 1 and 5' }, { status: 400 })
+        }
       }
 
       const settings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
@@ -243,15 +249,26 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Selected level is no longer available' }, { status: 400 })
       }
 
-      const duplicate = await prisma.user.findFirst({
-        where: {
-          id: { not: currentUser.userId },
-          OR: [{ phone: normalizedPhone }, { studentId: normalizedStudentId }],
-        },
-        select: { phone: true, studentId: true },
-      })
+      const duplicateWhereClauses: Array<{ phone?: string; studentId?: string }> = []
+      if (normalizedStudentId) {
+        duplicateWhereClauses.push({ studentId: normalizedStudentId })
+      }
+      if (isStudentProfile && normalizedPhone) {
+        duplicateWhereClauses.push({ phone: normalizedPhone })
+      }
+
+      const duplicate = duplicateWhereClauses.length
+        ? await prisma.user.findFirst({
+            where: {
+              id: { not: currentUser.userId },
+              OR: duplicateWhereClauses,
+            },
+            select: { phone: true, studentId: true },
+          })
+        : null
+
       if (duplicate) {
-        if (duplicate.phone === normalizedPhone) {
+        if (isStudentProfile && normalizedPhone && duplicate.phone === normalizedPhone) {
           return NextResponse.json({ error: 'Phone number is already in use' }, { status: 409 })
         }
         if (duplicate.studentId === normalizedStudentId) {
@@ -262,11 +279,13 @@ export async function PATCH(request: NextRequest) {
       updateData.name = normalizedName
       updateData.degree = normalizedDegree
       updateData.level = normalizedLevel
-      updateData.institute = normalizedInstitute
       updateData.city = normalizedCity
       updateData.studentId = normalizedStudentId
-      updateData.phone = normalizedPhone
-      updateData.instituteRating = rating
+      if (isStudentProfile) {
+        updateData.institute = normalizedInstitute
+        updateData.phone = normalizedPhone
+        updateData.instituteRating = rating
+      }
     }
 
     if (!Object.keys(updateData).length) {

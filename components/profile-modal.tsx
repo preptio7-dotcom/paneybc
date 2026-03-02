@@ -47,6 +47,7 @@ type RegistrationOptions = {
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, setUser } = useAuth()
   const { toast } = useToast()
+  const isStudentRole = user?.role === 'student'
   const [isLoading, setIsLoading] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [isFetchingProfile, setIsFetchingProfile] = useState(false)
@@ -207,7 +208,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.avatarId || !form.degree || !form.level || !form.institute.trim() || !form.city.trim() || !form.studentId.trim() || !form.phone.trim()) {
+    if (!form.name.trim() || !form.avatarId || !form.degree || !form.level || !form.city.trim() || !form.studentId.trim()) {
       toast({
         title: 'Missing fields',
         description: 'All profile fields are required.',
@@ -215,7 +216,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       })
       return
     }
-    if (!normalizePkPhone(form.phone)) {
+
+    if (isStudentRole && (!form.institute.trim() || !form.phone.trim())) {
+      toast({
+        title: 'Missing fields',
+        description: 'Institute and phone are required for student profiles.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (isStudentRole && !normalizePkPhone(form.phone)) {
       toast({
         title: 'Invalid number',
         description: 'Please enter a valid Pakistani mobile number.',
@@ -223,7 +234,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       })
       return
     }
-    if (!form.instituteRating || form.instituteRating < 1 || form.instituteRating > 5) {
+
+    if (isStudentRole && (!form.instituteRating || form.instituteRating < 1 || form.instituteRating > 5)) {
       toast({
         title: 'Missing rating',
         description: 'Please rate your institute from 1 to 5 stars.',
@@ -234,20 +246,25 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
     try {
       setIsLoading(true)
+      const payload: Record<string, any> = {
+        name: form.name.trim(),
+        avatarId: form.avatarId,
+        degree: form.degree,
+        level: form.level,
+        city: form.city.trim(),
+        studentId: form.studentId.trim(),
+      }
+
+      if (isStudentRole) {
+        payload.institute = form.institute.trim()
+        payload.phone = form.phone.trim()
+        payload.instituteRating = form.instituteRating
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          avatarId: form.avatarId,
-          degree: form.degree,
-          level: form.level,
-          institute: form.institute.trim(),
-          city: form.city.trim(),
-          studentId: form.studentId.trim(),
-          phone: form.phone.trim(),
-          instituteRating: form.instituteRating,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await response.json()
@@ -417,15 +434,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="profile-institute">Institute *</Label>
-              <Input
-                id="profile-institute"
-                value={form.institute}
-                onChange={(e) => setForm((prev) => ({ ...prev, institute: e.target.value }))}
-                required
-              />
-            </div>
+            {isStudentRole ? (
+              <div className="space-y-1 md:col-span-2">
+                <Label htmlFor="profile-institute">Institute *</Label>
+                <Input
+                  id="profile-institute"
+                  value={form.institute}
+                  onChange={(e) => setForm((prev) => ({ ...prev, institute: e.target.value }))}
+                  required
+                />
+              </div>
+            ) : null}
             <div className="space-y-1">
               <Label htmlFor="profile-city">City *</Label>
               <Input
@@ -444,36 +463,40 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 required
               />
             </div>
-            <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="profile-phone">Pakistani Phone *</Label>
-              <Input
-                id="profile-phone"
-                value={form.phone}
-                onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
-                placeholder="+923001234567 or 03001234567"
-                required
-              />
-            </div>
-            <div className="space-y-1 md:col-span-2">
-              <Label>Institute Rating *</Label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, instituteRating: star }))}
-                    className="p-1"
-                    aria-label={`Rate ${star} star`}
-                  >
-                    <Star
-                      size={20}
-                      className={star <= form.instituteRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
-                    />
-                  </button>
-                ))}
-                <span className="text-xs text-slate-500">{form.instituteRating ? `${form.instituteRating}/5` : 'Select rating'}</span>
+            {isStudentRole ? (
+              <div className="space-y-1 md:col-span-2">
+                <Label htmlFor="profile-phone">Pakistani Phone *</Label>
+                <Input
+                  id="profile-phone"
+                  value={form.phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+923001234567 or 03001234567"
+                  required
+                />
               </div>
-            </div>
+            ) : null}
+            {isStudentRole ? (
+              <div className="space-y-1 md:col-span-2">
+                <Label>Institute Rating *</Label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, instituteRating: star }))}
+                      className="p-1"
+                      aria-label={`Rate ${star} star`}
+                    >
+                      <Star
+                        size={20}
+                        className={star <= form.instituteRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
+                      />
+                    </button>
+                  ))}
+                  <span className="text-xs text-slate-500">{form.instituteRating ? `${form.instituteRating}/5` : 'Select rating'}</span>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="pt-4 border-t space-y-4">
