@@ -7,10 +7,6 @@
     {
       "path": "/api/cron/publish-scheduled",
       "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/blog-analytics-retention",
-      "schedule": "20 0 * * *"
     }
   ]
 }

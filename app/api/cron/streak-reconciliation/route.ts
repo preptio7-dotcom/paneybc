@@ -57,6 +57,26 @@ async function executeReconciliation(source: 'cron' | 'admin') {
   }
 }
 
+async function runBlogAnalyticsRetention() {
+  const cutoff = new Date()
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 1)
+
+  const [events, clicks] = await Promise.all([
+    prisma.blogAnalyticsEvent.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    }),
+    prisma.blogCtaClick.deleteMany({
+      where: { clickedAt: { lt: cutoff } },
+    }),
+  ])
+
+  return {
+    cutoff: cutoff.toISOString(),
+    deletedAnalyticsEvents: events.count,
+    deletedCtaClicks: clicks.count,
+  }
+}
+
 async function createReconciliationAuditLog(input: ReconciliationAuditLogInput) {
   const actor = input.actor || {
     id: 'system-cron',
@@ -90,6 +110,16 @@ export async function GET(request: NextRequest) {
     }
 
     const payload = await executeReconciliation('cron')
+    let retention: Awaited<ReturnType<typeof runBlogAnalyticsRetention>> | null = null
+    try {
+      retention = await runBlogAnalyticsRetention()
+      console.log(
+        `[streak-reconciliation] retention cleanup complete analytics=${retention.deletedAnalyticsEvents} ctaClicks=${retention.deletedCtaClicks}`
+      )
+    } catch (retentionError) {
+      console.error('[streak-reconciliation] retention cleanup failed:', retentionError)
+    }
+
     try {
       await createReconciliationAuditLog({
         triggeredBy: 'cron_auto',
@@ -101,7 +131,10 @@ export async function GET(request: NextRequest) {
     } catch (logError) {
       console.error('[streak-reconciliation] failed to write success audit log:', logError)
     }
-    return NextResponse.json(payload)
+    return NextResponse.json({
+      ...payload,
+      retention,
+    })
   } catch (error: any) {
     console.error('[streak-reconciliation] error:', error)
     try {

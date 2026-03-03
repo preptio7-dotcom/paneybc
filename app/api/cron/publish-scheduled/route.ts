@@ -7,18 +7,20 @@ import { requireAdminUser } from '@/lib/admin-auth'
 import { createBlogRevision } from '@/lib/blog-revisions'
 import { revalidateBlogPaths } from '@/lib/blog-cache'
 
-function isAuthorizedCronRequest(request: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  const incoming = request.headers.get('x-cron-secret')
-  if (secret && incoming && incoming === secret) return true
-  return Boolean(requireAdminUser(request))
+function hasValidCronSecret(request: NextRequest) {
+  const secret = process.env.CRON_SECRET || process.env.PUBLISH_SCHEDULED_SECRET
+  if (!secret) return true
+
+  const authHeader = request.headers.get('authorization')
+  if (authHeader === `Bearer ${secret}`) return true
+
+  const legacyHeader = request.headers.get('x-cron-secret')
+  if (legacyHeader === secret) return true
+
+  return false
 }
 
-export async function POST(request: NextRequest) {
-  if (!isAuthorizedCronRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+async function runScheduledPublisher() {
   const now = new Date()
   const duePosts = await prisma.blogPost.findMany({
     where: {
@@ -74,11 +76,29 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({
+  return {
     success: true,
     publishedCount: successCount,
     failedCount: failed.length,
     failed,
     processedAt: now.toISOString(),
-  })
+  }
+}
+
+export async function GET(request: NextRequest) {
+  if (!hasValidCronSecret(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const payload = await runScheduledPublisher()
+  return NextResponse.json(payload)
+}
+
+export async function POST(request: NextRequest) {
+  if (!hasValidCronSecret(request) && !requireAdminUser(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const payload = await runScheduledPublisher()
+  return NextResponse.json(payload)
 }
