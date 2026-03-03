@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const startOfToday = new Date()
     startOfToday.setHours(0, 0, 0, 0)
 
-    const [activeThreatIpCount, pendingFeedbackCount, newUsersTodayCount] = await Promise.all([
+    const [activeThreatIpCount, pendingFeedbackCount, newUsersTodayCount, pendingAmbassadorCount] = await Promise.all([
       prisma.ipActivityLog.count({
         where: {
           status: 'active_threat',
@@ -31,13 +31,21 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
+      prisma.joinUsRequest.count({
+        where: {
+          type: 'ambassador',
+          status: 'new',
+        },
+      }),
     ])
 
     return NextResponse.json({
       activeThreatIpCount,
       pendingFeedbackCount,
       newUsersTodayCount,
-      notificationCount: activeThreatIpCount + pendingFeedbackCount + newUsersTodayCount,
+      pendingAmbassadorCount,
+      notificationCount:
+        activeThreatIpCount + pendingFeedbackCount + newUsersTodayCount + pendingAmbassadorCount,
     })
   } catch (error: any) {
     return NextResponse.json(
@@ -48,4 +56,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

@@ -19,6 +19,15 @@ import {
 } from '@/lib/homepage-theme'
 import { type StreakResetTimezone } from '@/lib/streak-settings'
 
+type AmbassadorSubmissionPreview = {
+    id: string
+    name: string
+    email: string
+    institute: string | null
+    createdAt: string
+    status: 'new' | 'reviewed' | 'replied'
+}
+
 export default function AdminDashboardPage() {
     const { toast } = useToast()
     const [stats, setStats] = useState([
@@ -41,9 +50,13 @@ export default function AdminDashboardPage() {
     const [newDegree, setNewDegree] = useState('')
     const [newLevel, setNewLevel] = useState('')
     const [isSavingTestSettings, setIsSavingTestSettings] = useState(false)
+    const [recentAmbassadorApplications, setRecentAmbassadorApplications] = useState<AmbassadorSubmissionPreview[]>([])
+    const [pendingAmbassadorCount, setPendingAmbassadorCount] = useState(0)
+    const [isLoadingAmbassadorApplications, setIsLoadingAmbassadorApplications] = useState(true)
 
     useEffect(() => {
         fetchStats()
+        fetchRecentAmbassadorApplications()
     }, [])
 
     useEffect(() => {
@@ -107,6 +120,23 @@ export default function AdminDashboardPage() {
             console.error('Failed to fetch admin stats:', error)
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const fetchRecentAmbassadorApplications = async () => {
+        try {
+            setIsLoadingAmbassadorApplications(true)
+            const response = await fetch('/api/admin/join-us?type=ambassador&limit=5', { cache: 'no-store' })
+            const data = await response.json()
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load ambassador applications')
+            }
+            setRecentAmbassadorApplications(Array.isArray(data.submissions) ? data.submissions : [])
+            setPendingAmbassadorCount(Number(data.newAmbassadorCount || 0))
+        } catch (error) {
+            console.error('Failed to load ambassador applications:', error)
+        } finally {
+            setIsLoadingAmbassadorApplications(false)
         }
     }
 
@@ -555,6 +585,54 @@ export default function AdminDashboardPage() {
                             </Link>
                         ))}
                     </div>
+
+                    <Card className="border-border mt-12">
+                        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+                            <div>
+                                <CardTitle className="text-xl">Recent Ambassador Applications</CardTitle>
+                                <CardDescription>
+                                    New pending: <span className="font-semibold text-emerald-600">{pendingAmbassadorCount}</span>
+                                </CardDescription>
+                            </div>
+                            <Link href="/admin/join-us">
+                                <Button variant="outline">View All</Button>
+                            </Link>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoadingAmbassadorApplications ? (
+                                <p className="text-sm text-text-light">Loading applications...</p>
+                            ) : recentAmbassadorApplications.length === 0 ? (
+                                <p className="text-sm text-text-light">No ambassador applications yet.</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {recentAmbassadorApplications.map((item) => (
+                                        <div key={item.id} className="rounded-lg border border-border p-3">
+                                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                                <div>
+                                                    <p className="font-semibold text-text-dark">{item.name}</p>
+                                                    <p className="text-sm text-text-light">{item.email}</p>
+                                                    <p className="text-xs text-text-light mt-1">
+                                                        {item.institute || 'Institute not provided'} · {new Date(item.createdAt).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <span
+                                                    className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                                        item.status === 'new'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : item.status === 'reviewed'
+                                                              ? 'bg-amber-100 text-amber-700'
+                                                              : 'bg-blue-100 text-blue-700'
+                                                    }`}
+                                                >
+                                                    {item.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
 

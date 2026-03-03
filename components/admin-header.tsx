@@ -23,6 +23,7 @@ import {
   Settings,
   Shield,
   Upload,
+  UserRoundCheck,
   User as UserIcon,
   Users,
   X,
@@ -34,6 +35,7 @@ type AdminBadgeState = {
   activeThreatIpCount: number
   pendingFeedbackCount: number
   newUsersTodayCount: number
+  pendingAmbassadorCount: number
   notificationCount: number
 }
 
@@ -66,6 +68,12 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Users & Feedback',
     items: [
       { label: 'Users', href: '/admin/users', icon: Users, badgeKey: 'newUsersTodayCount' },
+      {
+        label: 'Ambassador Apps',
+        href: '/admin/join-us',
+        icon: UserRoundCheck,
+        badgeKey: 'pendingAmbassadorCount',
+      },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
     ],
@@ -103,6 +111,7 @@ function getBadgeColor(item: NavItem) {
   if (item.badgeKey === 'activeThreatIpCount') return 'bg-red-600 text-white'
   if (item.badgeKey === 'pendingFeedbackCount') return 'bg-amber-500 text-white'
   if (item.badgeKey === 'newUsersTodayCount') return 'bg-blue-500 text-white'
+  if (item.badgeKey === 'pendingAmbassadorCount') return 'bg-emerald-500 text-white'
   return 'bg-slate-600 text-white'
 }
 
@@ -167,6 +176,7 @@ export function AdminHeader() {
     activeThreatIpCount: 0,
     pendingFeedbackCount: 0,
     newUsersTodayCount: 0,
+    pendingAmbassadorCount: 0,
     notificationCount: 0,
   })
 
@@ -185,6 +195,7 @@ export function AdminHeader() {
           activeThreatIpCount: Number(data?.activeThreatIpCount || 0),
           pendingFeedbackCount: Number(data?.pendingFeedbackCount || 0),
           newUsersTodayCount: Number(data?.newUsersTodayCount || 0),
+          pendingAmbassadorCount: Number(data?.pendingAmbassadorCount || 0),
           notificationCount: Number(data?.notificationCount || 0),
         })
       } catch {

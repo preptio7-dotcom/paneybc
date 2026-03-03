@@ -13,13 +13,45 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200)
+    const type = (searchParams.get('type') || '').trim().toLowerCase()
+    const status = (searchParams.get('status') || '').trim().toLowerCase()
+    const query = (searchParams.get('q') || '').trim()
 
-    const submissions = await prisma.joinUsRequest.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: limit,
+    const where: any = {}
+    if (type) where.type = type
+    if (status && ['new', 'reviewed', 'replied'].includes(status)) {
+      where.status = status
+    }
+    if (query) {
+      where.OR = [
+        { name: { contains: query, mode: 'insensitive' } },
+        { email: { contains: query, mode: 'insensitive' } },
+        { phone: { contains: query, mode: 'insensitive' } },
+        { institute: { contains: query, mode: 'insensitive' } },
+        { message: { contains: query, mode: 'insensitive' } },
+      ]
+    }
+
+    const [submissions, totalCount, newAmbassadorCount] = await Promise.all([
+      prisma.joinUsRequest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      }),
+      prisma.joinUsRequest.count({ where }),
+      prisma.joinUsRequest.count({
+        where: {
+          type: 'ambassador',
+          status: 'new',
+        },
+      }),
+    ])
+
+    return NextResponse.json({
+      submissions,
+      totalCount,
+      newAmbassadorCount,
     })
-
-    return NextResponse.json({ submissions })
   } catch (error: any) {
     console.error('Join Us admin fetch error:', error)
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 })
