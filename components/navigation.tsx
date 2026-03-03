@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { NotificationOptIn } from './notification-opt-in'
 import { usePathname } from 'next/navigation'
 import {
+  canAccessBetaFeature,
   DEFAULT_BETA_FEATURE_SETTINGS,
   extractBetaFeatureSettings,
   type BetaFeatureSettings,
@@ -136,6 +137,13 @@ export function Navigation() {
       (item) => item.key !== 'studentFeedback' && betaFeatures[item.key] !== 'public'
     )
   }, [betaFeatures, user?.studentRole])
+  const showBlogInMainNav =
+    betaFeatures.blog === 'public' || user?.role === 'admin' || user?.role === 'super_admin'
+  const canAccessBlogRoute =
+    showBlogInMainNav ||
+    canAccessBetaFeature(betaFeatures.blog, user?.studentRole) ||
+    user?.role === 'admin' ||
+    user?.role === 'super_admin'
   const showBetaLinks = betaNavItems.length > 0
   const useFrostedNavbar = isScrolled || isMenuOpen
   const profileHref = user?.role === 'student' ? '/dashboard/settings' : '/admin/users'
@@ -240,6 +248,11 @@ export function Navigation() {
               <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors">
                 Subjects
               </Link>
+              {showBlogInMainNav ? (
+                <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors">
+                  Blog
+                </Link>
+              ) : null}
               <Link href="/ambassador" className="text-text-dark hover:text-primary-green transition-colors">
                 Ambassador
               </Link>
@@ -463,12 +476,22 @@ export function Navigation() {
                 <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                   Subjects
                 </Link>
+                {showBlogInMainNav ? (
+                  <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                    Blog
+                  </Link>
+                ) : null}
                 <Link href="/ambassador" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                   Ambassador
                 </Link>
-                <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
-                  Contact
+              <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                Contact
+              </Link>
+              {!showBlogInMainNav && canAccessBlogRoute && user?.studentRole === 'ambassador' ? (
+                <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                  Blog
                 </Link>
+              ) : null}
                 {showBetaLinks ? (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold mb-1">Beta</p>

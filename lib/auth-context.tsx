@@ -33,6 +33,12 @@ interface AuthContextType {
       verificationToken?: string
       website?: string
       startedAt?: number
+      blogReferral?: {
+        post_id?: string
+        post_slug?: string
+        visited_at?: number
+        session_id?: string
+      }
     }
   ) => Promise<void>
   logout: () => Promise<void>
@@ -102,12 +108,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       verificationToken?: string
       website?: string
       startedAt?: number
+      blogReferral?: {
+        post_id?: string
+        post_slug?: string
+        visited_at?: number
+        session_id?: string
+      }
     }
   ) => {
+    const resolvedBlogReferral = (() => {
+      if (options?.blogReferral) return options.blogReferral
+      if (typeof window === 'undefined') return null
+      try {
+        const raw = sessionStorage.getItem('blog_referral')
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        return typeof parsed === 'object' && parsed ? parsed : null
+      } catch {
+        return null
+      }
+    })()
+
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name, ...options }),
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+        ...options,
+        blogReferral: resolvedBlogReferral || undefined,
+      }),
       credentials: 'include',
     })
 
@@ -120,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user)
     try {
       localStorage.setItem('preptio_welcome_unread', '1')
+      sessionStorage.removeItem('blog_referral')
     } catch (error) {
       // ignore storage errors
     }

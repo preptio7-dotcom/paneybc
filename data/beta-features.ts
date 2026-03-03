@@ -9,6 +9,12 @@ export type BetaFeatureDefinition = {
 
 export const betaFeatureDefinitions: BetaFeatureDefinition[] = [
   {
+    key: 'blog',
+    label: 'Blog',
+    description: 'Public blog pages and latest article previews.',
+    href: '/blog',
+  },
+  {
     key: 'faq',
     label: 'Homepage FAQ',
     description: 'Frequently asked questions shown on the home page.',

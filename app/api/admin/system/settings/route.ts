@@ -102,6 +102,9 @@ export async function GET(request: NextRequest) {
       studentFeedback: {
         visibility: normalizedBetaFeatures.studentFeedback,
       },
+      blog: {
+        visibility: normalizedBetaFeatures.blog,
+      },
     }
 
     return NextResponse.json({
@@ -213,6 +216,9 @@ export async function POST(request: NextRequest) {
       },
       studentFeedback: {
         visibility: mergedBetaFeatures.studentFeedback,
+      },
+      blog: {
+        visibility: mergedBetaFeatures.blog,
       },
     }
 

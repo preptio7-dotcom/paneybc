@@ -19,6 +19,7 @@ import {
   Menu,
   MessageSquare,
   Palette,
+  PenSquare,
   Settings,
   Shield,
   Upload,
@@ -52,6 +53,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Content Management',
     items: [
+      { label: 'Blog', href: '/admin/blog', icon: PenSquare },
+      { label: 'Blog Analytics', href: '/admin/blog/analytics', icon: BarChart2 },
       { label: 'Questions', href: '/admin/questions', icon: BookOpen },
       { label: 'Subjects', href: '/admin/subjects', icon: Layers },
       { label: 'Upload', href: '/admin/upload', icon: Upload },

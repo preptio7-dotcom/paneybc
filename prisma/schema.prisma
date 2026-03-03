@@ -122,6 +122,58 @@ enum UserBadgeType {
   centurion
 }
 
+enum BlogPostStatus {
+  draft
+  published
+  archived
+}
+
+enum BlogAuthorType {
+  admin
+  guest
+  student
+}
+
+enum BlogPostVisibility {
+  public
+  beta
+}
+
+enum BlogRevisionSaveType {
+  manual_save
+  publish
+  status_change
+  pre_restore_snapshot
+  scheduled_publish
+}
+
+enum BlogAnalyticsEventType {
+  page_view
+  read_complete
+  cta_click
+  share_click
+  signup_from_blog
+}
+
+enum BlogCtaPosition {
+  mid_article
+  end_article
+}
+
+enum BlogSharePlatform {
+  whatsapp
+  facebook
+  copy
+}
+
+enum BlogReferrerSource {
+  google
+  whatsapp
+  facebook
+  direct
+  other
+}
+
 model User {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -675,4 +727,135 @@ model UserBadge {
   @@index([userId])
   @@index([seen, createdAt])
   @@map("user_badges")
+}
+
+model BlogAuthor {
+  id          String     @id @default(cuid())
+  name        String
+  bio         String?
+  avatarUrl   String?    @map("avatar_url")
+  designation String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  posts       BlogPost[]
+
+  @@index([createdAt])
+  @@map("blog_authors")
+}
+
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  color       String     @default("#16a34a")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  posts       BlogPost[]
+
+  @@index([createdAt])
+  @@map("blog_categories")
+}
+
+model BlogPost {
+  id              String         @id @default(cuid())
+  title           String
+  slug            String         @unique
+  excerpt         String         @db.VarChar(300)
+  content         String
+  coverImageUrl   String?        @map("cover_image_url")
+  authorId        String         @map("author_id")
+  authorType      BlogAuthorType @default(admin) @map("author_type")
+  categoryId      String         @map("category_id")
+  tags            Json?
+  relatedSubjects Json?          @map("related_subjects")
+  status          BlogPostStatus @default(draft)
+  visibility      BlogPostVisibility @default(beta)
+  featured        Boolean        @default(false)
+  readingTime     Int            @default(1) @map("reading_time")
+  viewsCount      Int            @default(0) @map("views_count")
+  metaTitle       String?        @map("meta_title")
+  metaDescription String?        @map("meta_description")
+  publishedAt     DateTime?      @map("published_at")
+  scheduledAt     DateTime?      @map("scheduled_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  author          BlogAuthor     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  category        BlogCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  revisions       BlogRevision[]
+  ctaClicks       BlogCtaClick[]
+  analyticsEvents BlogAnalyticsEvent[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([featured])
+  @@index([visibility])
+  @@index([scheduledAt])
+  @@index([createdAt])
+  @@map("blog_posts")
+}
+
+model BlogRevision {
+  id             String               @id @default(cuid())
+  postId         String               @map("post_id")
+  title          String
+  content        String
+  excerpt        String               @db.VarChar(300)
+  coverImageUrl  String?              @map("cover_image_url")
+  savedBy        String               @map("saved_by")
+  saveType       BlogRevisionSaveType @map("save_type")
+  revisionNumber Int                  @map("revision_number")
+  wordCount      Int                  @default(0) @map("word_count")
+  createdAt      DateTime             @default(now()) @map("created_at")
+
+  post           BlogPost             @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@unique([postId, revisionNumber])
+  @@map("blog_revisions")
+}
+
+model BlogCtaClick {
+  id          String          @id @default(cuid())
+  postId      String          @map("post_id")
+  subjectCode String          @map("subject_code")
+  ctaPosition BlogCtaPosition @map("cta_position")
+  clickedAt   DateTime        @default(now()) @map("clicked_at")
+  userId      String?         @map("user_id")
+  sessionId   String          @map("session_id")
+
+  post        BlogPost        @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([subjectCode])
+  @@index([clickedAt])
+  @@index([sessionId])
+  @@map("blog_cta_clicks")
+}
+
+model BlogAnalyticsEvent {
+  id             String                @id @default(cuid())
+  postId         String?               @map("post_id")
+  eventType      BlogAnalyticsEventType @map("event_type")
+  subjectCode    String?               @map("subject_code")
+  ctaPosition    BlogCtaPosition?      @map("cta_position")
+  sharePlatform  BlogSharePlatform?    @map("share_platform")
+  userId         String?               @map("user_id")
+  sessionId      String                @map("session_id")
+  referrerSource BlogReferrerSource    @default(other) @map("referrer_source")
+  timeOnPage     Int?                  @map("time_on_page")
+  scrollDepth    Int?                  @map("scroll_depth")
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  post           BlogPost?             @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([postId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([postId, createdAt])
+  @@map("blog_analytics_events")
 }

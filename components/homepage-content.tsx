@@ -38,6 +38,10 @@ const HomeFeedbackSection = dynamic(
   () => import('@/components/home-feedback-section').then((module) => module.HomeFeedbackSection),
   { ssr: false, loading: () => null }
 )
+const HomeBlogSection = dynamic(
+  () => import('@/components/home-blog-section').then((module) => module.HomeBlogSection),
+  { ssr: false, loading: () => null }
+)
 const HomeFaqSection = dynamic(
   () => import('@/components/home-faq-section').then((module) => module.HomeFaqSection),
   { ssr: false, loading: () => null }
@@ -144,6 +148,9 @@ export function HomepageContent() {
       </LazyHomeSection>
       <LazyHomeSection minHeight={420}>
         <CTABanner themeVariant={sectionConfig.cta} />
+      </LazyHomeSection>
+      <LazyHomeSection minHeight={520}>
+        <HomeBlogSection />
       </LazyHomeSection>
       <LazyHomeSection minHeight={560}>
         <HomeFaqSection themeVariant={sectionConfig.faq} reduceMotion={reduceMotion} />

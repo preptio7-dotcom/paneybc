@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/streak-reconciliation",
       "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/publish-scheduled",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/blog-analytics-retention",
+      "schedule": "20 0 * * *"
     }
   ]
 }

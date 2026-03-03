@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import bcryptjs from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import { BlogAnalyticsEventType, BlogReferrerSource } from '@prisma/client'
 import { extractRegistrationSettings, normalizeEmail, normalizePkPhone, sanitizeText } from '@/lib/account-utils'
 import { hasValidSameOrigin } from '@/lib/csrf'
 import { detectSuspiciousInput } from '@/lib/security-input'
@@ -11,10 +12,37 @@ import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 import { getIpAccess, getRequestIpAddress, logSecurityEvent } from '@/lib/ip-security'
 import { getDeterministicSeedFromPool, packAvatarId } from '@/lib/avatar'
 import { getActiveAvatarPack, resolveAvatarForUser } from '@/lib/avatar-pack-service'
+import { detectReferrerSource } from '@/lib/blog-analytics'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
 const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 const REGISTER_ENDPOINT = '/api/auth/register'
+
+type BlogReferralPayload = {
+  post_id?: unknown
+  post_slug?: unknown
+  visited_at?: unknown
+  session_id?: unknown
+}
+
+function parseBlogReferral(raw: unknown): {
+  postId: string
+  postSlug: string
+  visitedAt: number
+  sessionId: string
+} | null {
+  if (!raw || typeof raw !== 'object') return null
+  const payload = raw as BlogReferralPayload
+  const postId = String(payload.post_id || '').trim()
+  const postSlug = String(payload.post_slug || '').trim()
+  const visitedAt = Number(payload.visited_at || 0)
+  const sessionId = String(payload.session_id || '').trim()
+  if (!postId || !postSlug || !Number.isFinite(visitedAt) || !sessionId) return null
+  if (visitedAt <= 0) return null
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+  if (Date.now() - visitedAt > sevenDaysMs) return null
+  return { postId, postSlug, visitedAt, sessionId }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,6 +92,7 @@ export async function POST(request: NextRequest) {
       verificationToken,
       website,
       startedAt,
+      blogReferral,
     } = await request.json()
 
     const suspiciousInput = detectSuspiciousInput({
@@ -211,6 +240,33 @@ export async function POST(request: NextRequest) {
     })
 
     const resolvedAvatar = await resolveAvatarForUser(createdUserWithAvatar)
+
+    const referral = parseBlogReferral(blogReferral)
+    if (referral) {
+      try {
+        const referredPost = await prisma.blogPost.findFirst({
+          where: {
+            id: referral.postId,
+            slug: referral.postSlug,
+          },
+          select: { id: true },
+        })
+
+        if (referredPost) {
+          await prisma.blogAnalyticsEvent.create({
+            data: {
+              postId: referredPost.id,
+              eventType: BlogAnalyticsEventType.signup_from_blog,
+              userId: createdUserWithAvatar.id,
+              sessionId: referral.sessionId.slice(0, 120),
+              referrerSource: detectReferrerSource(request.headers.get('referer')) as BlogReferrerSource,
+            },
+          })
+        }
+      } catch {
+        // Do not block registration on analytics attribution failures.
+      }
+    }
 
     const response = NextResponse.json(
       {

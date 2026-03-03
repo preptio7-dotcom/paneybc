@@ -1,4 +1,4 @@
-export const BETA_FEATURE_KEYS = ['faq', 'studentFeedback'] as const
+export const BETA_FEATURE_KEYS = ['faq', 'studentFeedback', 'blog'] as const
 
 export type BetaFeatureKey = (typeof BETA_FEATURE_KEYS)[number]
 export type BetaFeatureVisibility = 'public' | 'beta_ambassador'
@@ -7,6 +7,7 @@ export type BetaFeatureSettings = Record<BetaFeatureKey, BetaFeatureVisibility>
 export const DEFAULT_BETA_FEATURE_SETTINGS: BetaFeatureSettings = {
   faq: 'beta_ambassador',
   studentFeedback: 'beta_ambassador',
+  blog: 'beta_ambassador',
 }
 
 function asRecord(value: unknown) {
@@ -22,6 +23,7 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
   const source = asRecord(asRecord(testSettings).betaFeatures)
   const faqFallback = asRecord(asRecord(testSettings).faq).visibility
   const studentFeedbackFallback = asRecord(asRecord(testSettings).studentFeedback).visibility
+  const blogFallback = asRecord(asRecord(testSettings).blog).visibility
 
   return {
     faq: normalizeBetaFeatureVisibility(source.faq ?? faqFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.faq),
@@ -30,6 +32,7 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
         studentFeedbackFallback ??
         DEFAULT_BETA_FEATURE_SETTINGS.studentFeedback
     ),
+    blog: normalizeBetaFeatureVisibility(source.blog ?? blogFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.blog),
   }
 }
 
