@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth-context'
+import { trackSubjectActionClick } from '@/lib/client-analytics'
+import { PRACTICE_LABELS, SUBJECT_TEST_MODES } from '@/lib/practice-modes'
 
 interface Chapter {
   name: string
@@ -44,7 +46,7 @@ export default function SubjectDetailPage() {
   const { user, loading: authLoading } = useAuth()
   const [subject, setSubject] = useState<SubjectDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [mode, setMode] = useState<'full' | 'chapter' | null>(null)
+  const [mode, setMode] = useState<'mock' | 'chapter' | null>(null)
   const [testSettings, setTestSettings] = useState<TestSettings>({
     fullBookTimeMinutes: 120,
     chapterTestDefaultMinutes: 30,
@@ -212,7 +214,7 @@ export default function SubjectDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-0 shadow-lg">
                 <CardContent className="p-6 md:p-8 space-y-4">
-                  <h3 className="text-xl font-bold text-text-dark">Full Book Test</h3>
+                  <h3 className="text-xl font-bold text-text-dark">{PRACTICE_LABELS.mockTest}</h3>
                   <p className="text-text-light text-sm">
                     All chapters mixed and shuffled for sharp practice. Default time: {fullBookTime} minutes.
                   </p>
@@ -225,10 +227,17 @@ export default function SubjectDetailPage() {
                         openAuthPrompt('test')
                         return
                       }
-                      router.push(`/subjects/${encodeURIComponent(subject.code)}/test?mode=full&time=${fullBookTime}`)
+                      trackSubjectActionClick({
+                        action: 'mock_test',
+                        subjectCode: subject.code,
+                        source: 'subjects_page',
+                      })
+                      router.push(
+                        `/subjects/${encodeURIComponent(subject.code)}/test?mode=${SUBJECT_TEST_MODES.mock}&time=${fullBookTime}`
+                      )
                     }}
                   >
-                    Start Full Book Test
+                    Start {PRACTICE_LABELS.mockTest}
                   </Button>
                 </CardContent>
               </Card>
@@ -241,7 +250,14 @@ export default function SubjectDetailPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => setMode('chapter')}
+                    onClick={() => {
+                      trackSubjectActionClick({
+                        action: 'chapter_wise',
+                        subjectCode: subject.code,
+                        source: 'subjects_page',
+                      })
+                      setMode('chapter')
+                    }}
                   >
                     Choose Chapter
                   </Button>

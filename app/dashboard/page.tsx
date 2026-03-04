@@ -33,6 +33,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-badges'
 import { getDateKeyInTimezone, getStreakResetLabel, type StreakResetTimezone } from '@/lib/streak-settings'
+import { trackSubjectActionClick } from '@/lib/client-analytics'
+import { PRACTICE_LABELS, SUBJECT_TEST_MODES } from '@/lib/practice-modes'
 
 interface SubjectStat {
   code: string
@@ -64,6 +66,34 @@ interface BadgeProgress {
   earned: boolean
   earnedAt: string | null
   seen: boolean
+}
+
+interface BaeWeakAreaSummary {
+  attemptCount: number
+  unlocked: boolean
+  remainingForUnlock: number
+  accuracy: {
+    vol1: number
+    vol2: number
+  }
+  comparison: {
+    difference: number
+    weakerVolume: 'VOL1' | 'VOL2' | null
+    strongerVolume: 'VOL1' | 'VOL2' | null
+    balanced: boolean
+  }
+  history: Array<{
+    id: string
+    date: string
+    scorePercent: number
+    scoreText: string
+    ratioText: string
+    vol1Accuracy: number
+    vol2Accuracy: number
+    improvementDelta: number
+    timeTaken: number
+    timeAllowed: number
+  }>
 }
 
 const DEFAULT_CHECKLIST = [
@@ -155,6 +185,8 @@ export default function DashboardPage() {
   const [celebrationBadge, setCelebrationBadge] = useState<BadgeProgress | null>(null)
   const [currentTime, setCurrentTime] = useState(() => Date.now())
   const [isExamEditorOpen, setIsExamEditorOpen] = useState(false)
+  const [baeWeakArea, setBaeWeakArea] = useState<BaeWeakAreaSummary | null>(null)
+  const [showBaeAnalysis, setShowBaeAnalysis] = useState(false)
   const [fsSummary, setFsSummary] = useState<{
     totalCases: number
     totalQuestions: number
@@ -388,6 +420,18 @@ export default function DashboardPage() {
       } else {
         setFsSummary(null)
       }
+
+      try {
+        const baeWeakResponse = await fetch('/api/bae-mock/weak-area', { cache: 'no-store' })
+        if (baeWeakResponse.ok) {
+          const baeWeakData = await baeWeakResponse.json()
+          setBaeWeakArea(baeWeakData)
+        } else {
+          setBaeWeakArea(null)
+        }
+      } catch {
+        setBaeWeakArea(null)
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
     } finally {
@@ -524,12 +568,49 @@ export default function DashboardPage() {
 
   const modeCompletionCounts = useMemo(
     () => ({
+      baeMock: Number(globalStats?.modeCompletions?.baeMock) || 0,
       weekIntensive: Number(globalStats?.modeCompletions?.weekIntensive) || 0,
       wrongAnswers: Number(globalStats?.modeCompletions?.wrongAnswers) || 0,
       financialStatements: Number(globalStats?.modeCompletions?.financialStatements) || 0,
     }),
     [globalStats?.modeCompletions]
   )
+
+  const baeFocusLabel = useMemo(() => {
+    if (!baeWeakArea?.unlocked) return null
+    if (!baeWeakArea.comparison.weakerVolume) return null
+    return baeWeakArea.comparison.weakerVolume === 'VOL1' ? 'Vol I - ITB' : 'Vol II - ECO'
+  }, [baeWeakArea])
+
+  const baeTrend = useMemo(() => {
+    const points = (baeWeakArea?.history || []).slice(0, 10).reverse()
+    if (points.length < 2) return null
+
+    const width = 420
+    const height = 140
+    const leftPadding = 12
+    const rightPadding = 12
+    const topPadding = 12
+    const bottomPadding = 20
+    const usableWidth = width - leftPadding - rightPadding
+    const usableHeight = height - topPadding - bottomPadding
+
+    const toPath = (key: 'vol1Accuracy' | 'vol2Accuracy') =>
+      points
+        .map((point, index) => {
+          const x = leftPadding + (index / Math.max(1, points.length - 1)) * usableWidth
+          const y = topPadding + ((100 - Number(point[key])) / 100) * usableHeight
+          return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
+        })
+        .join(' ')
+
+    return {
+      width,
+      height,
+      pathVol1: toPath('vol1Accuracy'),
+      pathVol2: toPath('vol2Accuracy'),
+    }
+  }, [baeWeakArea?.history])
 
   const getSubjectPracticeLabel = (lastPracticedAt: string | null) => {
     if (!lastPracticedAt) {
@@ -1032,6 +1113,106 @@ export default function DashboardPage() {
                 </Card>
 
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="dashboard-feature-card md:col-span-2">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#16a34a,#2563eb)]" />
+                      <BookOpen size={90} className="absolute -top-2 -right-2 text-emerald-500/10" />
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="dashboard-mode-icon bg-[linear-gradient(135deg,rgba(22,163,74,0.12),rgba(37,99,235,0.12))] text-[#16a34a]">
+                          <BookOpen size={28} />
+                        </div>
+                        <span className="rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#2563eb]">
+                          ICAP Pattern
+                        </span>
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">BAE Mock Test</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Experience the real ICAP exam format - a timed mix of Business &amp; Economic Insights Vol I (ITB)
+                        and Vol II (ECO). Vol II questions always match or exceed Vol I based on historical student reports.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-[#dcfce7] px-2.5 py-1 text-[11px] font-semibold text-[#166534]">BAEIVI</span>
+                        <span className="rounded-full bg-[#dbeafe] px-2.5 py-1 text-[11px] font-semibold text-[#1d4ed8]">BAEIV2E</span>
+                      </div>
+                      <p className="mt-3 text-xs text-slate-500">50 Questions · 75 Minutes · Mixed Ratio</p>
+                      {baeWeakArea?.unlocked && baeFocusLabel ? (
+                        <p className="mt-2 inline-flex rounded-md bg-[#fef9c3] px-2.5 py-1 text-[11px] font-semibold text-[#854d0e]">
+                          Focus needed: {baeFocusLabel}
+                        </p>
+                      ) : null}
+                      {modeCompletionCounts.baeMock > 0 ? (
+                        <p className="mt-2 text-xs text-slate-500">Completed {modeCompletionCounts.baeMock} times</p>
+                      ) : null}
+                      <div className="mt-4 border-t border-slate-100 pt-4 space-y-3">
+                        <Button
+                          className="w-full bg-[linear-gradient(135deg,#16a34a,#2563eb)] hover:brightness-110 text-white"
+                          onClick={() => window.location.assign('/practice/bae-mock')}
+                        >
+                          Start Mock Test
+                          <ArrowRight size={16} className="ml-1" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full text-xs text-slate-500"
+                          onClick={() => setShowBaeAnalysis((prev) => !prev)}
+                        >
+                          {showBaeAnalysis ? 'Hide Analysis ▲' : 'View Analysis ▼'}
+                        </Button>
+
+                        {showBaeAnalysis ? (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                            {!baeWeakArea || !baeWeakArea.unlocked ? (
+                              <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs text-slate-600">
+                                Complete {baeWeakArea?.remainingForUnlock ?? 3} more BAE mock tests to unlock your weak area analysis.
+                              </div>
+                            ) : (
+                              <>
+                                <div>
+                                  <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
+                                    <span>Vol I - ITB</span>
+                                    <span className="font-semibold text-slate-900">{baeWeakArea.accuracy.vol1}%</span>
+                                  </div>
+                                  <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                                    <div className="h-full rounded-full bg-[#16a34a]" style={{ width: `${baeWeakArea.accuracy.vol1}%` }} />
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
+                                    <span>Vol II - ECO</span>
+                                    <span className="font-semibold text-slate-900">{baeWeakArea.accuracy.vol2}%</span>
+                                  </div>
+                                  <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                                    <div className="h-full rounded-full bg-[#2563eb]" style={{ width: `${baeWeakArea.accuracy.vol2}%` }} />
+                                  </div>
+                                </div>
+                                <div
+                                  className={`rounded-lg px-3 py-2 text-xs ${
+                                    baeWeakArea.comparison.difference < 10
+                                      ? 'bg-[#f0fdf4] text-[#166534]'
+                                      : baeWeakArea.comparison.difference < 25
+                                        ? 'bg-[#fef9c3] text-[#854d0e]'
+                                        : 'bg-[#fee2e2] text-[#991b1b]'
+                                  }`}
+                                >
+                                  {baeWeakArea.comparison.difference < 10 ? (
+                                    <span>Well balanced across both volumes.</span>
+                                  ) : (
+                                    <span>
+                                      Focus Area: {baeWeakArea.comparison.weakerVolume === 'VOL1' ? 'Vol I - ITB' : 'Vol II - ECO'} (
+                                      {baeWeakArea.comparison.difference}% gap)
+                                    </span>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   <Card className="dashboard-feature-card">
                     <CardContent className="p-6 relative overflow-hidden">
                       <BookOpen size={84} className="absolute -top-2 -right-2 text-green-500/5" />
@@ -1150,15 +1331,22 @@ export default function DashboardPage() {
                                 {practiceStatus.text}
                               </p>
                               <Link
-                                href={`/subjects/${encodeURIComponent(subject.code)}/test?mode=full`}
+                                href={`/subjects/${encodeURIComponent(subject.code)}/test?mode=${SUBJECT_TEST_MODES.mock}`}
                                 className="dashboard-quick-start shrink-0"
+                                onClick={() =>
+                                  trackSubjectActionClick({
+                                    action: 'quick_start',
+                                    subjectCode: subject.code,
+                                    source: 'dashboard',
+                                  })
+                                }
                               >
                                 <Button
                                   size="sm"
                                   className="h-7 rounded-lg px-2.5 text-[11px] font-semibold text-white hover:brightness-95"
                                   style={{ backgroundColor: accent }}
                                 >
-                                  Quick Start
+                                  {PRACTICE_LABELS.quickStart}
                                 </Button>
                               </Link>
                             </div>
@@ -1172,17 +1360,40 @@ export default function DashboardPage() {
                               </div>
                             </div>
                             <div className="mt-4 grid grid-cols-2 gap-2">
-                              <Link href={`/subjects/${encodeURIComponent(subject.code)}?mode=chapter`} className="w-full">
+                              <Link
+                                href={`/subjects/${encodeURIComponent(subject.code)}?mode=${SUBJECT_TEST_MODES.chapter}`}
+                                className="w-full"
+                                onClick={() =>
+                                  trackSubjectActionClick({
+                                    action: 'chapter_wise',
+                                    subjectCode: subject.code,
+                                    source: 'dashboard',
+                                  })
+                                }
+                              >
                                 <Button
                                   className="w-full text-xs text-white hover:brightness-95"
                                   style={{ backgroundColor: accent }}
                                 >
-                                  Chapter Wise
+                                  {PRACTICE_LABELS.chapterWise}
                                 </Button>
                               </Link>
-                              <Link href={`/subjects/${encodeURIComponent(subject.code)}/test?mode=full`} className="w-full">
-                                <Button variant="outline" className="w-full text-xs border-slate-300 text-slate-700 hover:bg-slate-50">
-                                  Full Book
+                              <Link
+                                href={`/subjects/${encodeURIComponent(subject.code)}/test?mode=${SUBJECT_TEST_MODES.mock}`}
+                                className="w-full"
+                                onClick={() =>
+                                  trackSubjectActionClick({
+                                    action: 'mock_test',
+                                    subjectCode: subject.code,
+                                    source: 'dashboard',
+                                  })
+                                }
+                              >
+                                <Button
+                                  variant="outline"
+                                  className="w-full bg-white text-xs border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-700 focus-visible:text-slate-700"
+                                >
+                                  {PRACTICE_LABELS.mockTest}
                                 </Button>
                               </Link>
                             </div>
@@ -1395,6 +1606,88 @@ export default function DashboardPage() {
 
               <div id="performance-tracking" className="dashboard-reveal scroll-mt-24">
                 <h2 className="dashboard-section-title">Performance Tracking</h2>
+                {baeWeakArea?.history?.length ? (
+                  <Card className="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">BAE Mock Test History</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary-green"
+                          onClick={() => window.location.assign('/practice/bae-mock')}
+                        >
+                          New Attempt
+                        </Button>
+                      </div>
+
+                      {baeTrend ? (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                            <span>Vol I vs Vol II Accuracy Trend</span>
+                            <span className="flex items-center gap-3">
+                              <span className="inline-flex items-center gap-1">
+                                <span className="h-2 w-2 rounded-full bg-[#16a34a]" />
+                                Vol I
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <span className="h-2 w-2 rounded-full bg-[#2563eb]" />
+                                Vol II
+                              </span>
+                            </span>
+                          </div>
+                          <svg viewBox={`0 0 ${baeTrend.width} ${baeTrend.height}`} className="w-full h-28">
+                            <path d={baeTrend.pathVol1} fill="none" stroke="#16a34a" strokeWidth="2.5" />
+                            <path d={baeTrend.pathVol2} fill="none" stroke="#2563eb" strokeWidth="2.5" />
+                          </svg>
+                        </div>
+                      ) : null}
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[640px] text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500 text-left">
+                              <th className="pb-2 pr-3">Date</th>
+                              <th className="pb-2 pr-3">Score</th>
+                              <th className="pb-2 pr-3">Ratio</th>
+                              <th className="pb-2 pr-3">Vol I</th>
+                              <th className="pb-2 pr-3">Vol II</th>
+                              <th className="pb-2 pr-3">Time</th>
+                              <th className="pb-2">Change</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {baeWeakArea.history.slice(0, 10).map((attempt) => (
+                              <tr key={attempt.id} className="border-b border-slate-100 text-slate-700">
+                                <td className="py-2 pr-3">{new Date(attempt.date).toLocaleDateString()}</td>
+                                <td className="py-2 pr-3">{attempt.scoreText} ({attempt.scorePercent}%)</td>
+                                <td className="py-2 pr-3">{attempt.ratioText}</td>
+                                <td className="py-2 pr-3">{attempt.vol1Accuracy}%</td>
+                                <td className="py-2 pr-3">{attempt.vol2Accuracy}%</td>
+                                <td className="py-2 pr-3">
+                                  {Math.round((attempt.timeTaken / Math.max(1, attempt.timeAllowed * 60)) * 100)}%
+                                </td>
+                                <td className="py-2">
+                                  <span
+                                    className={
+                                      attempt.improvementDelta > 0
+                                        ? 'text-emerald-600 font-semibold'
+                                        : attempt.improvementDelta < 0
+                                          ? 'text-rose-600 font-semibold'
+                                          : 'text-slate-500'
+                                    }
+                                  >
+                                    {attempt.improvementDelta > 0 ? `+${attempt.improvementDelta}%` : `${attempt.improvementDelta}%`}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
                 <div className="mt-4">
                   <RecentActivity />
                 </div>
@@ -1639,8 +1932,8 @@ export default function DashboardPage() {
         }
         @media (min-width: 768px) {
           .dashboard-quick-start {
-            opacity: 0;
-            pointer-events: none;
+            opacity: 1;
+            pointer-events: auto;
           }
           .dashboard-subject-card:hover .dashboard-quick-start,
           .dashboard-subject-card:focus-within .dashboard-quick-start {

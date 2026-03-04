@@ -21,6 +21,7 @@ import { Navigation } from '@/components/navigation'
 import { ReportQuestionButton } from '@/components/report-question-button'
 import { AnswerBreakdown } from '@/components/answer-breakdown'
 import { FeedbackPromptCard } from '@/components/feedback-prompt-card'
+import { normalizeSubjectTestMode, PRACTICE_LABELS, SUBJECT_TEST_MODES } from '@/lib/practice-modes'
 
 interface Question {
     id?: string
@@ -86,7 +87,8 @@ export default function TestPage() {
         if (Array.isArray(code)) return code[0]?.toUpperCase() || ''
         return (code || '').toString().toUpperCase()
     }, [code])
-    const mode = useMemo(() => searchParams.get('mode') || 'full', [searchParams])
+    const modeParam = useMemo(() => searchParams.get('mode'), [searchParams])
+    const mode = useMemo(() => normalizeSubjectTestMode(modeParam), [modeParam])
     const chapterParam = useMemo(() => searchParams.get('chapter') || '', [searchParams])
 
     useEffect(() => {
@@ -114,7 +116,7 @@ export default function TestPage() {
             const chapterQuery = chapterParam ? `&chapter=${chapterParam}` : ''
             const limitParam = searchParams.get('limit')
             const baseLimit = limitParam ? `&limit=${limitParam}` : ''
-            const fullBookQuery = mode === 'full' ? `&fullbook=1${baseLimit || '&limit=50'}` : `&limit=${limitParam || 25}`
+            const fullBookQuery = mode === SUBJECT_TEST_MODES.mock ? `&fullbook=1${baseLimit || '&limit=50'}` : `&limit=${limitParam || 25}`
             const response = await fetch(`/api/questions?subject=${encodeURIComponent(subjectCode)}${chapterQuery}${fullBookQuery}&shuffle=1`)
             if (!response.ok) throw new Error('Failed to fetch questions')
             const data = await response.json()
@@ -446,7 +448,7 @@ export default function TestPage() {
                         {mode === 'chapter' && chapterParam ? (
                             <span className="text-xs text-slate-500">Chapter {chapterParam}</span>
                         ) : (
-                            <span className="text-xs text-slate-500">Full Book Test</span>
+                            <span className="text-xs text-slate-500">{PRACTICE_LABELS.mockTest}</span>
                         )}
                     </div>
 

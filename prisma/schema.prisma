@@ -273,6 +273,35 @@ model TestResult {
   updatedAt      DateTime @updatedAt
 }
 
+model BaeMockSession {
+  id             String   @id @default(cuid())
+  userId         String
+  testType       String   @default("bae_mock")
+  subjectIds     Json
+  status         String   @default("in_progress")
+  completed      Boolean  @default(false)
+  totalQuestions Int
+  timeAllowed    Int
+  timeTaken      Int?
+  vol1Count      Int
+  vol2Count      Int
+  vol1Correct    Int      @default(0)
+  vol2Correct    Int      @default(0)
+  correctAnswers Int      @default(0)
+  wrongAnswers   Int      @default(0)
+  notAttempted   Int      @default(0)
+  scorePercent   Int      @default(0)
+  questionSet    Json
+  answers        Json?
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, completed, createdAt])
+  @@index([testType, completed, createdAt])
+}
+
 model Analytics {
   id               String   @id @default(cuid())
   path             String

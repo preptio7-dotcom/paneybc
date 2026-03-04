@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
+import { SUBJECT_TEST_MODES } from '@/lib/practice-modes'
 
 interface Subject {
   id?: string
@@ -90,7 +91,9 @@ export default function ExamSimulatorPage() {
   const handleStart = () => {
     if (!subjectCode) return
     const encoded = encodeURIComponent(subjectCode)
-    router.push(`/subjects/${encoded}/test?mode=full&time=${duration}&limit=${questionCount}&sim=1`)
+    router.push(
+      `/subjects/${encoded}/test?mode=${SUBJECT_TEST_MODES.mock}&time=${duration}&limit=${questionCount}&sim=1`
+    )
   }
 
   return (

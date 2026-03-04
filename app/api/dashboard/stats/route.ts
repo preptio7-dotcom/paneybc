@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
 
     const startedSubjects = formattedStats.filter((item) => item.completedQuestions > 0).length
     const wrongAnswersSessions = estimateWrongAnswersSessionCount(results)
-    const [weakAreaCompletions, financialStatementsCompletions] = await Promise.all([
+    const [weakAreaCompletions, financialStatementsCompletions, baeMockCompletions] = await Promise.all([
       prisma.streakAuditLog.count({
         where: {
           userId,
@@ -198,6 +198,13 @@ export async function GET(request: NextRequest) {
         where: {
           userId,
           status: 'completed',
+        },
+      }),
+      prisma.baeMockSession.count({
+        where: {
+          userId,
+          testType: 'bae_mock',
+          completed: true,
         },
       }),
     ])
@@ -219,6 +226,7 @@ export async function GET(request: NextRequest) {
           timezone,
         },
         modeCompletions: {
+          baeMock: baeMockCompletions,
           weekIntensive: weakAreaCompletions,
           wrongAnswers: wrongAnswersSessions,
           financialStatements: financialStatementsCompletions,

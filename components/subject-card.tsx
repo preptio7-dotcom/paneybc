@@ -6,6 +6,8 @@ import { Button } from './ui/button'
 import { Progress } from './ui/progress'
 import { BookOpen, Zap, Layers } from 'lucide-react'
 import Link from 'next/link'
+import { trackSubjectActionClick } from '@/lib/client-analytics'
+import { PRACTICE_LABELS, SUBJECT_TEST_MODES } from '@/lib/practice-modes'
 
 interface SubjectCardProps {
   name: string
@@ -72,23 +74,43 @@ export function SubjectCard({
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-2 pt-2">
-          <Link href={`/subjects/${encodedCode}/test?mode=full`} className="w-full">
+          <Link
+            href={`/subjects/${encodedCode}/test?mode=${SUBJECT_TEST_MODES.mock}`}
+            className="w-full"
+            onClick={() =>
+              trackSubjectActionClick({
+                action: 'mock_test',
+                subjectCode: normalizedCode,
+                source: 'subjects_grid',
+              })
+            }
+          >
             <Button
               variant="outline"
               size="sm"
               className="gap-2 text-xs h-9 bg-transparent w-full"
             >
               <Zap size={14} />
-              Full Book
+              {PRACTICE_LABELS.mockTest}
             </Button>
           </Link>
-          <Link href={`/subjects/${encodedCode}?mode=chapter`} className="w-full">
+          <Link
+            href={`/subjects/${encodedCode}?mode=${SUBJECT_TEST_MODES.chapter}`}
+            className="w-full"
+            onClick={() =>
+              trackSubjectActionClick({
+                action: 'chapter_wise',
+                subjectCode: normalizedCode,
+                source: 'subjects_grid',
+              })
+            }
+          >
             <Button
               size="sm"
               className="gap-2 text-xs h-9 w-full"
             >
               <Layers size={14} />
-              Chapter Wise
+              {PRACTICE_LABELS.chapterWise}
             </Button>
           </Link>
         </div>
