@@ -16,6 +16,9 @@ export type StudyRecommendationType =
   | 'exam_approaching'
   | 'build_strength'
   | 'bae_mock'
+  | 'foa_mock'
+  | 'qafb_mock'
+  | 'mock_weak_chapter'
   | 'general'
 
 export type StudyRecommendation = {
@@ -197,6 +200,81 @@ export function generateStudyRecommendations(
       action: 'Start BAE Mock ->',
       actionLink: '/practice/bae-mock',
       dataPoint: 'Simulate real ICAP format',
+    })
+  }
+
+  const foaSubject = context.subjects.find((subject) => subject.code === 'FOA')
+  if (
+    foaSubject &&
+    foaSubject.questionsAttempted >= 20 &&
+    context.foaMockAttempts === 0 &&
+    recommendations.length < 5
+  ) {
+    recommendations.push({
+      priority: 'medium',
+      icon: icon(0x1f9ee),
+      type: 'foa_mock',
+      title: 'Try an FOA Mock Test',
+      description:
+        'You have built enough FOA practice data. Run a timed FOA mock test to measure exam readiness.',
+      action: 'Start FOA Mock ->',
+      actionLink: '/practice/foa-mock',
+      dataPoint: `${foaSubject.questionsAttempted} FOA questions practiced`,
+    })
+  }
+
+  const qafbSubject = context.subjects.find((subject) => subject.code === 'QAFB')
+  if (
+    qafbSubject &&
+    qafbSubject.totalQuestions > 0 &&
+    qafbSubject.questionsAttempted >= 20 &&
+    context.qafbMockAttempts === 0 &&
+    recommendations.length < 6
+  ) {
+    recommendations.push({
+      priority: 'medium',
+      icon: icon(0x1f4ca),
+      type: 'qafb_mock',
+      title: 'Try a QAFB Mock Test',
+      description:
+        'You have practiced enough QAFB questions. Run a timed mock to test your speed and chapter-level balance.',
+      action: 'Start QAFB Mock ->',
+      actionLink: '/practice/qafb-mock',
+      dataPoint: `${qafbSubject.questionsAttempted} QAFB questions practiced`,
+    })
+  }
+
+  if (context.latestFoaWeakChapter && context.latestFoaWeakChapter.accuracy < 50) {
+    const chapterName =
+      context.latestFoaWeakChapter.chapterLabel || context.latestFoaWeakChapter.chapterCode
+    recommendations.push({
+      priority: 'high',
+      icon: icon(0x1f4d9),
+      type: 'mock_weak_chapter',
+      title: `FOA mock focus: ${chapterName}`,
+      description: `Your latest FOA mock shows ${chapterName} at ${context.latestFoaWeakChapter.accuracy}% accuracy. Target this chapter before the next mock.`,
+      action: 'Practice Chapter ->',
+      actionLink: `/subjects/FOA/practice?chapter=${encodeURIComponent(
+        context.latestFoaWeakChapter.chapterCode
+      )}`,
+      dataPoint: `${context.latestFoaWeakChapter.accuracy}% in last FOA mock`,
+    })
+  }
+
+  if (context.latestQafbWeakChapter && context.latestQafbWeakChapter.accuracy < 50) {
+    const chapterName =
+      context.latestQafbWeakChapter.chapterLabel || context.latestQafbWeakChapter.chapterCode
+    recommendations.push({
+      priority: 'high',
+      icon: icon(0x1f4d8),
+      type: 'mock_weak_chapter',
+      title: `QAFB mock focus: ${chapterName}`,
+      description: `Your latest QAFB mock shows ${chapterName} at ${context.latestQafbWeakChapter.accuracy}% accuracy. Review this chapter before the next attempt.`,
+      action: 'Practice Chapter ->',
+      actionLink: `/subjects/QAFB/practice?chapter=${encodeURIComponent(
+        context.latestQafbWeakChapter.chapterCode
+      )}`,
+      dataPoint: `${context.latestQafbWeakChapter.accuracy}% in last QAFB mock`,
     })
   }
 

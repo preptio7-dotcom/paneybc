@@ -22,11 +22,7 @@ export type BaeSessionQuestionRef = {
 
 export function calculateBaeTimeAllowedMinutes(totalQuestions: number) {
   const safeTotal = Math.max(1, Math.floor(Number(totalQuestions) || 1))
-  // Base pacing: 2 minutes per question + review buffer.
-  // This keeps the requested default at 120 minutes for 50 questions.
-  const baseMinutes = safeTotal * 2
-  const reviewBufferMinutes = Math.ceil(safeTotal * 0.4)
-  return baseMinutes + reviewBufferMinutes
+  return Math.ceil((safeTotal * 90) / 60)
 }
 
 export function shuffleArray<T>(input: T[]) {

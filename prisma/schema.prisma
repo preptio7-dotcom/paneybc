@@ -283,6 +283,7 @@ model BaeMockSession {
   userId         String
   testType       String   @default("bae_mock")
   subjectIds     Json
+  chapterBreakdown Json?  @map("chapter_breakdown")
   status         String   @default("in_progress")
   completed      Boolean  @default(false)
   totalQuestions Int
@@ -305,6 +306,17 @@ model BaeMockSession {
 
   @@index([userId, completed, createdAt])
   @@index([testType, completed, createdAt])
+}
+
+model MockTestNotifyRequest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  testType  String   @map("test_type")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, testType])
+  @@index([testType, createdAt])
+  @@map("mock_test_notify_requests")
 }
 
 model Analytics {

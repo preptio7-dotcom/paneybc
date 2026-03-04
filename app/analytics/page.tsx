@@ -85,6 +85,32 @@ type DeepAnalytics = {
     metrics: Array<{ key: string; label: string; you: string; platform: string; trend: 'above' | 'below' | 'equal' }>
     percentileTop: number | null
   }
+  mockHistory: {
+    foa: Array<{
+      id: string
+      date: string
+      scorePercent: number
+      scoreText: string
+      weakestChapter: string | null
+      weakestChapterLabel: string | null
+      weakestAccuracy: number | null
+      timeAllowed: number
+      timeTaken: number
+      improvementDelta: number
+    }>
+    qafb: Array<{
+      id: string
+      date: string
+      scorePercent: number
+      scoreText: string
+      weakestChapter: string | null
+      weakestChapterLabel: string | null
+      weakestAccuracy: number | null
+      timeAllowed: number
+      timeTaken: number
+      improvementDelta: number
+    }>
+  }
 }
 
 const RANGE_OPTIONS: Array<{ key: RangeKey; label: string }> = [
@@ -98,6 +124,26 @@ function formatDelta(value: number | null, suffix = '') {
   if (value === null || Number.isNaN(value)) return '--'
   const rounded = Math.round(value * 10) / 10
   return `${rounded > 0 ? '+' : ''}${rounded}${suffix}`
+}
+
+function buildSparklinePath(values: number[]) {
+  if (values.length < 2) return ''
+  const width = 260
+  const height = 80
+  const left = 8
+  const right = 8
+  const top = 8
+  const bottom = 8
+  const usableWidth = width - left - right
+  const usableHeight = height - top - bottom
+
+  return values
+    .map((value, index) => {
+      const x = left + (index / Math.max(1, values.length - 1)) * usableWidth
+      const y = top + ((100 - Math.max(0, Math.min(100, value))) / 100) * usableHeight
+      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
+    })
+    .join(' ')
 }
 
 function priorityTheme(priority: RecommendationPriority) {
@@ -204,6 +250,16 @@ export default function AnalyticsPage() {
     return analytics.heatmap.tabs.find((tab) => tab.code === selectedTab) || analytics.heatmap.tabs[0]
   }, [analytics?.heatmap.tabs, selectedTab])
 
+  const foaTrendPath = useMemo(() => {
+    const scores = (analytics?.mockHistory.foa || []).slice().reverse().map((row) => row.scorePercent)
+    return buildSparklinePath(scores)
+  }, [analytics?.mockHistory.foa])
+
+  const qafbTrendPath = useMemo(() => {
+    const scores = (analytics?.mockHistory.qafb || []).slice().reverse().map((row) => row.scorePercent)
+    return buildSparklinePath(scores)
+  }, [analytics?.mockHistory.qafb])
+
   if (authLoading) {
     return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><div className="h-8 w-8 rounded-full border-2 border-primary-green border-t-transparent animate-spin" /></div>
   }
@@ -300,8 +356,206 @@ export default function AnalyticsPage() {
               <Card><CardContent className="p-5"><h2 className="text-lg font-bold">Chapter Performance Heatmap</h2><div className="flex flex-wrap gap-2 mt-4">{analytics.heatmap.tabs.map((tab)=><button key={tab.code} className={`px-3 py-1.5 rounded-full border text-xs ${currentHeatmapTab?.code===tab.code ? 'bg-primary-green text-white border-primary-green':'bg-white border-slate-200 text-slate-600'}`} onClick={()=>setSelectedTab(tab.code)}>{tab.code}</button>)}</div>{currentHeatmapTab ? <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2 mt-4">{currentHeatmapTab.chapters.map((c)=> (<Link key={c.key} href={c.practiceLink}><div className={`rounded-lg border p-2 ${c.status==='strong'?'bg-emerald-100 border-emerald-200':c.status==='improving'?'bg-amber-100 border-amber-200':c.status==='needs_work'?'bg-rose-100 border-rose-200':'bg-slate-50 border-slate-200 border-dashed'}`}><p className="text-[11px] line-clamp-2 font-semibold">{c.label}</p><p className="text-base font-black mt-1">{c.accuracy===null?'--':`${Math.round(c.accuracy)}%`}</p><p className="text-[10px]">{c.attempted} attempts</p></div></Link>))}</div> : null}</CardContent></Card>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <Card><CardContent className="p-5"><h2 className="text-lg font-bold">How Fast Are You?</h2><p className="mt-2 text-sm text-slate-600">Average: {Math.round(analytics.timeAnalysis.averageTimePerQuestion)}s · Platform: {analytics.timeAnalysis.platformAverageTimePerQuestion===null?'--':`${Math.round(analytics.timeAnalysis.platformAverageTimePerQuestion)}s`}</p><div className="h-56 mt-4"><ResponsiveContainer width="100%" height="100%"><BarChart data={analytics.timeAnalysis.distribution}><CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /><XAxis dataKey="bucket" /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="count" fill="#16a34a" radius={[6,6,0,0]} /></BarChart></ResponsiveContainer></div><p className="text-sm text-slate-600 mt-2">{analytics.timeAnalysis.insight}</p></CardContent></Card>
-                <Card><CardContent className="p-5"><h2 className="text-lg font-bold">How Do You Compare?</h2><div className="overflow-x-auto mt-3"><table className="w-full min-w-[420px] text-sm"><thead><tr className="text-left text-slate-500"><th className="py-1">Metric</th><th className="py-1">You</th><th className="py-1">Platform</th><th className="py-1">Status</th></tr></thead><tbody>{analytics.comparison.metrics.map((m)=><tr key={m.key} className="border-t border-slate-100"><td className="py-1.5">{m.label}</td><td className="py-1.5 font-semibold">{m.you}</td><td className="py-1.5">{m.platform}</td><td className={`py-1.5 text-xs font-semibold ${m.trend==='above'?'text-emerald-700':m.trend==='below'?'text-rose-700':'text-slate-500'}`}>{m.trend}</td></tr>)}</tbody></table></div><p className="text-sm text-slate-600 mt-3">{analytics.comparison.percentileTop===null?'Not enough percentile data yet.':`You are in top ${analytics.comparison.percentileTop}% of active students.`}</p></CardContent></Card>
+                <Card>
+                  <CardContent className="p-5">
+                    <h2 className="text-lg font-bold">How Fast Are You?</h2>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Average: {Math.round(analytics.timeAnalysis.averageTimePerQuestion)}s · Platform:{' '}
+                      {analytics.timeAnalysis.platformAverageTimePerQuestion === null
+                        ? '--'
+                        : `${Math.round(analytics.timeAnalysis.platformAverageTimePerQuestion)}s`}
+                    </p>
+                    <div className="h-56 mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analytics.timeAnalysis.distribution}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="bucket" />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#16a34a" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <p className="text-sm text-slate-600 mt-2">{analytics.timeAnalysis.insight}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-5">
+                    <h2 className="text-lg font-bold">How Do You Compare?</h2>
+                    <div className="overflow-x-auto mt-3">
+                      <table className="w-full min-w-[420px] text-sm">
+                        <thead>
+                          <tr className="text-left text-slate-500">
+                            <th className="py-1">Metric</th>
+                            <th className="py-1">You</th>
+                            <th className="py-1">Platform</th>
+                            <th className="py-1">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analytics.comparison.metrics.map((m) => (
+                            <tr key={m.key} className="border-t border-slate-100">
+                              <td className="py-1.5">{m.label}</td>
+                              <td className="py-1.5 font-semibold">{m.you}</td>
+                              <td className="py-1.5">{m.platform}</td>
+                              <td
+                                className={`py-1.5 text-xs font-semibold ${
+                                  m.trend === 'above'
+                                    ? 'text-emerald-700'
+                                    : m.trend === 'below'
+                                      ? 'text-rose-700'
+                                      : 'text-slate-500'
+                                }`}
+                              >
+                                {m.trend}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-sm text-slate-600 mt-3">
+                      {analytics.comparison.percentileTop === null
+                        ? 'Not enough percentile data yet.'
+                        : `You are in top ${analytics.comparison.percentileTop}% of active students.`}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <Card>
+                  <CardContent className="p-5">
+                    <h2 className="text-lg font-bold">FOA Mock Test History</h2>
+                    {analytics.mockHistory.foa.length ? (
+                      <>
+                        {foaTrendPath ? (
+                          <div className="mt-3 rounded-xl border border-[#ddd6fe] bg-[#f5f3ff] p-3">
+                            <p className="text-xs text-[#6d28d9] mb-2">Accuracy trend</p>
+                            <svg viewBox="0 0 260 80" className="h-20 w-full">
+                              <path d={foaTrendPath} fill="none" stroke="#7c3aed" strokeWidth="2.5" />
+                            </svg>
+                          </div>
+                        ) : null}
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[560px] text-xs">
+                            <thead>
+                              <tr className="border-b border-slate-200 text-left text-slate-500">
+                                <th className="pb-2 pr-3">Date</th>
+                                <th className="pb-2 pr-3">Score</th>
+                                <th className="pb-2 pr-3">Weakest</th>
+                                <th className="pb-2 pr-3">Time</th>
+                                <th className="pb-2">Change</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {analytics.mockHistory.foa.map((row) => (
+                                <tr key={row.id} className="border-b border-slate-100 text-slate-700">
+                                  <td className="py-2 pr-3">{new Date(row.date).toLocaleDateString()}</td>
+                                  <td className="py-2 pr-3">
+                                    {row.scoreText} ({row.scorePercent}%)
+                                  </td>
+                                  <td className="py-2 pr-3">
+                                    {row.weakestChapter
+                                      ? `${row.weakestChapterLabel || row.weakestChapter}${
+                                          row.weakestAccuracy === null ? '' : ` (${row.weakestAccuracy}%)`
+                                        }`
+                                      : '--'}
+                                  </td>
+                                  <td className="py-2 pr-3">
+                                    {Math.round((row.timeTaken / Math.max(1, row.timeAllowed * 60)) * 100)}%
+                                  </td>
+                                  <td
+                                    className={`py-2 font-semibold ${
+                                      row.improvementDelta > 0
+                                        ? 'text-emerald-600'
+                                        : row.improvementDelta < 0
+                                          ? 'text-rose-600'
+                                          : 'text-slate-500'
+                                    }`}
+                                  >
+                                    {row.improvementDelta > 0
+                                      ? `+${row.improvementDelta}%`
+                                      : `${row.improvementDelta}%`}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-600">No FOA mock attempts yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-5">
+                    <h2 className="text-lg font-bold">QAFB Mock Test History</h2>
+                    {analytics.mockHistory.qafb.length ? (
+                      <>
+                        {qafbTrendPath ? (
+                          <div className="mt-3 rounded-xl border border-[#fed7aa] bg-[#fff7ed] p-3">
+                            <p className="text-xs text-[#c2410c] mb-2">Accuracy trend</p>
+                            <svg viewBox="0 0 260 80" className="h-20 w-full">
+                              <path d={qafbTrendPath} fill="none" stroke="#ea580c" strokeWidth="2.5" />
+                            </svg>
+                          </div>
+                        ) : null}
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[560px] text-xs">
+                            <thead>
+                              <tr className="border-b border-slate-200 text-left text-slate-500">
+                                <th className="pb-2 pr-3">Date</th>
+                                <th className="pb-2 pr-3">Score</th>
+                                <th className="pb-2 pr-3">Weakest</th>
+                                <th className="pb-2 pr-3">Time</th>
+                                <th className="pb-2">Change</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {analytics.mockHistory.qafb.map((row) => (
+                                <tr key={row.id} className="border-b border-slate-100 text-slate-700">
+                                  <td className="py-2 pr-3">{new Date(row.date).toLocaleDateString()}</td>
+                                  <td className="py-2 pr-3">
+                                    {row.scoreText} ({row.scorePercent}%)
+                                  </td>
+                                  <td className="py-2 pr-3">
+                                    {row.weakestChapter
+                                      ? `${row.weakestChapterLabel || row.weakestChapter}${
+                                          row.weakestAccuracy === null ? '' : ` (${row.weakestAccuracy}%)`
+                                        }`
+                                      : '--'}
+                                  </td>
+                                  <td className="py-2 pr-3">
+                                    {Math.round((row.timeTaken / Math.max(1, row.timeAllowed * 60)) * 100)}%
+                                  </td>
+                                  <td
+                                    className={`py-2 font-semibold ${
+                                      row.improvementDelta > 0
+                                        ? 'text-emerald-600'
+                                        : row.improvementDelta < 0
+                                          ? 'text-rose-600'
+                                          : 'text-slate-500'
+                                    }`}
+                                  >
+                                    {row.improvementDelta > 0
+                                      ? `+${row.improvementDelta}%`
+                                      : `${row.improvementDelta}%`}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-600">No QAFB mock attempts yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
               <Card id="study-recommendations">

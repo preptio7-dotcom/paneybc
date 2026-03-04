@@ -9,10 +9,10 @@ function LoadingFallback() {
   )
 }
 
-export default function BaeMockTestPage() {
+export default function QafbMockTestPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <MockTestTestClient mockKey="bae-mock" />
+      <MockTestTestClient mockKey="qafb-mock" />
     </Suspense>
   )
 }

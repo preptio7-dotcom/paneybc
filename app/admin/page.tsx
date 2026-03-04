@@ -184,6 +184,12 @@ export default function AdminDashboardPage() {
             icon: Users,
         },
         {
+            title: 'Mock Notify Requests',
+            description: 'See users waiting for mock-test availability notifications.',
+            href: '/admin/mock-test-notify-requests',
+            icon: Users,
+        },
+        {
             title: 'FAQ Settings',
             description: 'Manage FAQ questions and answers.',
             href: '/admin/faq',

@@ -1,4 +1,9 @@
 import type { PrismaClient } from '@prisma/client'
+import {
+  buildChapterLabelMap,
+  extractChapterRows,
+  resolveChapterLabel,
+} from '@/lib/chapter-labels'
 
 export type AnalyticsRangeKey = '7d' | '30d' | '90d' | 'all'
 
@@ -34,6 +39,18 @@ export type RecommendationContext = {
   examDate: string | null
   examReadinessScore: number
   baeMockAttempts: number
+  foaMockAttempts: number
+  qafbMockAttempts: number
+  latestFoaWeakChapter: {
+    chapterCode: string
+    chapterLabel: string
+    accuracy: number
+  } | null
+  latestQafbWeakChapter: {
+    chapterCode: string
+    chapterLabel: string
+    accuracy: number
+  } | null
   subjects: RecommendationSubjectSnapshot[]
   chapters: RecommendationChapterSnapshot[]
 }
@@ -114,6 +131,19 @@ type ChapterAggregate = {
   correct: number
   accuracy: number
   lastPracticed: Date | null
+}
+
+type MockSessionRecord = {
+  id: string
+  testType: string
+  totalQuestions: number
+  correctAnswers: number
+  scorePercent: number
+  timeAllowed: number
+  timeTaken: number | null
+  chapterBreakdown: unknown
+  completedAt: Date | null
+  createdAt: Date
 }
 
 type ReadinessFactor = {
@@ -214,6 +244,32 @@ export type DeepAnalyticsPayload = {
     }>
     percentileTop: number | null
   }
+  mockHistory: {
+    foa: Array<{
+      id: string
+      date: string
+      scorePercent: number
+      scoreText: string
+      weakestChapter: string | null
+      weakestChapterLabel: string | null
+      weakestAccuracy: number | null
+      timeAllowed: number
+      timeTaken: number
+      improvementDelta: number
+    }>
+    qafb: Array<{
+      id: string
+      date: string
+      scorePercent: number
+      scoreText: string
+      weakestChapter: string | null
+      weakestChapterLabel: string | null
+      weakestAccuracy: number | null
+      timeAllowed: number
+      timeTaken: number
+      improvementDelta: number
+    }>
+  }
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -312,6 +368,64 @@ function parseAnswers(raw: unknown): ParsedAnswer[] {
   }
 
   return parsed
+}
+
+function parseChapterBreakdown(raw: unknown) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
+  return Object.entries(raw as Record<string, any>)
+    .map(([chapterCode, row]) => {
+      const attempted = Math.max(0, Number(row?.attempted) || 0)
+      const correct = Math.max(0, Number(row?.correct) || 0)
+      const accuracyValue =
+        typeof row?.accuracy === 'number'
+          ? Math.max(0, Number(row.accuracy) || 0)
+          : attempted > 0
+            ? round((correct / attempted) * 100, 1)
+            : 0
+      return {
+        chapterCode,
+        attempted,
+        correct,
+        accuracy: accuracyValue,
+      }
+    })
+    .filter((row) => row.attempted > 0)
+}
+
+function extractWeakestChapterFromBreakdown(raw: unknown) {
+  const entries = parseChapterBreakdown(raw)
+  if (!entries.length) return null
+  return entries.slice().sort((a, b) => a.accuracy - b.accuracy)[0] || null
+}
+
+function buildSingleMockHistory(rows: MockSessionRecord[], chapterLabels: Record<string, string>) {
+  const sortedRows = rows
+    .slice()
+    .sort(
+      (a, b) =>
+        (a.completedAt || a.createdAt).getTime() - (b.completedAt || b.createdAt).getTime()
+    )
+
+  const history = sortedRows.map((row, index) => {
+    const previous = sortedRows[index - 1]
+    const weakest = extractWeakestChapterFromBreakdown(row.chapterBreakdown)
+    return {
+      id: row.id,
+      date: (row.completedAt || row.createdAt).toISOString(),
+      scorePercent: Math.max(0, Number(row.scorePercent) || 0),
+      scoreText: `${Math.max(0, Number(row.correctAnswers) || 0)}/${Math.max(1, Number(row.totalQuestions) || 1)}`,
+      weakestChapter: weakest?.chapterCode || null,
+      weakestChapterLabel: weakest
+        ? resolveChapterLabel(weakest.chapterCode, chapterLabels)
+        : null,
+      weakestAccuracy: weakest ? Math.round(weakest.accuracy) : null,
+      timeAllowed: Math.max(0, Number(row.timeAllowed) || 0),
+      timeTaken: Math.max(0, Number(row.timeTaken) || 0),
+      improvementDelta: previous ? (Number(row.scorePercent) || 0) - (Number(previous.scorePercent) || 0) : 0,
+    }
+  })
+
+  return history.slice(-10).reverse()
 }
 
 function isAttempted(selected: number[]): boolean {
@@ -432,33 +546,10 @@ function formatTrendInsight(delta: number, currentValue: number) {
 }
 
 function getChapterEntriesFromSubject(subject: SubjectRecord): Array<{ key: string; label: string }> {
-  if (!Array.isArray(subject.chapters)) return []
-  const entries: Array<{ key: string; label: string }> = []
-
-  for (const row of subject.chapters) {
-    if (!row) continue
-    if (typeof row === 'string') {
-      const value = row.trim()
-      if (value) entries.push({ key: value, label: value })
-      continue
-    }
-    if (typeof row === 'object') {
-      const record = row as Record<string, unknown>
-      const code = String(record.code || record.chapter || '').trim()
-      const name = String(record.name || record.title || code).trim()
-      if (code) {
-        entries.push({ key: code, label: name || code })
-      }
-    }
-  }
-
-  const dedup = new Map<string, { key: string; label: string }>()
-  for (const entry of entries) {
-    if (!dedup.has(entry.key)) {
-      dedup.set(entry.key, entry)
-    }
-  }
-  return Array.from(dedup.values())
+  return extractChapterRows(subject.chapters).map((entry) => ({
+    key: entry.code,
+    label: entry.label,
+  }))
 }
 
 function getPktDayWindow(reference = new Date(), mode: 'current' | 'previous' = 'previous') {
@@ -695,7 +786,7 @@ export async function buildDeepPerformanceAnalytics(
       ? { userId, createdAt: { gte: window.previousFrom, lt: window.previousTo } }
       : null
 
-  const [user, subjects, questionCounts, currentResults, previousResults, allResults, baeAttempts, platformRows] =
+  const [user, subjects, questionCounts, currentResults, previousResults, allResults, mockSessions, platformRows] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -772,8 +863,25 @@ export async function buildDeepPerformanceAnalytics(
           createdAt: true,
         },
       }),
-      prisma.baeMockSession.count({
-        where: { userId, testType: 'bae_mock', completed: true },
+      prisma.baeMockSession.findMany({
+        where: {
+          userId,
+          testType: { in: ['bae_mock', 'foa_mock', 'qafb_mock'] },
+          completed: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          testType: true,
+          totalQuestions: true,
+          correctAnswers: true,
+          scorePercent: true,
+          timeAllowed: true,
+          timeTaken: true,
+          chapterBreakdown: true,
+          completedAt: true,
+          createdAt: true,
+        },
       }),
       prisma.platformDailyStat.findMany({
         where: window.from
@@ -1232,6 +1340,42 @@ export async function buildDeepPerformanceAnalytics(
       ? round(platformBaeAverages.reduce((sum, value) => sum + value, 0) / platformBaeAverages.length, 1)
       : 0
 
+  const completedMockSessions = mockSessions as MockSessionRecord[]
+  const baeAttempts = completedMockSessions.filter((row) => row.testType === 'bae_mock').length
+  const foaSessions = completedMockSessions.filter((row) => row.testType === 'foa_mock')
+  const qafbSessions = completedMockSessions.filter((row) => row.testType === 'qafb_mock')
+  const foaMockAttempts = foaSessions.length
+  const qafbMockAttempts = qafbSessions.length
+
+  const chapterLabelsBySubject = new Map<string, Record<string, string>>(
+    normalizedSubjects.map((subject) => [subject.code, buildChapterLabelMap(subject.chapters)])
+  )
+  const foaChapterLabels = chapterLabelsBySubject.get('FOA') || {}
+  const qafbChapterLabels = chapterLabelsBySubject.get('QAFB') || {}
+
+  const foaMockHistory = buildSingleMockHistory(foaSessions, foaChapterLabels)
+  const qafbMockHistory = buildSingleMockHistory(qafbSessions, qafbChapterLabels)
+
+  const latestFoaSession = foaSessions
+    .slice()
+    .sort(
+      (a, b) =>
+        (b.completedAt || b.createdAt).getTime() - (a.completedAt || a.createdAt).getTime()
+    )[0]
+  const latestQafbSession = qafbSessions
+    .slice()
+    .sort(
+      (a, b) =>
+        (b.completedAt || b.createdAt).getTime() - (a.completedAt || a.createdAt).getTime()
+    )[0]
+
+  const latestFoaWeakChapter = latestFoaSession
+    ? extractWeakestChapterFromBreakdown(latestFoaSession.chapterBreakdown)
+    : null
+  const latestQafbWeakChapter = latestQafbSession
+    ? extractWeakestChapterFromBreakdown(latestQafbSession.chapterBreakdown)
+    : null
+
   const percentileGroups = await prisma.testResult.groupBy({
     by: ['userId'],
     where: {
@@ -1309,6 +1453,22 @@ export async function buildDeepPerformanceAnalytics(
     examDate: user.examDate ? user.examDate.toISOString() : null,
     examReadinessScore: readiness.score,
     baeMockAttempts: baeAttempts,
+    foaMockAttempts,
+    qafbMockAttempts,
+    latestFoaWeakChapter: latestFoaWeakChapter
+      ? {
+          chapterCode: latestFoaWeakChapter.chapterCode,
+          chapterLabel: resolveChapterLabel(latestFoaWeakChapter.chapterCode, foaChapterLabels),
+          accuracy: Math.round(latestFoaWeakChapter.accuracy),
+        }
+      : null,
+    latestQafbWeakChapter: latestQafbWeakChapter
+      ? {
+          chapterCode: latestQafbWeakChapter.chapterCode,
+          chapterLabel: resolveChapterLabel(latestQafbWeakChapter.chapterCode, qafbChapterLabels),
+          accuracy: Math.round(latestQafbWeakChapter.accuracy),
+        }
+      : null,
     subjects: subjectAggregates.map((subject) => ({
       code: subject.code,
       name: subject.name,
@@ -1368,6 +1528,10 @@ export async function buildDeepPerformanceAnalytics(
     comparison: {
       metrics: comparisonMetrics,
       percentileTop,
+    },
+    mockHistory: {
+      foa: foaMockHistory,
+      qafb: qafbMockHistory,
     },
   }
 

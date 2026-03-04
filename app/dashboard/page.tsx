@@ -97,6 +97,32 @@ interface BaeWeakAreaSummary {
   }>
 }
 
+interface SingleMockWeakAreaSummary {
+  attemptCount: number
+  unlocked: boolean
+  remainingForUnlock: number
+  chapterLabels?: Record<string, string>
+  chapters: Array<{
+    chapterCode: string
+    chapterLabel?: string
+    attempted: number
+    correct: number
+    accuracy: number
+  }>
+  history: Array<{
+    id: string
+    date: string
+    scorePercent: number
+    scoreText: string
+    weakestChapter: string | null
+    weakestChapterLabel?: string | null
+    weakestAccuracy: number | null
+    improvementDelta: number
+    timeTaken: number
+    timeAllowed: number
+  }>
+}
+
 interface DashboardRecommendation {
   priority: 'critical' | 'high' | 'medium' | 'low'
   icon: string
@@ -158,6 +184,17 @@ function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value))
 }
 
+function getWeakAreaChapterLabel(
+  chapter: { chapterCode: string; chapterLabel?: string },
+  chapterLabels?: Record<string, string>
+) {
+  const code = String(chapter.chapterCode || '').trim()
+  if (!code) return 'Unmapped'
+  if (chapter.chapterLabel) return chapter.chapterLabel
+  if (!chapterLabels) return code
+  return chapterLabels[code] || chapterLabels[code.toUpperCase()] || code
+}
+
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
@@ -201,6 +238,11 @@ export default function DashboardPage() {
   const [isExamEditorOpen, setIsExamEditorOpen] = useState(false)
   const [baeWeakArea, setBaeWeakArea] = useState<BaeWeakAreaSummary | null>(null)
   const [showBaeAnalysis, setShowBaeAnalysis] = useState(false)
+  const [foaWeakArea, setFoaWeakArea] = useState<SingleMockWeakAreaSummary | null>(null)
+  const [showFoaAnalysis, setShowFoaAnalysis] = useState(false)
+  const [qafbWeakArea, setQafbWeakArea] = useState<SingleMockWeakAreaSummary | null>(null)
+  const [showQafbAnalysis, setShowQafbAnalysis] = useState(false)
+  const [qafbMockComingSoon, setQafbMockComingSoon] = useState(false)
   const [recommendations, setRecommendations] = useState<DashboardRecommendation[]>([])
   const [recommendationsLoading, setRecommendationsLoading] = useState(false)
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
@@ -461,15 +503,46 @@ export default function DashboardPage() {
       }
 
       try {
-        const baeWeakResponse = await fetch('/api/bae-mock/weak-area', { cache: 'no-store' })
+        const [baeWeakResponse, foaWeakResponse, qafbWeakResponse, qafbConfigResponse] =
+          await Promise.all([
+            fetch('/api/mock-tests/bae-mock/weak-area', { cache: 'no-store' }),
+            fetch('/api/mock-tests/foa-mock/weak-area', { cache: 'no-store' }),
+            fetch('/api/mock-tests/qafb-mock/weak-area', { cache: 'no-store' }),
+            fetch('/api/mock-tests/qafb-mock/config', { cache: 'no-store' }),
+          ])
+
         if (baeWeakResponse.ok) {
           const baeWeakData = await baeWeakResponse.json()
           setBaeWeakArea(baeWeakData)
         } else {
           setBaeWeakArea(null)
         }
+
+        if (foaWeakResponse.ok) {
+          const foaWeakData = await foaWeakResponse.json()
+          setFoaWeakArea(foaWeakData)
+        } else {
+          setFoaWeakArea(null)
+        }
+
+        if (qafbWeakResponse.ok) {
+          const qafbWeakData = await qafbWeakResponse.json()
+          setQafbWeakArea(qafbWeakData)
+        } else {
+          setQafbWeakArea(null)
+        }
+
+        if (qafbConfigResponse.ok) {
+          const qafbConfigData = await qafbConfigResponse.json()
+          setQafbMockComingSoon(Boolean(qafbConfigData?.comingSoon))
+        } else {
+          setQafbMockComingSoon(false)
+        }
       } catch {
         setBaeWeakArea(null)
+        setFoaWeakArea(null)
+        setQafbWeakArea(null)
+        setQafbMockComingSoon(false)
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
@@ -571,6 +644,26 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleNotifyForMock(mockKey: 'qafb-mock') {
+    try {
+      const response = await fetch(`/api/mock-tests/${mockKey}/notify`, { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to save notification preference.')
+      }
+      toast({
+        title: 'Notification enabled',
+        description: data?.message || "We'll notify you when this mock is available.",
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Request failed',
+        description: error?.message || 'Unable to save notification preference.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const scrollToPractice = () => {
     document
       .querySelector('#continue-learning')
@@ -644,11 +737,19 @@ export default function DashboardPage() {
   const modeCompletionCounts = useMemo(
     () => ({
       baeMock: Number(globalStats?.modeCompletions?.baeMock) || 0,
+      foaMock:
+        Number(globalStats?.modeCompletions?.foaMock) ||
+        Number(foaWeakArea?.attemptCount) ||
+        0,
+      qafbMock:
+        Number(globalStats?.modeCompletions?.qafbMock) ||
+        Number(qafbWeakArea?.attemptCount) ||
+        0,
       weekIntensive: Number(globalStats?.modeCompletions?.weekIntensive) || 0,
       wrongAnswers: Number(globalStats?.modeCompletions?.wrongAnswers) || 0,
       financialStatements: Number(globalStats?.modeCompletions?.financialStatements) || 0,
     }),
-    [globalStats?.modeCompletions]
+    [foaWeakArea?.attemptCount, globalStats?.modeCompletions, qafbWeakArea?.attemptCount]
   )
 
   const baeFocusLabel = useMemo(() => {
@@ -656,6 +757,26 @@ export default function DashboardPage() {
     if (!baeWeakArea.comparison.weakerVolume) return null
     return baeWeakArea.comparison.weakerVolume === 'VOL1' ? 'Vol I - ITB' : 'Vol II - ECO'
   }, [baeWeakArea])
+
+  const foaWeakestChapter = useMemo(() => {
+    if (!foaWeakArea?.unlocked) return null
+    return (
+      foaWeakArea.chapters
+        .filter((chapter) => chapter.attempted > 0)
+        .slice()
+        .sort((a, b) => a.accuracy - b.accuracy)[0] || null
+    )
+  }, [foaWeakArea])
+
+  const qafbWeakestChapter = useMemo(() => {
+    if (!qafbWeakArea?.unlocked) return null
+    return (
+      qafbWeakArea.chapters
+        .filter((chapter) => chapter.attempted > 0)
+        .slice()
+        .sort((a, b) => a.accuracy - b.accuracy)[0] || null
+    )
+  }, [qafbWeakArea])
 
   const baeTrend = useMemo(() => {
     const points = (baeWeakArea?.history || []).slice(0, 10).reverse()
@@ -1288,12 +1409,17 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="mt-4 text-base font-bold text-slate-900">BAE Mock Test</h3>
                       <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-                        Experience the real ICAP exam format - a timed mix of Business &amp; Economic Insights Vol I (ITB)
-                        and Vol II (ECO). Vol II questions always match or exceed Vol I based on historical student reports.
+                        Experience the real ICAP exam format — a timed mix of Business &amp; Economic Insights Vol I
+                        (ITB) and Vol II (ECO). Vol II questions always match or exceed Vol I based on historical
+                        student reports.
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-[#dcfce7] px-2.5 py-1 text-[11px] font-semibold text-[#166534]">{BAE_VOL1_CODE}</span>
-                        <span className="rounded-full bg-[#dbeafe] px-2.5 py-1 text-[11px] font-semibold text-[#1d4ed8]">{BAE_VOL2_CODE}</span>
+                        <span className="rounded-full bg-[#dcfce7] px-2.5 py-1 text-[11px] font-semibold text-[#166534]">
+                          {BAE_VOL1_CODE}
+                        </span>
+                        <span className="rounded-full bg-[#dbeafe] px-2.5 py-1 text-[11px] font-semibold text-[#1d4ed8]">
+                          {BAE_VOL2_CODE}
+                        </span>
                       </div>
                       <p className="mt-3 text-xs text-slate-500">
                         50 Questions · {calculateBaeTimeAllowedMinutes(50)} Minutes · Mixed Ratio
@@ -1328,26 +1454,33 @@ export default function DashboardPage() {
                           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
                             {!baeWeakArea || !baeWeakArea.unlocked ? (
                               <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs text-slate-600">
-                                Complete {baeWeakArea?.remainingForUnlock ?? 3} more BAE mock tests to unlock your weak area analysis.
+                                Complete {baeWeakArea?.remainingForUnlock ?? 3} more BAE mock tests to unlock your weak
+                                area analysis.
                               </div>
                             ) : (
                               <>
                                 <div>
                                   <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                                    <span>Vol I - ITB</span>
+                                    <span>{BAE_VOL1_NAME}</span>
                                     <span className="font-semibold text-slate-900">{baeWeakArea.accuracy.vol1}%</span>
                                   </div>
                                   <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                                    <div className="h-full rounded-full bg-[#16a34a]" style={{ width: `${baeWeakArea.accuracy.vol1}%` }} />
+                                    <div
+                                      className="h-full rounded-full bg-[#16a34a]"
+                                      style={{ width: `${baeWeakArea.accuracy.vol1}%` }}
+                                    />
                                   </div>
                                 </div>
                                 <div>
                                   <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                                    <span>Vol II - ECO</span>
+                                    <span>{BAE_VOL2_NAME}</span>
                                     <span className="font-semibold text-slate-900">{baeWeakArea.accuracy.vol2}%</span>
                                   </div>
                                   <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                                    <div className="h-full rounded-full bg-[#2563eb]" style={{ width: `${baeWeakArea.accuracy.vol2}%` }} />
+                                    <div
+                                      className="h-full rounded-full bg-[#2563eb]"
+                                      style={{ width: `${baeWeakArea.accuracy.vol2}%` }}
+                                    />
                                   </div>
                                 </div>
                                 <div
@@ -1363,14 +1496,187 @@ export default function DashboardPage() {
                                     <span>Well balanced across both volumes.</span>
                                   ) : (
                                     <span>
-                                      Focus Area: {baeWeakArea.comparison.weakerVolume === 'VOL1' ? 'Vol I - ITB' : 'Vol II - ECO'} (
-                                      {baeWeakArea.comparison.difference}% gap)
+                                      Focus Area:{' '}
+                                      {baeWeakArea.comparison.weakerVolume === 'VOL1'
+                                        ? BAE_VOL1_NAME
+                                        : BAE_VOL2_NAME}{' '}
+                                      ({baeWeakArea.comparison.difference}% gap)
                                     </span>
                                   )}
                                 </div>
                               </>
                             )}
                           </div>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-feature-card">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-[#7c3aed]" />
+                      <BarChart2 size={84} className="absolute -top-2 -right-2 text-[#7c3aed]/10" />
+                      <div className="dashboard-mode-icon bg-[#f5f3ff] text-[#7c3aed]">
+                        <BarChart2 size={24} />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">FOA Mock Test</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Simulate the real ICAP Fundamentals of Accounting exam with timed practice across all chapters.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-[#ddd6fe] bg-[#f5f3ff] px-2.5 py-1 text-[11px] font-semibold text-[#7c3aed]">
+                          Fundamentals of Accounting
+                        </span>
+                      </div>
+                      <p className="mt-3 text-xs text-slate-500">50 Questions · 120 Minutes · All Chapters</p>
+                      {foaWeakestChapter && foaWeakestChapter.accuracy < 50 ? (
+                        <p className="mt-2 inline-flex rounded-md bg-[#fef9c3] px-2.5 py-1 text-[11px] font-semibold text-[#854d0e]">
+                          Focus needed: {getWeakAreaChapterLabel(foaWeakestChapter, foaWeakArea?.chapterLabels)}
+                        </p>
+                      ) : null}
+                      {modeCompletionCounts.foaMock > 0 ? (
+                        <p className="mt-2 text-xs text-slate-500">Completed {modeCompletionCounts.foaMock} times</p>
+                      ) : null}
+                      <div className="mt-4 border-t border-slate-100 pt-4 space-y-3">
+                        <Button
+                          className="w-full bg-[linear-gradient(135deg,#7c3aed,#6d28d9)] hover:brightness-110 text-white"
+                          onClick={() => window.location.assign('/practice/foa-mock')}
+                        >
+                          Start FOA Mock
+                          <ArrowRight size={16} className="ml-1" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full text-xs text-slate-500"
+                          onClick={() => setShowFoaAnalysis((prev) => !prev)}
+                        >
+                          {showFoaAnalysis ? 'Hide Analysis ▲' : 'View Analysis ▼'}
+                        </Button>
+
+                        {showFoaAnalysis ? (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                            {!foaWeakArea || !foaWeakArea.unlocked ? (
+                              <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs text-slate-600">
+                                Complete {foaWeakArea?.remainingForUnlock ?? 3} more FOA mock tests to unlock your weak
+                                area analysis.
+                              </div>
+                            ) : (
+                              foaWeakArea.chapters.slice(0, 4).map((chapter) => (
+                                <div
+                                  key={chapter.chapterCode}
+                                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span>{getWeakAreaChapterLabel(chapter, foaWeakArea?.chapterLabels)}</span>
+                                    <span className="font-semibold">{chapter.accuracy}%</span>
+                                  </div>
+                                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                    <div
+                                      className="h-full rounded-full bg-[#7c3aed]"
+                                      style={{ width: `${Math.max(0, Math.min(100, chapter.accuracy))}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="dashboard-feature-card dashboard-feature-card-orange">
+                    <CardContent className="p-6 relative overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-[#ea580c]" />
+                      <BarChart2 size={84} className="absolute -top-2 -right-2 text-[#ea580c]/10" />
+                      <div className="dashboard-mode-icon bg-[#fff7ed] text-[#ea580c]">
+                        <BarChart2 size={24} />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">QAFB Mock Test</h3>
+                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                        Test your Quantitative Analysis for Business knowledge under timed exam conditions.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-[#fed7aa] bg-[#fff7ed] px-2.5 py-1 text-[11px] font-semibold text-[#ea580c]">
+                          Quantitative Analysis for Business
+                        </span>
+                      </div>
+                      {qafbMockComingSoon ? (
+                        <p className="mt-3 inline-flex rounded-md bg-[#fff7ed] px-2.5 py-1 text-[11px] font-semibold text-[#ea580c]">
+                          Coming Soon — Questions being added
+                        </p>
+                      ) : (
+                        <p className="mt-3 text-xs text-slate-500">50 Questions · 120 Minutes · All Chapters</p>
+                      )}
+                      {qafbWeakestChapter && qafbWeakestChapter.accuracy < 50 && !qafbMockComingSoon ? (
+                        <p className="mt-2 inline-flex rounded-md bg-[#fef9c3] px-2.5 py-1 text-[11px] font-semibold text-[#854d0e]">
+                          Focus needed: {getWeakAreaChapterLabel(qafbWeakestChapter, qafbWeakArea?.chapterLabels)}
+                        </p>
+                      ) : null}
+                      {modeCompletionCounts.qafbMock > 0 ? (
+                        <p className="mt-2 text-xs text-slate-500">Completed {modeCompletionCounts.qafbMock} times</p>
+                      ) : null}
+                      <div className="mt-4 border-t border-slate-100 pt-4 space-y-3">
+                        {qafbMockComingSoon ? (
+                          <Button
+                            variant="outline"
+                            className="w-full border-[#fed7aa] text-[#ea580c] hover:bg-[#fff7ed]"
+                            onClick={() => void handleNotifyForMock('qafb-mock')}
+                          >
+                            Notify Me When Ready
+                          </Button>
+                        ) : (
+                          <Button
+                            className="w-full bg-[linear-gradient(135deg,#ea580c,#c2410c)] hover:brightness-110 text-white"
+                            onClick={() => window.location.assign('/practice/qafb-mock')}
+                          >
+                            Start QAFB Mock
+                            <ArrowRight size={16} className="ml-1" />
+                          </Button>
+                        )}
+
+                        {!qafbMockComingSoon ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="w-full text-xs text-slate-500"
+                              onClick={() => setShowQafbAnalysis((prev) => !prev)}
+                            >
+                              {showQafbAnalysis ? 'Hide Analysis ▲' : 'View Analysis ▼'}
+                            </Button>
+
+                            {showQafbAnalysis ? (
+                              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                                {!qafbWeakArea || !qafbWeakArea.unlocked ? (
+                                  <div className="rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs text-slate-600">
+                                    Complete {qafbWeakArea?.remainingForUnlock ?? 3} more QAFB mock tests to unlock your weak
+                                    area analysis.
+                                  </div>
+                                ) : (
+                                  qafbWeakArea.chapters.slice(0, 4).map((chapter) => (
+                                    <div
+                                      key={chapter.chapterCode}
+                                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span>{getWeakAreaChapterLabel(chapter, qafbWeakArea?.chapterLabels)}</span>
+                                        <span className="font-semibold">{chapter.accuracy}%</span>
+                                      </div>
+                                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                        <div
+                                          className="h-full rounded-full bg-[#ea580c]"
+                                          style={{ width: `${Math.max(0, Math.min(100, chapter.accuracy))}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            ) : null}
+                          </>
                         ) : null}
                       </div>
                     </CardContent>

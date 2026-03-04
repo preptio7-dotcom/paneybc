@@ -74,6 +74,11 @@ const NAV_GROUPS: NavGroup[] = [
         icon: UserRoundCheck,
         badgeKey: 'pendingAmbassadorCount',
       },
+      {
+        label: 'Mock Notify',
+        href: '/admin/mock-test-notify-requests',
+        icon: Bell,
+      },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
     ],
