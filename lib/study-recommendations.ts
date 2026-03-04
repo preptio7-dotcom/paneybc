@@ -175,7 +175,9 @@ export function generateStudyRecommendations(
     })
   }
 
-  const baeivi = context.subjects.find((subject) => subject.code === 'BAEIVI')
+  const baeivi = context.subjects.find(
+    (subject) => subject.code === 'BAEIVII' || subject.code === 'BAEIVI'
+  )
   const baeiv2e = context.subjects.find((subject) => subject.code === 'BAEIV2E')
   if (
     baeivi &&
@@ -191,7 +193,7 @@ export function generateStudyRecommendations(
       type: 'bae_mock',
       title: 'Try a BAE Mock Test',
       description:
-        'You have practiced BAEIVI and BAEIV2E individually. Simulate the real ICAP format with a combined BAE mock.',
+        'You have practiced BAEIVII and BAEIV2E individually. Simulate the real ICAP format with a combined BAE mock.',
       action: 'Start BAE Mock ->',
       actionLink: '/practice/bae-mock',
       dataPoint: 'Simulate real ICAP format',

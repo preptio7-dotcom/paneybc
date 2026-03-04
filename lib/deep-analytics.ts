@@ -221,6 +221,7 @@ const PKT_OFFSET_MS = 5 * 60 * 60 * 1000
 
 const SUBJECT_SHORT_NAMES: Record<string, string> = {
   BAEIVI: 'BEI Vol I',
+  BAEIVII: 'BEI Vol I',
   BAEIV2E: 'BEI Vol II',
   FOA: 'Fund. of Accounting',
   QAFB: 'Quant. Analysis',
@@ -1203,19 +1204,29 @@ export async function buildDeepPerformanceAnalytics(
     livePlatformMetrics?.subjectAverages?.FOA?.accuracy ??
     0
 
-  const baeSubjects = subjectAggregates.filter((subject) => subject.code === 'BAEIVI' || subject.code === 'BAEIV2E')
+  const isBaeVol1 = (code: string) => code === 'BAEIVII' || code === 'BAEIVI'
+  const baeSubjects = subjectAggregates.filter(
+    (subject) => isBaeVol1(subject.code) || subject.code === 'BAEIV2E'
+  )
   const baeAccuracy =
     baeSubjects.length > 0
       ? round(baeSubjects.reduce((sum, subject) => sum + subject.accuracy, 0) / baeSubjects.length, 1)
       : 0
-  const platformBaeAverages = ['BAEIVI', 'BAEIV2E']
-    .map((code) => {
-      const cache = (latestPlatformRow?.subjectAverages as Record<string, { accuracy?: number }> | null)?.[code]?.accuracy
+  const platformSubjectAverages =
+    (latestPlatformRow?.subjectAverages as Record<string, { accuracy?: number }> | null) || null
+  const resolvePlatformSubjectAccuracy = (codes: string[]) => {
+    for (const code of codes) {
+      const cache = platformSubjectAverages?.[code]?.accuracy
+      if (typeof cache === 'number') return cache
       const live = livePlatformMetrics?.subjectAverages?.[code]?.accuracy
-      const value = cache ?? live
-      return typeof value === 'number' ? value : null
-    })
-    .filter((value): value is number => value !== null)
+      if (typeof live === 'number') return live
+    }
+    return null
+  }
+  const platformBaeAverages = [
+    resolvePlatformSubjectAccuracy(['BAEIVII', 'BAEIVI']),
+    resolvePlatformSubjectAccuracy(['BAEIV2E']),
+  ].filter((value): value is number => value !== null)
   const platformBaeAccuracy =
     platformBaeAverages.length > 0
       ? round(platformBaeAverages.reduce((sum, value) => sum + value, 0) / platformBaeAverages.length, 1)

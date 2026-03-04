@@ -5,9 +5,11 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import {
   BAE_VOL1_CODE,
+  BAE_VOL1_CODES,
   BAE_VOL2_CODE,
   calculateBaeTimeAllowedMinutes,
   resolveBaeDistributionWithAvailability,
+  sampleWeightedQuestionsByChapter,
   shuffleArray,
   type BaeSessionQuestionRef,
 } from '@/lib/bae-mock'
@@ -21,9 +23,12 @@ function clampRequestedTotal(value: number | undefined) {
   return Math.max(10, Math.min(100, parsed))
 }
 
-function sampleQuestionIds(questionIds: string[], count: number) {
-  if (count >= questionIds.length) return questionIds.slice()
-  return shuffleArray(questionIds).slice(0, count)
+function sampleQuestionIdsByChapterWeight(
+  questions: Array<{ id: string; chapter: string | null }>,
+  count: number,
+  chapterSources: Array<unknown>
+) {
+  return sampleWeightedQuestionsByChapter(questions, count, chapterSources)
 }
 
 export async function POST(request: NextRequest) {
@@ -36,14 +41,22 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as StartPayload
     const requestedTotal = clampRequestedTotal(body.totalQuestions)
 
-    const [vol1Questions, vol2Questions] = await Promise.all([
+    const [vol1Questions, vol2Questions, vol1Subjects, vol2Subject] = await Promise.all([
       prisma.question.findMany({
-        where: { subject: BAE_VOL1_CODE },
-        select: { id: true },
+        where: { subject: { in: [...BAE_VOL1_CODES] } },
+        select: { id: true, chapter: true },
       }),
       prisma.question.findMany({
         where: { subject: BAE_VOL2_CODE },
-        select: { id: true },
+        select: { id: true, chapter: true },
+      }),
+      prisma.subject.findMany({
+        where: { code: { in: [...BAE_VOL1_CODES] } },
+        select: { chapters: true },
+      }),
+      prisma.subject.findUnique({
+        where: { code: BAE_VOL2_CODE },
+        select: { chapters: true },
       }),
     ])
 
@@ -76,14 +89,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const vol1Ids = sampleQuestionIds(
-      vol1Questions.map((item) => item.id),
-      distribution.vol1Count
+    const vol1Ids = sampleQuestionIdsByChapterWeight(
+      vol1Questions,
+      distribution.vol1Count,
+      vol1Subjects.map((subject) => subject.chapters)
     )
-    const vol2Ids = sampleQuestionIds(
-      vol2Questions.map((item) => item.id),
-      distribution.vol2Count
-    )
+    const vol2Ids = sampleQuestionIdsByChapterWeight(vol2Questions, distribution.vol2Count, [
+      vol2Subject?.chapters,
+    ])
 
     const mergedSet = shuffleArray<BaeSessionQuestionRef>([
       ...vol1Ids.map((questionId) => ({ questionId, volume: 'VOL1' as const })),

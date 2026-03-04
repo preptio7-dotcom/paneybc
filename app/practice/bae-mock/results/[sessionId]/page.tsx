@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/lib/auth-context'
 import { SUBJECT_TEST_MODES } from '@/lib/practice-modes'
+import { BAE_VOL1_CODE, BAE_VOL2_CODE } from '@/lib/bae-mock'
 
 type SessionSummary = {
   id: string
@@ -388,17 +389,17 @@ export default function BaeMockResultsPage() {
                     onClick={() =>
                       router.push(
                         weakArea.comparison.weakerVolume === 'VOL1'
-                          ? `/subjects/BAEIVI/test?mode=${SUBJECT_TEST_MODES.mock}`
+                          ? `/subjects/${encodeURIComponent(BAE_VOL1_CODE)}/test?mode=${SUBJECT_TEST_MODES.mock}`
                           : weakArea.comparison.weakerVolume === 'VOL2'
-                            ? `/subjects/BAEIV2E/test?mode=${SUBJECT_TEST_MODES.mock}`
+                            ? `/subjects/${encodeURIComponent(BAE_VOL2_CODE)}/test?mode=${SUBJECT_TEST_MODES.mock}`
                             : '/practice/bae-mock'
                       )
                     }
                   >
                     {weakArea.comparison.weakerVolume === 'VOL1'
-                      ? 'Practice BAEIVI Questions'
+                      ? `Practice ${BAE_VOL1_CODE} Questions`
                       : weakArea.comparison.weakerVolume === 'VOL2'
-                        ? 'Practice BAEIV2E Questions'
+                        ? `Practice ${BAE_VOL2_CODE} Questions`
                         : 'Take Another BAE Mock Test'}
                     <ArrowRight size={14} className="ml-1" />
                   </Button>

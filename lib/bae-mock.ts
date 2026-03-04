@@ -1,4 +1,6 @@
-export const BAE_VOL1_CODE = 'BAEIVI'
+export const BAE_VOL1_CODE = 'BAEIVII'
+export const BAE_VOL1_LEGACY_CODE = 'BAEIVI'
+export const BAE_VOL1_CODES = [BAE_VOL1_CODE, BAE_VOL1_LEGACY_CODE] as const
 export const BAE_VOL2_CODE = 'BAEIV2E'
 
 export const BAE_VOL1_NAME = 'Vol I - ITB'
@@ -19,7 +21,12 @@ export type BaeSessionQuestionRef = {
 }
 
 export function calculateBaeTimeAllowedMinutes(totalQuestions: number) {
-  return Math.max(1, Math.ceil((Number(totalQuestions) * 90) / 60))
+  const safeTotal = Math.max(1, Math.floor(Number(totalQuestions) || 1))
+  // Base pacing: 2 minutes per question + review buffer.
+  // This keeps the requested default at 120 minutes for 50 questions.
+  const baseMinutes = safeTotal * 2
+  const reviewBufferMinutes = Math.ceil(safeTotal * 0.4)
+  return baseMinutes + reviewBufferMinutes
 }
 
 export function shuffleArray<T>(input: T[]) {
@@ -130,6 +137,150 @@ export function getVolumeLabel(volume: BaeVolume) {
   return volume === 'VOL1' ? BAE_VOL1_NAME : BAE_VOL2_NAME
 }
 
+export function isVol1SubjectCode(subjectCode: string) {
+  const normalized = String(subjectCode || '').toUpperCase()
+  return BAE_VOL1_CODES.includes(normalized as (typeof BAE_VOL1_CODES)[number])
+}
+
 export function getVolumeBySubjectCode(subjectCode: string): BaeVolume {
-  return String(subjectCode || '').toUpperCase() === BAE_VOL1_CODE ? 'VOL1' : 'VOL2'
+  return isVol1SubjectCode(subjectCode) ? 'VOL1' : 'VOL2'
+}
+
+type ChapterWeightEntry = {
+  code: string
+  weight: number
+}
+
+type QuestionWithChapter = {
+  id: string
+  chapter: string | null
+}
+
+function parseChapterWeights(rawChapters: unknown): ChapterWeightEntry[] {
+  if (!Array.isArray(rawChapters)) return []
+
+  const entries: ChapterWeightEntry[] = []
+
+  for (const row of rawChapters) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) continue
+    const chapter = row as Record<string, unknown>
+    const code = String(chapter.code || chapter.chapter || '').trim()
+    if (!code) continue
+    const weight = Number(chapter.weightage)
+    entries.push({
+      code,
+      weight: Number.isFinite(weight) && weight > 0 ? weight : 1,
+    })
+  }
+
+  return entries
+}
+
+function buildAllocationByWeight(
+  requestedCount: number,
+  chapters: Array<{ code: string; available: number; weight: number }>
+) {
+  if (requestedCount <= 0 || chapters.length === 0) {
+    return new Map<string, number>()
+  }
+
+  const safeRequested = Math.min(
+    requestedCount,
+    chapters.reduce((sum, chapter) => sum + chapter.available, 0)
+  )
+  const weightSum = chapters.reduce((sum, chapter) => sum + chapter.weight, 0)
+  const allocation = new Map<string, number>()
+  if (weightSum <= 0) return allocation
+
+  const allocations = chapters.map((chapter) => {
+    const raw = (chapter.weight / weightSum) * safeRequested
+    return {
+      ...chapter,
+      base: Math.floor(raw),
+      remainder: raw - Math.floor(raw),
+    }
+  })
+
+  let remaining = safeRequested
+  for (const chapter of allocations) {
+    const allocated = Math.min(chapter.base, chapter.available)
+    allocation.set(chapter.code, allocated)
+    remaining -= allocated
+  }
+
+  const byRemainder = allocations.slice().sort((a, b) => b.remainder - a.remainder)
+  while (remaining > 0) {
+    let progressed = false
+    for (const chapter of byRemainder) {
+      if (remaining <= 0) break
+      const current = allocation.get(chapter.code) || 0
+      if (current < chapter.available) {
+        allocation.set(chapter.code, current + 1)
+        remaining -= 1
+        progressed = true
+      }
+    }
+    if (!progressed) break
+  }
+
+  return allocation
+}
+
+export function sampleWeightedQuestionsByChapter(
+  questions: QuestionWithChapter[],
+  requestedCount: number,
+  chapterSources: Array<unknown>
+) {
+  if (requestedCount <= 0) return [] as string[]
+  if (questions.length <= requestedCount) return questions.map((question) => question.id)
+
+  const chapterWeightMap = new Map<string, number>()
+  for (const source of chapterSources) {
+    const entries = parseChapterWeights(source)
+    for (const entry of entries) {
+      if (!chapterWeightMap.has(entry.code)) {
+        chapterWeightMap.set(entry.code, entry.weight)
+      }
+    }
+  }
+
+  if (!chapterWeightMap.size) {
+    return shuffleArray(questions.map((question) => question.id)).slice(0, requestedCount)
+  }
+
+  const groupedByChapter = new Map<string, string[]>()
+  for (const question of questions) {
+    const chapterCode = String(question.chapter || '').trim()
+    const key = chapterCode || '__unmapped__'
+    if (!groupedByChapter.has(key)) {
+      groupedByChapter.set(key, [])
+    }
+    groupedByChapter.get(key)!.push(question.id)
+  }
+
+  const weightedChapters = Array.from(groupedByChapter.entries()).map(([code, ids]) => ({
+    code,
+    available: ids.length,
+    weight: chapterWeightMap.get(code) || 1,
+  }))
+
+  const allocation = buildAllocationByWeight(requestedCount, weightedChapters)
+  const picked: string[] = []
+
+  for (const chapter of weightedChapters) {
+    const target = allocation.get(chapter.code) || 0
+    if (target <= 0) continue
+    const questionIds = groupedByChapter.get(chapter.code) || []
+    picked.push(...shuffleArray(questionIds).slice(0, target))
+  }
+
+  if (picked.length < requestedCount) {
+    const pickedSet = new Set(picked)
+    const leftovers = shuffleArray(
+      questions.map((question) => question.id).filter((id) => !pickedSet.has(id))
+    )
+    picked.push(...leftovers.slice(0, requestedCount - picked.length))
+  }
+
+  return picked.slice(0, requestedCount)
 }

@@ -3,7 +3,12 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { BAE_VOL1_CODE, BAE_VOL2_CODE, calculateBaeTimeAllowedMinutes } from '@/lib/bae-mock'
+import {
+  BAE_VOL1_CODE,
+  BAE_VOL1_CODES,
+  BAE_VOL2_CODE,
+  calculateBaeTimeAllowedMinutes,
+} from '@/lib/bae-mock'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [vol1Available, vol2Available] = await Promise.all([
-      prisma.question.count({ where: { subject: BAE_VOL1_CODE } }),
+      prisma.question.count({ where: { subject: { in: [...BAE_VOL1_CODES] } } }),
       prisma.question.count({ where: { subject: BAE_VOL2_CODE } }),
     ])
 

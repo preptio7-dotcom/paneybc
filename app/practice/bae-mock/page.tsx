@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
+import { calculateBaeTimeAllowedMinutes } from '@/lib/bae-mock'
 
 type ConfigPayload = {
   success: boolean
@@ -69,7 +70,10 @@ export default function BaeMockConfigurationPage() {
     void fetchConfig()
   }, [loading, user, toast])
 
-  const timeAllowedMinutes = useMemo(() => Math.ceil((questionCount * 90) / 60), [questionCount])
+  const timeAllowedMinutes = useMemo(
+    () => calculateBaeTimeAllowedMinutes(questionCount),
+    [questionCount]
+  )
   const lessThanRecommended = questionCount < 20
   const canStart = Boolean(config?.canStart)
 

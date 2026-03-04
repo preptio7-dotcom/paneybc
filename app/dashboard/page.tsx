@@ -35,6 +35,7 @@ import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-bad
 import { getDateKeyInTimezone, getStreakResetLabel, type StreakResetTimezone } from '@/lib/streak-settings'
 import { trackSubjectActionClick } from '@/lib/client-analytics'
 import { PRACTICE_LABELS, SUBJECT_TEST_MODES } from '@/lib/practice-modes'
+import { BAE_VOL1_CODE, BAE_VOL2_CODE, calculateBaeTimeAllowedMinutes } from '@/lib/bae-mock'
 
 interface SubjectStat {
   code: string
@@ -132,6 +133,7 @@ const DAILY_QUOTES = [
 
 const SUBJECT_ACCENTS: Record<string, string> = {
   BAEIVI: '#16a34a',
+  BAEIVII: '#16a34a',
   BAEIV2E: '#2563eb',
   FOA: '#7c3aed',
   QAFB: '#ea580c',
@@ -139,6 +141,7 @@ const SUBJECT_ACCENTS: Record<string, string> = {
 
 const SUBJECT_SHORT_NAMES: Record<string, string> = {
   BAEIVI: 'BEI Vol I',
+  BAEIVII: 'BEI Vol I',
   BAEIV2E: 'BEI Vol II',
   FOA: 'Fund. of Accounting',
   QAFB: 'Quant. Analysis',
@@ -1259,7 +1262,7 @@ export default function DashboardPage() {
                       <div className="dashboard-quiz-mockup hidden md:block rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/85">
                         <div className="space-y-2">
                           <p>[x] FOA</p>
-                          <p>[x] BAEIVI</p>
+                          <p>[x] {BAE_VOL1_CODE}</p>
                           <p>[ ] QAFB</p>
                         </div>
                         <div className="my-3 border-t border-white/15" />
@@ -1289,10 +1292,12 @@ export default function DashboardPage() {
                         and Vol II (ECO). Vol II questions always match or exceed Vol I based on historical student reports.
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-[#dcfce7] px-2.5 py-1 text-[11px] font-semibold text-[#166534]">BAEIVI</span>
-                        <span className="rounded-full bg-[#dbeafe] px-2.5 py-1 text-[11px] font-semibold text-[#1d4ed8]">BAEIV2E</span>
+                        <span className="rounded-full bg-[#dcfce7] px-2.5 py-1 text-[11px] font-semibold text-[#166534]">{BAE_VOL1_CODE}</span>
+                        <span className="rounded-full bg-[#dbeafe] px-2.5 py-1 text-[11px] font-semibold text-[#1d4ed8]">{BAE_VOL2_CODE}</span>
                       </div>
-                      <p className="mt-3 text-xs text-slate-500">50 Questions · 75 Minutes · Mixed Ratio</p>
+                      <p className="mt-3 text-xs text-slate-500">
+                        50 Questions · {calculateBaeTimeAllowedMinutes(50)} Minutes · Mixed Ratio
+                      </p>
                       {baeWeakArea?.unlocked && baeFocusLabel ? (
                         <p className="mt-2 inline-flex rounded-md bg-[#fef9c3] px-2.5 py-1 text-[11px] font-semibold text-[#854d0e]">
                           Focus needed: {baeFocusLabel}
