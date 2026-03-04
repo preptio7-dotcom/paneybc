@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { resolveFeatureAccess } from '@/lib/feature-access'
@@ -11,7 +12,21 @@ import {
   setCachedRecommendations,
 } from '@/lib/study-recommendations'
 
+function isPrismaSchemaNotReadyError(error: unknown) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return error.code === 'P2021' || error.code === 'P2022'
+  }
+  const message = String((error as any)?.message || '').toLowerCase()
+  return (
+    message.includes('does not exist') ||
+    message.includes('relation') && message.includes('missing') ||
+    message.includes('column') && message.includes('missing')
+  )
+}
+
 export async function GET(request: NextRequest) {
+  let rangeKey = 'all'
+  let maxItems = 3
   try {
     const tokenUser = getCurrentUser(request)
     if (!tokenUser?.userId) {
@@ -27,9 +42,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const rangeKey = parseAnalyticsRangeKey(searchParams.get('range'))
+    rangeKey = parseAnalyticsRangeKey(searchParams.get('range'))
     const compact = searchParams.get('compact') === '1'
-    const maxItems = Math.max(1, Math.min(10, Number(searchParams.get('limit') || (compact ? 3 : 10))))
+    maxItems = Math.max(1, Math.min(10, Number(searchParams.get('limit') || (compact ? 3 : 10))))
 
     const cached = await getCachedRecommendations(prisma, access.user.id, rangeKey)
     if (cached) {
@@ -91,6 +106,24 @@ export async function GET(request: NextRequest) {
       }
     )
   } catch (error: any) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      // Graceful fallback when the DB is behind latest migrations.
+      return NextResponse.json(
+        {
+          success: true,
+          range: rangeKey,
+          fromCache: false,
+          setupRequired: true,
+          recommendations: [],
+          total: 0,
+        },
+        {
+          headers: {
+            'Cache-Control': 'private, no-store',
+          },
+        }
+      )
+    }
     console.error('recommendations error:', error)
     return NextResponse.json({ error: 'Failed to load recommendations' }, { status: 500 })
   }

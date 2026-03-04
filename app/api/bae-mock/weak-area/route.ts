@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -12,6 +13,45 @@ function roundToWhole(value: number) {
 function calculateAccuracy(correct: number, total: number) {
   if (!total) return 0
   return roundToWhole((correct / total) * 100)
+}
+
+function isPrismaSchemaNotReadyError(error: unknown) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return error.code === 'P2021' || error.code === 'P2022'
+  }
+  const message = String((error as any)?.message || '').toLowerCase()
+  return (
+    message.includes('does not exist') ||
+    message.includes('relation') && message.includes('missing') ||
+    message.includes('column') && message.includes('missing')
+  )
+}
+
+function emptyBaeWeakAreaPayload() {
+  return {
+    success: true,
+    setupRequired: true,
+    attemptCount: 0,
+    unlocked: false,
+    remainingForUnlock: 3,
+    totals: {
+      vol1Questions: 0,
+      vol2Questions: 0,
+      vol1Correct: 0,
+      vol2Correct: 0,
+    },
+    accuracy: {
+      vol1: 0,
+      vol2: 0,
+    },
+    comparison: {
+      difference: 0,
+      weakerVolume: null,
+      strongerVolume: null,
+      balanced: true,
+    },
+    history: [],
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -117,6 +157,9 @@ export async function GET(request: NextRequest) {
       history,
     })
   } catch (error: any) {
+    if (isPrismaSchemaNotReadyError(error)) {
+      return NextResponse.json(emptyBaeWeakAreaPayload())
+    }
     console.error('BAE weak area error:', error)
     return NextResponse.json({ error: error?.message || 'Server error' }, { status: 500 })
   }
