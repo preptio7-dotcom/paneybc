@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { updateUserPracticeStreak } from '@/lib/practice-streak'
+import { invalidateUserRecommendationCache } from '@/lib/study-recommendations'
 import { type BaeSessionQuestionRef, type BaeVolume } from '@/lib/bae-mock'
 
 type SubmitPayload = {
@@ -200,6 +201,9 @@ export async function POST(
         endpoint: '/api/bae-mock/session/submit',
       }).catch((error: any) => {
         console.error('BAE mock streak update failed:', error)
+      })
+      void invalidateUserRecommendationCache(prisma, currentUser.userId).catch((error: any) => {
+        console.error('BAE mock recommendation cache invalidation failed:', error)
       })
     }
 

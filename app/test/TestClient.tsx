@@ -211,6 +211,10 @@ export default function TestPage() {
 
     setIsSubmitting(true)
 
+    const duration = Math.max(0, Math.floor((Date.now() - startTimeRef.current) / 1000))
+    const estimatedTimePerQuestion =
+      questions.length > 0 ? Math.max(1, Math.round(duration / questions.length)) : 0
+
     const finalAnswers = questions.map((question, index) => {
       const selected = answers[index]
       return {
@@ -227,11 +231,9 @@ export default function TestPage() {
           }
           return selected[0] === question.correctAnswer
         })(),
-        timeSpent: 0,
+        timeSpent: estimatedTimePerQuestion,
       }
     })
-
-    const duration = Math.max(0, Math.floor((Date.now() - startTimeRef.current) / 1000))
 
     try {
       const response = await fetch('/api/results', {

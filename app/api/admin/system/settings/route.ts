@@ -105,6 +105,12 @@ export async function GET(request: NextRequest) {
       blog: {
         visibility: normalizedBetaFeatures.blog,
       },
+      performanceAnalytics: {
+        visibility: normalizedBetaFeatures.performanceAnalytics,
+      },
+      aiRecommendations: {
+        visibility: normalizedBetaFeatures.aiRecommendations,
+      },
     }
 
     return NextResponse.json({
@@ -219,6 +225,12 @@ export async function POST(request: NextRequest) {
       },
       blog: {
         visibility: mergedBetaFeatures.blog,
+      },
+      performanceAnalytics: {
+        visibility: mergedBetaFeatures.performanceAnalytics,
+      },
+      aiRecommendations: {
+        visibility: mergedBetaFeatures.aiRecommendations,
       },
     }
 

@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getCaseById, submitAttempt } from '@/lib/db/financial-statements'
 import { prisma } from '@/lib/prisma'
 import { updateUserPracticeStreak } from '@/lib/practice-streak'
+import { invalidateUserRecommendationCache } from '@/lib/study-recommendations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,6 +94,9 @@ export async function POST(request: NextRequest) {
       endpoint: '/api/financial-statements/submit',
     }).catch((error: any) => {
       console.error('Financial statements streak update failed:', error)
+    })
+    void invalidateUserRecommendationCache(prisma, user.userId).catch((error: any) => {
+      console.error('Financial statements recommendation cache invalidation failed:', error)
     })
     return NextResponse.json({ result })
   } catch (error: any) {

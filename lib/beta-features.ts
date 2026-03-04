@@ -1,4 +1,10 @@
-export const BETA_FEATURE_KEYS = ['faq', 'studentFeedback', 'blog'] as const
+export const BETA_FEATURE_KEYS = [
+  'faq',
+  'studentFeedback',
+  'blog',
+  'performanceAnalytics',
+  'aiRecommendations',
+] as const
 
 export type BetaFeatureKey = (typeof BETA_FEATURE_KEYS)[number]
 export type BetaFeatureVisibility = 'public' | 'beta_ambassador'
@@ -8,6 +14,8 @@ export const DEFAULT_BETA_FEATURE_SETTINGS: BetaFeatureSettings = {
   faq: 'beta_ambassador',
   studentFeedback: 'beta_ambassador',
   blog: 'beta_ambassador',
+  performanceAnalytics: 'beta_ambassador',
+  aiRecommendations: 'beta_ambassador',
 }
 
 function asRecord(value: unknown) {
@@ -24,6 +32,12 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
   const faqFallback = asRecord(asRecord(testSettings).faq).visibility
   const studentFeedbackFallback = asRecord(asRecord(testSettings).studentFeedback).visibility
   const blogFallback = asRecord(asRecord(testSettings).blog).visibility
+  const performanceAnalyticsFallback =
+    asRecord(asRecord(testSettings).performanceAnalytics).visibility ??
+    asRecord(asRecord(testSettings).analytics).visibility
+  const aiRecommendationsFallback =
+    asRecord(asRecord(testSettings).aiRecommendations).visibility ??
+    asRecord(asRecord(testSettings).recommendations).visibility
 
   return {
     faq: normalizeBetaFeatureVisibility(source.faq ?? faqFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.faq),
@@ -33,6 +47,14 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
         DEFAULT_BETA_FEATURE_SETTINGS.studentFeedback
     ),
     blog: normalizeBetaFeatureVisibility(source.blog ?? blogFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.blog),
+    performanceAnalytics: normalizeBetaFeatureVisibility(
+      source.performanceAnalytics ??
+        performanceAnalyticsFallback ??
+        DEFAULT_BETA_FEATURE_SETTINGS.performanceAnalytics
+    ),
+    aiRecommendations: normalizeBetaFeatureVisibility(
+      source.aiRecommendations ?? aiRecommendationsFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.aiRecommendations
+    ),
   }
 }
 

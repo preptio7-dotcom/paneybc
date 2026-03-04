@@ -110,6 +110,12 @@ export async function GET(request: NextRequest) {
       blog: {
         visibility: betaFeatures.blog,
       },
+      performanceAnalytics: {
+        visibility: betaFeatures.performanceAnalytics,
+      },
+      aiRecommendations: {
+        visibility: betaFeatures.aiRecommendations,
+      },
     }
 
     return NextResponse.json(
@@ -160,6 +166,12 @@ export async function GET(request: NextRequest) {
           },
           blog: {
             visibility: fallbackBetaFeatures.blog,
+          },
+          performanceAnalytics: {
+            visibility: fallbackBetaFeatures.performanceAnalytics,
+          },
+          aiRecommendations: {
+            visibility: fallbackBetaFeatures.aiRecommendations,
           },
         },
       },

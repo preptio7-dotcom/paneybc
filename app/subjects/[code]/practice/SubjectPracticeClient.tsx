@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,6 +48,8 @@ export default function PracticePage() {
     const { user, loading: authLoading } = useAuth()
     const [isFinishing, setIsFinishing] = useState(false)
     const [authToastShown, setAuthToastShown] = useState(false)
+    const sessionStartRef = useRef<number>(Date.now())
+    const questionStartRef = useRef<number>(Date.now())
     const getQuestionId = (q: Question) => q.id ?? q._id ?? ''
 
     const chapterParam = useMemo(() => searchParams.get('chapter') || '', [searchParams])
@@ -148,6 +150,12 @@ export default function PracticePage() {
                 }
 
                 setQuestions(mixed)
+                setCurrentIndex(0)
+                setSessionAnswers([])
+                setScore(0)
+                const startNow = Date.now()
+                sessionStartRef.current = startNow
+                questionStartRef.current = startNow
                 return
             }
 
@@ -155,6 +163,12 @@ export default function PracticePage() {
             if (!response.ok) throw new Error('Failed to fetch questions')
             const data = await response.json()
             setQuestions(data.questions)
+            setCurrentIndex(0)
+            setSessionAnswers([])
+            setScore(0)
+            const startNow = Date.now()
+            sessionStartRef.current = startNow
+            questionStartRef.current = startNow
         } catch (error) {
             toast({
                 title: "Error",
@@ -194,8 +208,10 @@ export default function PracticePage() {
             : selectedOptions[0] === current.correctAnswer
         setIsCorrect(isCorrect)
 
-        // Track the answer
-            setSessionAnswers(prev => [
+        const timeSpentSeconds = Math.max(1, Math.round((Date.now() - questionStartRef.current) / 1000))
+
+        // Track the answer with per-question time.
+        setSessionAnswers(prev => [
             ...prev,
             {
                 questionId: getQuestionId(questions[currentIndex]),
@@ -203,7 +219,7 @@ export default function PracticePage() {
                 questionNumber: questions[currentIndex].questionNumber,
                 selectedAnswer: selectedOptions.length > 0 ? selectedOptions : -1,
                 isCorrect,
-                timeSpent: 0
+                timeSpent: timeSpentSeconds
             }
         ])
 
@@ -232,6 +248,7 @@ export default function PracticePage() {
 
         try {
             setIsFinishing(true)
+            const duration = Math.max(1, Math.round((Date.now() - sessionStartRef.current) / 1000))
             const response = await fetch('/api/results', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -239,7 +256,7 @@ export default function PracticePage() {
                     userId: user?.id,
                     subject: code,
                     answers: sessionAnswers,
-                    duration: 0
+                    duration
                 })
             })
 
@@ -261,6 +278,7 @@ export default function PracticePage() {
     const handleNext = () => {
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1)
+            questionStartRef.current = Date.now()
             setSelectedOptions([])
             setIsAnswered(false)
             setIsChecked(false)
@@ -273,6 +291,7 @@ export default function PracticePage() {
     const handlePrevious = () => {
         if (currentIndex > 0) {
             setCurrentIndex(prev => prev - 1)
+            questionStartRef.current = Date.now()
             setSelectedOptions([])
             setIsAnswered(false)
             setIsChecked(false)

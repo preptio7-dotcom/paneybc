@@ -29,6 +29,7 @@ export function Navigation() {
   const pathname = usePathname()
   const dashboardNavRoutes = [
     '/dashboard',
+    '/dashboard/analytics',
     '/weak-area',
     '/wrong-answers',
     '/financial-statements',
@@ -39,6 +40,10 @@ export function Navigation() {
     '/exam-simulator',
   ]
   const showDashboardNav = !!pathname && dashboardNavRoutes.some((route) => pathname.startsWith(route))
+  const isPrivilegedUser = user?.role === 'admin' || user?.role === 'super_admin'
+  const canAccessAnalyticsFeature =
+    isPrivilegedUser ||
+    canAccessBetaFeature(betaFeatures.performanceAnalytics, user?.studentRole)
   const practiceLinks = [
     { href: '/weak-area', label: 'Weak Area Intensive' },
     { href: '/wrong-answers', label: 'Practice Wrong Answers' },
@@ -49,7 +54,7 @@ export function Navigation() {
     { href: '/study-session', label: 'Study Session' },
     { href: '/notes', label: 'Notes & Flashcards' },
     { href: '/study-planner', label: 'Study Planner' },
-    { href: '/analytics', label: 'Analytics' },
+    ...(canAccessAnalyticsFeature ? [{ href: '/dashboard/analytics', label: 'Analytics' }] : []),
     { href: '/exam-simulator', label: 'Exam Simulator' },
   ]
 
@@ -138,12 +143,11 @@ export function Navigation() {
     )
   }, [betaFeatures, user?.studentRole])
   const showBlogInMainNav =
-    betaFeatures.blog === 'public' || user?.role === 'admin' || user?.role === 'super_admin'
+    betaFeatures.blog === 'public' || isPrivilegedUser
   const canAccessBlogRoute =
     showBlogInMainNav ||
     canAccessBetaFeature(betaFeatures.blog, user?.studentRole) ||
-    user?.role === 'admin' ||
-    user?.role === 'super_admin'
+    isPrivilegedUser
   const showBetaLinks = betaNavItems.length > 0
   const useFrostedNavbar = isScrolled || isMenuOpen
   const profileHref = user?.role === 'student' ? '/dashboard/settings' : '/admin/users'

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { updateUserPracticeStreak } from '@/lib/practice-streak'
+import { invalidateUserRecommendationCache } from '@/lib/study-recommendations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +21,10 @@ export async function POST(request: NextRequest) {
         endpoint: '/api/weak-areas/complete',
       }).catch((error: any) => {
         console.error('Weak area streak update failed:', error)
+      })
+
+      void invalidateUserRecommendationCache(prisma, user.userId).catch((error: any) => {
+        console.error('Weak area recommendation cache invalidation failed:', error)
       })
     }
 

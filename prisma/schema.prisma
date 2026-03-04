@@ -252,6 +252,8 @@ model Question {
   uploadId      String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
+
+  @@index([subject, chapter])
 }
 
 model TestResult {
@@ -271,6 +273,9 @@ model TestResult {
   duration       Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([userId, subject, createdAt])
 }
 
 model BaeMockSession {
@@ -311,6 +316,43 @@ model Analytics {
   ip               String?
   userId           String?
   createdAt        DateTime @default(now())
+}
+
+model PlatformDailyStat {
+  id                  String   @id @default(cuid())
+  dayKey              String   @unique @map("day_key")
+  timezone            String   @default("PKT")
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  userCount           Int      @default(0) @map("user_count")
+  totalTests          Int      @default(0) @map("total_tests")
+  totalQuestions      Int      @default(0) @map("total_questions")
+  overallAccuracy     Float    @default(0) @map("overall_accuracy")
+  avgQuestionsPerDay  Float    @default(0) @map("avg_questions_per_day")
+  avgStreak           Float    @default(0) @map("avg_streak")
+  avgTimePerQuestion  Float    @default(0) @map("avg_time_per_question")
+  subjectAverages     Json     @map("subject_averages")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([periodStart])
+  @@map("platform_stats_daily")
+}
+
+model UserRecommendationCache {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  rangeKey        String   @default("all") @map("range_key")
+  recommendations Json
+  generatedAt     DateTime @default(now()) @map("generated_at")
+  expiresAt       DateTime @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, rangeKey])
+  @@index([expiresAt])
+  @@index([userId, expiresAt])
+  @@map("user_recommendations")
 }
 
 model ContactMessage {

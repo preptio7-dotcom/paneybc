@@ -3,6 +3,13 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextResponse, NextRequest } from 'next/server'
 
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+  return value as Record<string, unknown>
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
@@ -10,9 +17,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const [totalResults, results] = await Promise.all([
+    const [totalResults, results, settings] = await Promise.all([
       prisma.testResult.count(),
       prisma.testResult.findMany({ select: { duration: true, totalQuestions: true, createdAt: true, answers: true } }),
+      prisma.systemSettings.findFirst({ select: { testSettings: true } }),
     ])
 
     let durationSum = 0
@@ -71,6 +79,13 @@ export async function GET(request: NextRequest) {
       .sort(([a], [b]) => a - b)
       .map(([hour, count]) => ({ _id: hour, count }))
 
+    const savedTestSettings = asObject(settings?.testSettings)
+    const lastRunRaw = asObject(
+      savedTestSettings.platformStatsLastRun ?? savedTestSettings.platformStatsDailyLastRun
+    )
+    const status = lastRunRaw.status === 'success' || lastRunRaw.status === 'failed' ? lastRunRaw.status : null
+    const runAt = typeof lastRunRaw.runAt === 'string' ? lastRunRaw.runAt : null
+
     return NextResponse.json({
       totalResults,
       avgDuration,
@@ -80,6 +95,16 @@ export async function GET(request: NextRequest) {
       tooEasyQuestions,
       mostAttempted,
       usageByHour,
+      platformStatsLastRun:
+        status && runAt
+          ? {
+              status,
+              runAt,
+              dayKey: typeof lastRunRaw.dayKey === 'string' ? lastRunRaw.dayKey : null,
+              triggeredBy: typeof lastRunRaw.triggeredBy === 'string' ? lastRunRaw.triggeredBy : null,
+              error: typeof lastRunRaw.error === 'string' ? lastRunRaw.error : null,
+            }
+          : null,
     })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

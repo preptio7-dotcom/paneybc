@@ -9,6 +9,18 @@ export type BetaFeatureDefinition = {
 
 export const betaFeatureDefinitions: BetaFeatureDefinition[] = [
   {
+    key: 'performanceAnalytics',
+    label: 'Performance Analytics',
+    description: 'Deep student analytics with readiness score, heatmap, and platform comparison.',
+    href: '/dashboard/analytics',
+  },
+  {
+    key: 'aiRecommendations',
+    label: 'Study Recommendations',
+    description: 'Rule-based personalized study recommendations for dashboard and analytics page.',
+    href: '/dashboard/analytics#study-recommendations',
+  },
+  {
     key: 'blog',
     label: 'Blog',
     description: 'Public blog pages and latest article previews.',

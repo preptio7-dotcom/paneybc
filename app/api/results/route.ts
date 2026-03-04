@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { buildReviewUpdate } from '@/lib/spaced-repetition'
 import { prisma } from '@/lib/prisma'
 import { updateUserPracticeStreak } from '@/lib/practice-streak'
+import { invalidateUserRecommendationCache } from '@/lib/study-recommendations'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -157,6 +158,11 @@ export async function POST(request: NextRequest) {
           endpoint: '/api/results',
         }).catch((error: any) => {
           console.error('Practice streak update failed:', error)
+        })
+
+        // Keep recommendations fresh after any completed practice session.
+        void invalidateUserRecommendationCache(prisma, resolvedUserId).catch((error: any) => {
+          console.error('Recommendation cache invalidation failed:', error)
         })
       }
     }

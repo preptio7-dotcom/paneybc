@@ -28,7 +28,7 @@ import { AdSlot } from '@/components/ad-slot'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { betaFeatureDefinitions } from '@/data/beta-features'
-import { extractBetaFeatureSettings } from '@/lib/beta-features'
+import { canAccessBetaFeature, extractBetaFeatureSettings } from '@/lib/beta-features'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-badges'
@@ -94,6 +94,17 @@ interface BaeWeakAreaSummary {
     timeTaken: number
     timeAllowed: number
   }>
+}
+
+interface DashboardRecommendation {
+  priority: 'critical' | 'high' | 'medium' | 'low'
+  icon: string
+  type: string
+  title: string
+  description: string
+  action: string
+  actionLink: string
+  dataPoint: string
 }
 
 const DEFAULT_CHECKLIST = [
@@ -187,6 +198,11 @@ export default function DashboardPage() {
   const [isExamEditorOpen, setIsExamEditorOpen] = useState(false)
   const [baeWeakArea, setBaeWeakArea] = useState<BaeWeakAreaSummary | null>(null)
   const [showBaeAnalysis, setShowBaeAnalysis] = useState(false)
+  const [recommendations, setRecommendations] = useState<DashboardRecommendation[]>([])
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false)
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
+  const [showPerformanceAnalytics, setShowPerformanceAnalytics] = useState(false)
+  const [showRecommendations, setShowRecommendations] = useState(false)
   const [fsSummary, setFsSummary] = useState<{
     totalCases: number
     totalQuestions: number
@@ -200,6 +216,17 @@ export default function DashboardPage() {
     if (authLoading || !user?.id) return
     void fetchDashboardData()
   }, [authLoading, user?.id, streakResetTimezone])
+
+  useEffect(() => {
+    if (authLoading || !user?.id) return
+    if (!showRecommendations) {
+      setRecommendations([])
+      setRecommendationsLoading(false)
+      setRecommendationsError(null)
+      return
+    }
+    void fetchDashboardRecommendations()
+  }, [authLoading, user?.id, showRecommendations])
 
   useEffect(() => {
     if (!authLoading && !user && !authToastShown) {
@@ -236,8 +263,15 @@ export default function DashboardPage() {
         setAdsEnabled(Boolean(data.adsEnabled))
         setAdContent(data.adContent || fallbackAds)
         setStreakResetTimezone(data?.testSettings?.streakResetTimezone === 'PKT' ? 'PKT' : 'UTC')
+        const betaSettings = extractBetaFeatureSettings(data?.testSettings || {})
+        const isPrivileged = user?.role === 'admin' || user?.role === 'super_admin'
+        const canAccessPerformance =
+          isPrivileged || canAccessBetaFeature(betaSettings.performanceAnalytics, user?.studentRole)
+        const canAccessRecommendations =
+          isPrivileged || canAccessBetaFeature(betaSettings.aiRecommendations, user?.studentRole)
+        setShowPerformanceAnalytics(canAccessPerformance)
+        setShowRecommendations(canAccessRecommendations)
         if (user?.studentRole === 'ambassador') {
-          const betaSettings = extractBetaFeatureSettings(data?.testSettings || {})
           const links = betaFeatureDefinitions
             .filter((feature) => betaSettings[feature.key] !== 'public')
             .map((feature) => ({ label: feature.label, href: feature.href }))
@@ -251,13 +285,15 @@ export default function DashboardPage() {
         setAdContent(fallbackAds)
         setBetaFeatureLinks([])
         setStreakResetTimezone('UTC')
+        setShowPerformanceAnalytics(false)
+        setShowRecommendations(false)
       } finally {
         setAdsLoaded(true)
       }
     }
 
     void loadSettings()
-  }, [user?.studentRole])
+  }, [user?.role, user?.studentRole])
 
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(Date.now()), 1000)
@@ -436,6 +472,42 @@ export default function DashboardPage() {
       console.error('Failed to fetch dashboard data:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchDashboardRecommendations = async () => {
+    try {
+      setRecommendationsLoading(true)
+      setRecommendationsError(null)
+      const response = await fetch('/api/analytics/recommendations?range=all&compact=1&limit=3', {
+        cache: 'no-store',
+      })
+
+      if (response.status === 403) {
+        setShowRecommendations(false)
+        setRecommendations([])
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to load recommendations')
+      }
+
+      const data = await response.json()
+      const rows = Array.isArray(data?.recommendations) ? (data.recommendations as DashboardRecommendation[]) : []
+      setRecommendations(rows)
+
+      if (data?.notEnoughData) {
+        setRecommendationsError('Complete at least 10 questions to unlock personalized recommendations.')
+      } else {
+        setRecommendationsError(null)
+      }
+    } catch (error) {
+      console.error('Failed to load recommendations:', error)
+      setRecommendations([])
+      setRecommendationsError('Recommendations are temporarily unavailable.')
+    } finally {
+      setRecommendationsLoading(false)
     }
   }
 
@@ -1061,6 +1133,92 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {showRecommendations ? (
+                <div className="dashboard-reveal">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="dashboard-section-title !mb-0">Recommended for You</h2>
+                    <Link
+                      href="/dashboard/analytics#study-recommendations"
+                      className="text-xs sm:text-sm font-medium text-primary-green hover:text-green-700"
+                    >
+                      See All -&gt;
+                    </Link>
+                  </div>
+
+                  <Card className="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <CardContent className="p-4 space-y-3">
+                      {recommendationsLoading ? (
+                        <div className="space-y-2">
+                          {[0, 1, 2].map((idx) => (
+                            <div key={idx} className="h-14 rounded-xl bg-slate-100 animate-pulse" />
+                          ))}
+                        </div>
+                      ) : recommendations.length > 0 ? (
+                        recommendations.slice(0, 3).map((item, index) => {
+                          const theme =
+                            item.priority === 'critical'
+                              ? {
+                                  border: 'border-l-red-500',
+                                  badge: 'bg-red-50 text-red-700',
+                                  button: 'border-red-200 text-red-700 hover:bg-red-600',
+                                }
+                              : item.priority === 'high'
+                                ? {
+                                    border: 'border-l-amber-500',
+                                    badge: 'bg-amber-50 text-amber-700',
+                                    button: 'border-amber-200 text-amber-700 hover:bg-amber-600',
+                                  }
+                                : item.priority === 'medium'
+                                  ? {
+                                      border: 'border-l-blue-500',
+                                      badge: 'bg-blue-50 text-blue-700',
+                                      button: 'border-blue-200 text-blue-700 hover:bg-blue-600',
+                                    }
+                                  : {
+                                      border: 'border-l-emerald-500',
+                                      badge: 'bg-emerald-50 text-emerald-700',
+                                      button: 'border-emerald-200 text-emerald-700 hover:bg-emerald-600',
+                                    }
+
+                          return (
+                            <div
+                              key={`${item.type}-${index}`}
+                              className={`rounded-xl border border-slate-200 border-l-4 ${theme.border} px-3 py-3`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${theme.badge}`}>
+                                  {item.priority}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-xs text-slate-600">{item.description}</p>
+                              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-500">
+                                  {item.dataPoint}
+                                </span>
+                                <Link href={item.actionLink} className="shrink-0">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className={`h-7 text-[11px] transition-colors ${theme.button} hover:text-white`}
+                                  >
+                                    {item.action}
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-600">
+                          {recommendationsError || 'No recommendations yet.'}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null}
+
               {statsSummary.questionsPracticed === 0 ? (
                 <div className="dashboard-reveal rounded-2xl border border-[#86efac] bg-[#f0fdf4] p-4">
                   <p className="text-sm font-medium text-[#166534]">
@@ -1425,22 +1583,24 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="dashboard-feature-card">
-                    <CardContent className="p-6 relative overflow-hidden">
-                      <div className="absolute inset-x-0 top-0 h-1 bg-blue-600" />
-                      <BarChart2 size={84} className="absolute -top-2 -right-2 text-blue-500/5" />
-                      <div className="dashboard-mode-icon bg-blue-100 text-blue-600">
-                        <BarChart2 size={24} />
-                      </div>
-                      <h3 className="mt-4 text-base font-bold text-slate-900">My Analytics</h3>
-                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-                        Track your performance and identify weak areas.
-                      </p>
-                      <Button className="mt-4 w-full bg-blue-600 hover:bg-blue-700" onClick={() => window.location.assign('/analytics')}>
-                        View Analytics
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  {showPerformanceAnalytics ? (
+                    <Card className="dashboard-feature-card">
+                      <CardContent className="p-6 relative overflow-hidden">
+                        <div className="absolute inset-x-0 top-0 h-1 bg-blue-600" />
+                        <BarChart2 size={84} className="absolute -top-2 -right-2 text-blue-500/5" />
+                        <div className="dashboard-mode-icon bg-blue-100 text-blue-600">
+                          <BarChart2 size={24} />
+                        </div>
+                        <h3 className="mt-4 text-base font-bold text-slate-900">My Analytics</h3>
+                        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                          Track your performance and identify weak areas.
+                        </p>
+                        <Button className="mt-4 w-full bg-blue-600 hover:bg-blue-700" onClick={() => window.location.assign('/dashboard/analytics')}>
+                          View Analytics
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : null}
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => window.location.assign('/study-session')}>Study Session</Button>
