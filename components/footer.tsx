@@ -41,16 +41,34 @@ export function Footer() {
               The ultimate platform for CA exam candidates. Master your professional exams with over {questionCountLabel} real exam-style questions and detailed explanations.
             </p>
             <div className="flex gap-4">
-              <Link href="#" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white">
+              <Link href="#" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white" aria-label="Preptio Facebook">
                 <Facebook size={18} />
               </Link>
-              <Link href="#" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white">
+              <Link
+                href="https://x.com/PreptioOfficial"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Preptio on X"
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white"
+              >
                 <X size={18} />
               </Link>
-              <Link href="#" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white">
+              <Link
+                href="https://www.instagram.com/preptio.official/?hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Preptio on Instagram"
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white"
+              >
                 <Instagram size={18} />
               </Link>
-              <Link href="#" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white">
+              <Link
+                href="https://www.linkedin.com/company/preptio/about/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Preptio on LinkedIn"
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white"
+              >
                 <Linkedin size={18} />
               </Link>
             </div>

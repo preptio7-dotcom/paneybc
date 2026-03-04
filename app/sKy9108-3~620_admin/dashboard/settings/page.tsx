@@ -26,8 +26,8 @@ export default function SettingsPage() {
         phone: '+1 (555) 000-0000',
         address: '123 CA Plaza, Finance District',
         facebook: 'https://facebook.com/icap',
-        twitter: 'https://twitter.com/icap',
-        linkedin: 'https://linkedin.com/company/icap',
+        twitter: 'https://x.com/PreptioOfficial',
+        linkedin: 'https://www.linkedin.com/company/preptio/about/',
     })
 
     // Service toggles
