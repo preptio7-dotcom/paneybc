@@ -8,6 +8,11 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
 
 import { AuthProvider } from '@/lib/auth-context'
+import {
+  PREPTIO_DEFAULT_OG_IMAGE_URL,
+  PREPTIO_SITE_URL,
+  PREPTIO_TWITTER_SITE,
+} from '@/lib/seo'
 
 import { Inter, Poppins, Geist as V0_Font_Geist, Geist_Mono as V0_Font_Geist_Mono, Source_Serif_4 as V0_Font_Source_Serif_4 } from 'next/font/google'
 
@@ -29,16 +34,14 @@ const poppins = Poppins({
   weight: ['400', '500', '600', '700']
 })
 
-const appUrlValue = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-const resolvedAppUrl = appUrlValue.startsWith('http') ? appUrlValue : `https://${appUrlValue}`
+const defaultTitle = 'Preptio - Free CA Foundation Exam Prep for ICAP Students Pakistan'
+const defaultDescription =
+  "Pakistan's free CA Foundation exam prep platform. 4,000+ ICAP-aligned MCQs, mock tests, analytics - completely free. Start at preptio.com"
 
 export const metadata: Metadata = {
-  metadataBase: new URL(resolvedAppUrl),
-  title: {
-    default: 'Preptio - Master Your CA Exams',
-    template: '%s | Preptio'
-  },
-  description: 'Practice with 2000+ real exam questions, take timed tests, and track your progress. Master your CA exams with confidence.',
+  metadataBase: new URL(PREPTIO_SITE_URL),
+  title: defaultTitle,
+  description: defaultDescription,
   keywords: ['CA', 'CA', 'Practice Platform', 'MCQs', 'Chartered Accountant', 'Exams', 'Pakistan'],
   authors: [{ name: 'Preptio Team' }],
   creator: 'Preptio',
@@ -66,25 +69,25 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://preptio.com',
-    title: 'Preptio - Master Your Exams',
-    description: 'The ultimate preparation platform for CA students. 2000+ verified MCQs and real-time mock tests.',
+    url: PREPTIO_SITE_URL,
+    title: defaultTitle,
+    description: defaultDescription,
     siteName: 'Preptio',
     images: [
       {
-        url: '/web-app-manifest-512x512.png',
-        width: 512,
-        height: 512,
-        alt: 'Preptio',
+        url: PREPTIO_DEFAULT_OG_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: defaultTitle,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Preptio - Master Your Exams',
-    description: 'The ultimate preparation platform for CA students. 2000+ verified MCQs and real-time mock tests.',
-    creator: '@preptio',
-    images: ['/web-app-manifest-512x512.png'],
+    site: PREPTIO_TWITTER_SITE,
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [PREPTIO_DEFAULT_OG_IMAGE_URL],
   },
 }
 

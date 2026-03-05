@@ -24,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/feedback',
     '/contact',
     '/login',
+    '/signup',
     '/register',
     '/auth/login',
     '/auth/signup',
@@ -40,7 +41,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? 'daily'
         : route === '/'
           ? 'weekly'
-          : route === '/login' || route === '/register' || route === '/auth/login' || route === '/auth/signup'
+          : route === '/login' ||
+              route === '/signup' ||
+              route === '/register' ||
+              route === '/auth/login' ||
+              route === '/auth/signup'
             ? 'yearly'
             : 'monthly',
     priority:

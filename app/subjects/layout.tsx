@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
+import { buildPublicMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-    title: 'CA Exam Subjects',
-    description: 'Explore the full CA curriculum with our extensive MCQ bank for every subject. Start practicing and track your progress.',
-}
+export const metadata: Metadata = buildPublicMetadata({
+    title: 'Practice Subjects | Preptio - ICAP CA Foundation MCQs',
+    description:
+        'Practice CA Foundation subjects on Preptio. FOA, BAE Vol I & II, QAFB - chapter-wise and full book MCQs. Free for all ICAP students.',
+    path: '/subjects',
+})
 
 export default function SubjectsLayout({
     children,

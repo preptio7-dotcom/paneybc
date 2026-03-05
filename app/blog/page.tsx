@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { BlogListingClient } from './BlogListingClient'
+import { buildPublicMetadata } from '@/lib/seo'
 import {
   ensureDefaultBlogData,
   getAllPublishedPosts,
@@ -16,11 +17,12 @@ import { resolveBlogFeatureVisibility, resolveServerBlogViewer } from '@/lib/blo
 
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: 'Blog | Preptio',
+export const metadata: Metadata = buildPublicMetadata({
+  title: 'Blog | CA Exam Tips & Study Guides | Preptio',
   description:
-    'Expert tips, study guides, and practical insights to help CA students prepare better for ICAP exams.',
-}
+    'CA exam tips, study guides and ICAP news for CA Foundation students in Pakistan. Free resources on Preptio.',
+  path: '/blog',
+})
 
 export default async function BlogPage({
   searchParams,

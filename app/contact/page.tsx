@@ -1,7 +1,16 @@
 import React from 'react'
+import type { Metadata } from 'next'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { ContactForm } from '@/components/contact-form'
+import { buildPublicMetadata } from '@/lib/seo'
+
+export const metadata: Metadata = buildPublicMetadata({
+    title: 'Contact Us | Preptio',
+    description:
+        'Get in touch with Team Preptio. Questions, feedback, or support - we respond personally.',
+    path: '/contact',
+})
 
 export default function ContactPage() {
     return (

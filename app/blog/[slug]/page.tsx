@@ -4,6 +4,12 @@ import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { BlogPostClient } from './BlogPostClient'
 import {
+  PREPTIO_DEFAULT_OG_IMAGE_URL,
+  buildPublicMetadata,
+  preptioUrl,
+  toAbsolutePreptioUrl,
+} from '@/lib/seo'
+import {
   ensureDefaultBlogData,
   getPopularPublishedPosts,
   getPublishedCategoriesWithCounts,
@@ -15,13 +21,6 @@ import { resolveBlogFeatureVisibility, resolveServerBlogViewer } from '@/lib/blo
 
 export const revalidate = 600
 
-function getBaseUrl() {
-  const fallback = 'https://preptio.com'
-  const raw = process.env.NEXT_PUBLIC_APP_URL || fallback
-  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/$/, '')
-  return `https://${raw.replace(/\/$/, '')}`
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -30,41 +29,31 @@ export async function generateMetadata({
   const { slug } = await params
   const post = await getPublishedPostDetailBySlug(slug, { viewer: null })
   if (!post) {
-    return {
+    return buildPublicMetadata({
       title: 'Post Not Found | Preptio Blog',
-    }
+      description: 'This blog post could not be found.',
+      path: `/blog/${encodeURIComponent(slug)}`,
+    })
   }
 
-  const baseUrl = getBaseUrl()
-  const canonicalUrl = `${baseUrl}/blog/${post.slug}`
-  const metaTitle = post.metaTitle || post.title
-  const metaDescription = post.metaDescription || post.excerpt
-  const imageUrl = post.coverImageUrl || `${baseUrl}/web-app-manifest-512x512.png`
+  const title = `${post.title} | Preptio Blog`
+  const description = post.excerpt?.trim()
+    ? `${post.excerpt.slice(0, 155).trimEnd()}...`
+    : 'Read the latest CA Foundation insights from Preptio.'
+  const imageUrl = toAbsolutePreptioUrl(post.coverImageUrl || PREPTIO_DEFAULT_OG_IMAGE_URL)
 
   return {
-    title: `${metaTitle} | Preptio Blog`,
-    description: metaDescription,
-    keywords: post.tags.join(', '),
-    authors: [{ name: post.author.name }],
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
+    ...buildPublicMetadata({
+      title,
+      description,
+      path: `/blog/${post.slug}`,
       type: 'article',
-      title: post.title,
-      description: post.excerpt,
-      url: canonicalUrl,
-      siteName: 'Preptio',
-      images: [{ url: imageUrl }],
+      imageUrl,
       publishedTime: post.publishedAt || undefined,
       authors: [post.author.name],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.title,
-      description: post.excerpt,
-      images: [imageUrl],
-    },
+    }),
+    keywords: post.tags,
+    authors: [{ name: post.author.name }],
   }
 }
 
@@ -91,14 +80,13 @@ export default async function BlogPostPage({
     getPublishedCategoriesWithCounts({ viewer }),
   ])
 
-  const baseUrl = getBaseUrl()
-  const canonicalUrl = `${baseUrl}/blog/${post.slug}`
+  const canonicalUrl = preptioUrl(`/blog/${post.slug}`)
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
     description: post.excerpt,
-    image: post.coverImageUrl || `${baseUrl}/web-app-manifest-512x512.png`,
+    image: toAbsolutePreptioUrl(post.coverImageUrl || PREPTIO_DEFAULT_OG_IMAGE_URL),
     author: {
       '@type': 'Person',
       name: post.author.name,
@@ -108,7 +96,7 @@ export default async function BlogPostPage({
       name: 'Preptio',
       logo: {
         '@type': 'ImageObject',
-        url: `${baseUrl}/logo.png`,
+        url: PREPTIO_DEFAULT_OG_IMAGE_URL,
       },
     },
     datePublished: post.publishedAt || post.createdAt,
