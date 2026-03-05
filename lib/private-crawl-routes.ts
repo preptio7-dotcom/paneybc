@@ -28,9 +28,14 @@ const PRIVATE_PREFIXES = [
 ]
 
 const SUBJECT_INTERNAL_REGEX = /^\/subjects\/[^/]+\/(practice|test)(?:\/|$)/i
+const PUBLIC_CRAWL_EXCEPTIONS = ['/auth/login', '/auth/signup']
 
 export function isPrivateCrawlPath(pathname: string) {
   if (!pathname) return false
+
+  if (PUBLIC_CRAWL_EXCEPTIONS.some((route) => pathname === route)) {
+    return false
+  }
 
   if (SUBJECT_INTERNAL_REGEX.test(pathname)) return true
 
@@ -38,4 +43,3 @@ export function isPrivateCrawlPath(pathname: string) {
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )
 }
-

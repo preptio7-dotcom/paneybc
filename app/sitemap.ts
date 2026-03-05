@@ -14,11 +14,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/',
     '/about',
     '/subjects',
+    '/subjects/BAEIVII',
+    '/subjects/BAEIV2E',
+    '/subjects/QAFB',
+    '/subjects/FOA',
     '/blog',
     '/ambassador',
+    '/demo',
+    '/feedback',
     '/contact',
     '/login',
     '/register',
+    '/auth/login',
+    '/auth/signup',
     '/join-us',
     '/privacy',
     '/terms',
@@ -32,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? 'daily'
         : route === '/'
           ? 'weekly'
-          : route === '/login' || route === '/register'
+          : route === '/login' || route === '/register' || route === '/auth/login' || route === '/auth/signup'
             ? 'yearly'
             : 'monthly',
     priority:

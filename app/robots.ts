@@ -7,7 +7,17 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/'],
+        allow: [
+          '/',
+          '/auth/login',
+          '/auth/signup',
+          '/ambassador',
+          '/subjects/BAEIVII',
+          '/subjects/BAEIV2E',
+          '/subjects/QAFB',
+          '/subjects/FOA',
+          '/feedback',
+        ],
       },
     ],
     sitemap: `${BASE_URL}/sitemap.xml`,
