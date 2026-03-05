@@ -13,6 +13,8 @@ import { getIpAccess, getRequestIpAddress, logSecurityEvent } from '@/lib/ip-sec
 import { getDeterministicSeedFromPool, packAvatarId } from '@/lib/avatar'
 import { getActiveAvatarPack, resolveAvatarForUser } from '@/lib/avatar-pack-service'
 import { detectReferrerSource } from '@/lib/blog-analytics'
+import { sendInstituteSuggestionAdminEmail } from '@/lib/email'
+import { getInstituteKey } from '@/lib/institutes'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
 const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
       studentId,
       phone,
       instituteRating,
+      instituteSelectionMode,
       acceptedTerms,
       verificationToken,
       website,
@@ -188,6 +191,12 @@ export async function POST(request: NextRequest) {
     if (!registrationSettings.levels.includes(normalizedLevel)) {
       return NextResponse.json({ error: 'Selected level is no longer available' }, { status: 400 })
     }
+    const normalizedInstituteKey = normalizedInstitute.toLowerCase()
+    const isKnownInstitute = registrationSettings.institutes.some(
+      (item) => item.toLowerCase() === normalizedInstituteKey
+    )
+    const shouldNotifyInstituteSuggestion =
+      String(instituteSelectionMode || '').toLowerCase() === 'other' || !isKnownInstitute
 
     const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
     if (existingUser) {
@@ -240,6 +249,74 @@ export async function POST(request: NextRequest) {
     })
 
     const resolvedAvatar = await resolveAvatarForUser(createdUserWithAvatar)
+
+    if (shouldNotifyInstituteSuggestion) {
+      const normalizedInstituteName = normalizedInstitute
+      const normalizedInstituteSuggestionKey = getInstituteKey(normalizedInstituteName)
+      let shouldSendInstituteSuggestionEmail = false
+
+      if (normalizedInstituteSuggestionKey) {
+        const existingSuggestion = await prisma.instituteSuggestion.findUnique({
+          where: {
+            normalizedName: normalizedInstituteSuggestionKey,
+          },
+          select: {
+            id: true,
+            status: true,
+          },
+        })
+
+        if (existingSuggestion) {
+          const shouldReopen = existingSuggestion.status === 'rejected'
+          await prisma.instituteSuggestion.update({
+            where: { id: existingSuggestion.id },
+            data: {
+              suggestedName: normalizedInstituteName,
+              requestedByUserId: createdUserWithAvatar.id,
+              requestedByEmail: normalizedEmail,
+              requestedByName: normalizedName,
+              usageCount: {
+                increment: 1,
+              },
+              ...(shouldReopen
+                ? {
+                    status: 'pending',
+                    reviewedAt: null,
+                    reviewedBy: null,
+                    reviewNote: null,
+                  }
+                : {}),
+            },
+          })
+          shouldSendInstituteSuggestionEmail = shouldReopen
+        } else {
+          await prisma.instituteSuggestion.create({
+            data: {
+              suggestedName: normalizedInstituteName,
+              normalizedName: normalizedInstituteSuggestionKey,
+              status: 'pending',
+              requestedByUserId: createdUserWithAvatar.id,
+              requestedByEmail: normalizedEmail,
+              requestedByName: normalizedName,
+              usageCount: 1,
+            },
+          })
+          shouldSendInstituteSuggestionEmail = true
+        }
+      }
+
+      if (shouldSendInstituteSuggestionEmail) {
+        try {
+          await sendInstituteSuggestionAdminEmail({
+            userName: normalizedName,
+            userEmail: normalizedEmail,
+            selectedInstitute: normalizedInstitute,
+          })
+        } catch {
+          // Do not block registration if admin notification email fails.
+        }
+      }
+    }
 
     const referral = parseBlogReferral(blogReferral)
     if (referral) {

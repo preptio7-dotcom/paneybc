@@ -1,7 +1,12 @@
 export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-utils'
+import {
+  DEFAULT_DEGREES,
+  DEFAULT_LEVELS,
+  DEFAULT_REGISTRATION_INSTITUTES,
+  parseOptionList,
+} from '@/lib/account-utils'
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { getCurrentUser } from '@/lib/auth'
 import { canAccessBetaFeature, extractBetaFeatureSettings } from '@/lib/beta-features'
@@ -10,6 +15,37 @@ import {
   extractHomepageThemeSettings,
 } from '@/lib/homepage-theme'
 import { DEFAULT_STREAK_RESET_TIMEZONE, extractStreakResetTimezone } from '@/lib/streak-settings'
+import { getInstituteKey } from '@/lib/institutes'
+
+async function sortInstitutesByUsage(institutes: string[]) {
+  if (!institutes.length) return institutes
+
+  const usageRows = await prisma.user.groupBy({
+    by: ['institute'],
+    where: {
+      institute: {
+        not: null,
+      },
+    },
+    _count: {
+      _all: true,
+    },
+  })
+
+  const usageMap = new Map<string, number>()
+  for (const row of usageRows) {
+    if (!row.institute) continue
+    const key = getInstituteKey(row.institute)
+    usageMap.set(key, (usageMap.get(key) || 0) + (row._count?._all || 0))
+  }
+
+  return [...institutes].sort((a, b) => {
+    const usageA = usageMap.get(getInstituteKey(a)) || 0
+    const usageB = usageMap.get(getInstituteKey(b)) || 0
+    if (usageB !== usageA) return usageB - usageA
+    return a.localeCompare(b)
+  })
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +91,7 @@ export async function GET(request: NextRequest) {
       demoSubjects: [],
       registrationDegrees: DEFAULT_DEGREES,
       registrationLevels: DEFAULT_LEVELS,
+      registrationInstitutes: DEFAULT_REGISTRATION_INSTITUTES,
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
@@ -84,6 +121,17 @@ export async function GET(request: NextRequest) {
     const visibleIds = new Set(faqItems.map((item) => item.id))
     faqFeaturedIds = faqFeaturedIds.filter((id) => visibleIds.has(id))
 
+    const registrationInstitutesSorted = await sortInstitutesByUsage(
+      (() => {
+        const next = parseOptionList(
+          testSettings.registrationInstitutes,
+          DEFAULT_REGISTRATION_INSTITUTES,
+          140
+        )
+        return next.length ? next : DEFAULT_REGISTRATION_INSTITUTES
+      })()
+    )
+
     const normalizedTestSettings = {
       ...testSettings,
       registrationDegrees: (() => {
@@ -94,6 +142,7 @@ export async function GET(request: NextRequest) {
         const next = parseOptionList(testSettings.registrationLevels, DEFAULT_LEVELS)
         return next.length ? next : DEFAULT_LEVELS
       })(),
+      registrationInstitutes: registrationInstitutesSorted,
       betaFeatures,
       homepageThemes: extractHomepageThemeSettings(testSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(testSettings),
@@ -154,6 +203,7 @@ export async function GET(request: NextRequest) {
           demoSubjects: [],
           registrationDegrees: DEFAULT_DEGREES,
           registrationLevels: DEFAULT_LEVELS,
+          registrationInstitutes: DEFAULT_REGISTRATION_INSTITUTES,
           betaFeatures: fallbackBetaFeatures,
           homepageThemes: extractHomepageThemeSettings({}),
           homepageHeroMotion: extractHomepageHeroMotionSettings({}),

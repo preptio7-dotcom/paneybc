@@ -54,6 +54,8 @@ interface StreakInfo {
   best: number
   practicedToday: boolean
   lastPracticeDate: string | null
+  daysSinceLastPractice: number | null
+  atRiskOfReset: boolean
 }
 
 interface BadgeProgress {
@@ -229,6 +231,8 @@ export default function DashboardPage() {
     best: 0,
     practicedToday: false,
     lastPracticeDate: null,
+    daysSinceLastPractice: null,
+    atRiskOfReset: false,
   })
   const [streakResetTimezone, setStreakResetTimezone] = useState<StreakResetTimezone>('UTC')
   const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([])
@@ -438,6 +442,12 @@ export default function DashboardPage() {
           best: Number(userProfile.practiceStreakBest) || 0,
           practicedToday: lastPracticeDate === getDateKeyInTimezone(new Date(), streakResetTimezone),
           lastPracticeDate,
+          daysSinceLastPractice:
+            Number.isFinite(Number(userProfile.streakDaysSinceLastPractice)) &&
+            Number(userProfile.streakDaysSinceLastPractice) >= 0
+              ? Number(userProfile.streakDaysSinceLastPractice)
+              : null,
+          atRiskOfReset: Boolean(userProfile.streakAtRiskOfReset),
         })
       }
 
@@ -705,10 +715,36 @@ export default function DashboardPage() {
         best: Number(apiStreak.best) || 0,
         practicedToday: Boolean(apiStreak.practicedToday),
         lastPracticeDate: apiStreak.lastPracticeDate || null,
+        daysSinceLastPractice:
+          Number.isFinite(Number(apiStreak.daysSinceLastPractice)) &&
+          Number(apiStreak.daysSinceLastPractice) >= 0
+            ? Number(apiStreak.daysSinceLastPractice)
+            : null,
+        atRiskOfReset: Boolean(apiStreak.atRiskOfReset),
       }
     }
     return profileStreak
   }, [globalStats?.streak, profileStreak])
+
+  useEffect(() => {
+    if (!user?.id) return
+    if (!resolvedStreak.atRiskOfReset) return
+
+    const todayKey = new Date().toISOString().slice(0, 10)
+    const storageKey = `preptio_streak_risk_notice_${user.id}_${todayKey}`
+    try {
+      if (localStorage.getItem(storageKey) === '1') return
+      localStorage.setItem(storageKey, '1')
+    } catch {
+      // ignore localStorage failures
+    }
+
+    toast({
+      title: 'Streak Alert',
+      description: `You missed yesterday. Practice today or your ${resolvedStreak.current} day streak will reset.`,
+      variant: 'destructive',
+    })
+  }, [resolvedStreak.atRiskOfReset, resolvedStreak.current, toast, user?.id])
 
   const statsSummary = useMemo(() => {
     const questionsPracticed = Number(globalStats?.totalQuestionsPracticed) || 0
@@ -1104,7 +1140,12 @@ export default function DashboardPage() {
                         <p className="text-xs text-orange-100 mt-1">
                           {resolvedStreak.practicedToday
                             ? 'You are safe for today.'
-                            : 'Practice today to keep your streak alive!'}
+                            : resolvedStreak.atRiskOfReset
+                              ? `You missed yesterday. Practice today or your ${resolvedStreak.current} day streak resets.`
+                              : resolvedStreak.daysSinceLastPractice !== null &&
+                                  resolvedStreak.daysSinceLastPractice >= 2
+                                ? 'Your streak was reset due to inactivity. Start again today.'
+                                : 'Practice today to keep your streak alive!'}
                         </p>
                         <p className="text-[11px] text-orange-100/90 mt-2">{streakResetText}</p>
                       </div>

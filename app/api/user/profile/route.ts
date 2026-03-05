@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { extractRegistrationSettings, normalizePkPhone, sanitizeText } from '@/lib/account-utils'
+import { getConfiguredStreakResetTimezone, getDateKeyInTimezone } from '@/lib/streak-settings'
+import { resolvePersistedStreakSnapshot } from '@/lib/practice-streak'
 import {
   LEGACY_AVATAR_PACK_ID,
   getLegacyAvatarSeedFromPath,
@@ -75,7 +77,53 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ user: await formatProfileResponse(user) })
+    const timezone = await getConfiguredStreakResetTimezone(prisma)
+    const todayKey = getDateKeyInTimezone(new Date(), timezone)
+    const lastPracticeKey = user.practiceStreakLastDate
+      ? getDateKeyInTimezone(user.practiceStreakLastDate, timezone)
+      : null
+
+    const resolvedStreak = resolvePersistedStreakSnapshot({
+      current: Number(user.practiceStreakCurrent) || 0,
+      best: Number(user.practiceStreakBest) || 0,
+      lastPracticeKey,
+      todayKey,
+    })
+
+    if (resolvedStreak.shouldResetPersistedCurrent) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          practiceStreakCurrent: 0,
+        },
+      })
+
+      await prisma.streakAuditLog.create({
+        data: {
+          userId: user.id,
+          endpoint: '/api/user/profile:auto_reconcile',
+          creditedDate: new Date(),
+          credited: false,
+          actionType: 'reconciliation_reset',
+          streakBefore: Number(user.practiceStreakCurrent) || 0,
+          streakAfter: 0,
+        },
+      })
+
+      user.practiceStreakCurrent = 0
+    } else {
+      user.practiceStreakCurrent = resolvedStreak.current
+    }
+
+    const responseUser = await formatProfileResponse(user)
+
+    return NextResponse.json({
+      user: {
+        ...responseUser,
+        streakDaysSinceLastPractice: resolvedStreak.daysSinceLastPractice,
+        streakAtRiskOfReset: resolvedStreak.atRiskOfReset,
+      },
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

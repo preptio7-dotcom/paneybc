@@ -25,6 +25,7 @@ interface AuthContextType {
       degree?: string
       level?: string
       institute?: string
+      instituteSelectionMode?: 'preset' | 'other'
       city?: string
       studentId?: string
       phone?: string
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       degree?: string
       level?: string
       institute?: string
+      instituteSelectionMode?: 'preset' | 'other'
       city?: string
       studentId?: string
       phone?: string

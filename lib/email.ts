@@ -431,6 +431,33 @@ export async function sendJoinUsAdminEmail(payload: {
   return transporter.sendMail(mailOptions)
 }
 
+export async function sendInstituteSuggestionAdminEmail(payload: {
+  userName: string
+  userEmail: string
+  selectedInstitute: string
+}) {
+  const adminRecipient = process.env.SMTP_USER
+  if (!adminRecipient) return null
+
+  const mailOptions = {
+    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    to: adminRecipient,
+    subject: 'New Institute Suggestion from Signup',
+    html: `
+      <div style="font-family: sans-serif; max-width: 650px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; color: #1e293b;">
+        <h2 style="color: #16a34a; margin-top: 0;">New Institute Suggestion</h2>
+        <p>A student signed up using an institute not in the dropdown list.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 16px 0;">
+        <p><strong>Name:</strong> ${payload.userName}</p>
+        <p><strong>Email:</strong> ${payload.userEmail}</p>
+        <p><strong>Institute Entered:</strong> ${payload.selectedInstitute}</p>
+      </div>
+    `,
+  }
+
+  return transporter.sendMail(mailOptions)
+}
+
 export async function sendContactConfirmationEmail(payload: {
   name: string
   email: string

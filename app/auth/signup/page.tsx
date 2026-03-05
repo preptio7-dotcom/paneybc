@@ -10,16 +10,18 @@ import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Star } from 'lucide-react'
-import { normalizePkPhone } from '@/lib/account-utils'
+import { DEFAULT_REGISTRATION_INSTITUTES, normalizePkPhone } from '@/lib/account-utils'
 
 type RegistrationOptions = {
   degrees: string[]
   levels: string[]
+  institutes: string[]
 }
 
 const fallbackOptions: RegistrationOptions = {
   degrees: ['CA'],
   levels: ['PRC', 'CAF'],
+  institutes: [...DEFAULT_REGISTRATION_INSTITUTES],
 }
 
 export default function SignupPage() {
@@ -39,6 +41,8 @@ export default function SignupPage() {
     degree: fallbackOptions.degrees[0],
     level: fallbackOptions.levels[0],
     institute: '',
+    instituteSelectionMode: 'preset' as 'preset' | 'other',
+    customInstitute: '',
     city: '',
     studentId: '',
     instituteRating: 0,
@@ -71,6 +75,12 @@ export default function SignupPage() {
         const nextOptions = {
           degrees: degrees.length ? degrees : fallbackOptions.degrees,
           levels: levels.length ? levels : fallbackOptions.levels,
+          institutes: (() => {
+            const values = Array.isArray(data?.testSettings?.registrationInstitutes)
+              ? data.testSettings.registrationInstitutes.map((item: string) => String(item).trim()).filter(Boolean)
+              : fallbackOptions.institutes
+            return values.length ? values : fallbackOptions.institutes
+          })(),
         }
         setRegistrationOptions(nextOptions)
         setFormData((prev) => ({
@@ -100,6 +110,25 @@ export default function SignupPage() {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
+    }))
+  }
+
+  const handleInstituteSelectionChange = (value: string) => {
+    const normalizedValue = String(value || '').trim()
+    if (normalizedValue.toLowerCase() === 'other') {
+      setFormData((prev) => ({
+        ...prev,
+        institute: 'Other',
+        instituteSelectionMode: 'other',
+      }))
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      institute: normalizedValue,
+      instituteSelectionMode: 'preset',
+      customInstitute: '',
     }))
   }
 
@@ -153,16 +182,37 @@ export default function SignupPage() {
   }
 
   const validateStepTwo = () => {
+    const normalizedInstitute = formData.institute.trim()
+    const normalizedCustomInstitute = formData.customInstitute.trim()
+    const knownInstitutes = new Set(registrationOptions.institutes.map((item) => item.toLowerCase()))
+    const usingOther = formData.instituteSelectionMode === 'other'
+
     if (
       !formData.degree ||
       !formData.level ||
-      !formData.institute.trim() ||
+      !normalizedInstitute ||
       !formData.city.trim() ||
       !formData.studentId.trim()
     ) {
       toast({
         title: 'Error',
         description: 'Please complete degree, level, institute, city, and student ID.',
+        variant: 'destructive',
+      })
+      return false
+    }
+    if (usingOther && !normalizedCustomInstitute) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your institute name in the Other field.',
+        variant: 'destructive',
+      })
+      return false
+    }
+    if (!usingOther && !knownInstitutes.has(normalizedInstitute.toLowerCase())) {
+      toast({
+        title: 'Select an institute',
+        description: 'Please pick an institute from the list or select "Other".',
         variant: 'destructive',
       })
       return false
@@ -250,7 +300,11 @@ export default function SignupPage() {
       await register(formData.email.trim(), formData.password, formData.name.trim(), {
         degree: formData.degree,
         level: formData.level,
-        institute: formData.institute.trim(),
+        institute:
+          formData.instituteSelectionMode === 'other'
+            ? formData.customInstitute.trim()
+            : formData.institute.trim(),
+        instituteSelectionMode: formData.instituteSelectionMode,
         city: formData.city.trim(),
         studentId: formData.studentId.trim(),
         phone: formData.phone.trim(),
@@ -479,14 +533,54 @@ export default function SignupPage() {
                           id="institute"
                           name="institute"
                           type="text"
-                          placeholder="Your institute name"
+                          placeholder="Start typing and select your institute"
                           value={formData.institute}
-                          onChange={handleChange}
+                          onChange={(event) => handleInstituteSelectionChange(event.target.value)}
                           disabled={isLoading}
+                          list="registration-institutes"
                           className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
                           required
                         />
+                        <datalist id="registration-institutes">
+                          {registrationOptions.institutes.map((option) => (
+                            <option key={option} value={option} />
+                          ))}
+                          <option value="Other" />
+                        </datalist>
+                        <p className="text-xs text-slate-500">
+                          If your institute is not listed, choose <span className="font-semibold">Other</span>.
+                        </p>
                       </div>
+
+                      {formData.instituteSelectionMode === 'other' ? (
+                        <div className="space-y-2 md:col-span-2">
+                          <label htmlFor="customInstitute" className="text-sm font-medium text-gray-700">
+                            Enter your institute name *
+                          </label>
+                          <Input
+                            id="customInstitute"
+                            name="customInstitute"
+                            type="text"
+                            placeholder="Type your institute name"
+                            value={formData.customInstitute}
+                            onChange={handleChange}
+                            disabled={isLoading}
+                            className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                            required
+                          />
+                        </div>
+                      ) : null}
+
+                      {formData.institute.trim() &&
+                      formData.instituteSelectionMode !== 'other' &&
+                      !registrationOptions.institutes.some(
+                        (item) => item.toLowerCase() === formData.institute.trim().toLowerCase()
+                      ) ? (
+                        <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                          Can&apos;t find your institute? Select <span className="font-semibold">Other</span> from
+                          the list and enter it manually.
+                        </div>
+                      ) : null}
 
                       <div className="space-y-2">
                         <label htmlFor="city" className="text-sm font-medium text-gray-700">

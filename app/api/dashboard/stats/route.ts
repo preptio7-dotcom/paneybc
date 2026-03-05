@@ -1,6 +1,6 @@
 export const runtime = 'nodejs'
 import { prisma } from '@/lib/prisma'
-import { computePracticeStreak } from '@/lib/practice-streak'
+import { computePracticeStreak, resolvePersistedStreakSnapshot } from '@/lib/practice-streak'
 import { getConfiguredStreakResetTimezone, getDateKeyInTimezone } from '@/lib/streak-settings'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -171,19 +171,44 @@ export async function GET(request: NextRequest) {
       ? getDateKeyInTimezone(userStreak.practiceStreakLastDate, timezone)
       : null
 
-    const resolvedStreak = userStreak
-      ? {
+    let resolvedStreak = userStreak
+      ? resolvePersistedStreakSnapshot({
           current: Number(userStreak.practiceStreakCurrent) || 0,
           best: Number(userStreak.practiceStreakBest) || 0,
-          lastPracticeDate: persistedLastPracticeKey,
-          practicedToday: persistedLastPracticeKey === todayKey,
-        }
-      : {
+          lastPracticeKey: persistedLastPracticeKey,
+          todayKey,
+        })
+      : resolvePersistedStreakSnapshot({
           current: computedFromResults.current,
           best: computedFromResults.best,
-          lastPracticeDate: computedFromResults.lastPracticeKey,
-          practicedToday: computedFromResults.lastPracticeKey === todayKey,
-        }
+          lastPracticeKey: computedFromResults.lastPracticeKey,
+          todayKey,
+        })
+
+    if (userStreak && resolvedStreak.shouldResetPersistedCurrent) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { practiceStreakCurrent: 0 },
+      })
+
+      await prisma.streakAuditLog.create({
+        data: {
+          userId,
+          endpoint: '/api/dashboard/stats:auto_reconcile',
+          creditedDate: new Date(),
+          credited: false,
+          actionType: 'reconciliation_reset',
+          streakBefore: Number(userStreak.practiceStreakCurrent) || 0,
+          streakAfter: 0,
+        },
+      })
+
+      resolvedStreak = {
+        ...resolvedStreak,
+        current: 0,
+        shouldResetPersistedCurrent: false,
+      }
+    }
 
     const startedSubjects = formattedStats.filter((item) => item.completedQuestions > 0).length
     const wrongAnswersSessions = estimateWrongAnswersSessionCount(results)
@@ -243,6 +268,8 @@ export async function GET(request: NextRequest) {
           best: resolvedStreak.best,
           practicedToday: resolvedStreak.practicedToday,
           lastPracticeDate: resolvedStreak.lastPracticeDate,
+          daysSinceLastPractice: resolvedStreak.daysSinceLastPractice,
+          atRiskOfReset: resolvedStreak.atRiskOfReset,
           timezone,
         },
         modeCompletions: {

@@ -2,7 +2,12 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
-import { DEFAULT_DEGREES, DEFAULT_LEVELS, parseOptionList } from '@/lib/account-utils'
+import {
+  DEFAULT_DEGREES,
+  DEFAULT_LEVELS,
+  DEFAULT_REGISTRATION_INSTITUTES,
+  parseOptionList,
+} from '@/lib/account-utils'
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { extractBetaFeatureSettings } from '@/lib/beta-features'
 import { createAdminAuditLog } from '@/lib/admin-audit'
@@ -72,6 +77,7 @@ export async function GET(request: NextRequest) {
       demoSubjects: [],
       registrationDegrees: DEFAULT_DEGREES,
       registrationLevels: DEFAULT_LEVELS,
+      registrationInstitutes: DEFAULT_REGISTRATION_INSTITUTES,
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
@@ -90,6 +96,14 @@ export async function GET(request: NextRequest) {
       registrationLevels: (() => {
         const next = parseOptionList(testSettings.registrationLevels, DEFAULT_LEVELS)
         return next.length ? next : DEFAULT_LEVELS
+      })(),
+      registrationInstitutes: (() => {
+        const next = parseOptionList(
+          testSettings.registrationInstitutes,
+          DEFAULT_REGISTRATION_INSTITUTES,
+          140
+        )
+        return next.length ? next : DEFAULT_REGISTRATION_INSTITUTES
       })(),
       betaFeatures: normalizedBetaFeatures,
       homepageThemes: extractHomepageThemeSettings(testSettings),
@@ -175,6 +189,7 @@ export async function POST(request: NextRequest) {
       demoSubjects: [],
       registrationDegrees: DEFAULT_DEGREES,
       registrationLevels: DEFAULT_LEVELS,
+      registrationInstitutes: DEFAULT_REGISTRATION_INSTITUTES,
       betaFeatures: extractBetaFeatureSettings(savedTestSettings),
       faq: extractFaqSettings(savedTestSettings),
       homepageThemes: extractHomepageThemeSettings(savedTestSettings),
@@ -214,6 +229,14 @@ export async function POST(request: NextRequest) {
       registrationLevels: (() => {
         const next = parseOptionList(mergedTestSettings.registrationLevels, DEFAULT_LEVELS)
         return next.length ? next : DEFAULT_LEVELS
+      })(),
+      registrationInstitutes: (() => {
+        const next = parseOptionList(
+          mergedTestSettings.registrationInstitutes,
+          DEFAULT_REGISTRATION_INSTITUTES,
+          140
+        )
+        return next.length ? next : DEFAULT_REGISTRATION_INSTITUTES
       })(),
       betaFeatures: mergedBetaFeatures,
       homepageThemes: extractHomepageThemeSettings(mergedTestSettings),

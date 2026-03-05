@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import {
   BarChart2,
   Bell,
+  Building2,
   BookOpen,
   ClipboardList,
   FileText,
@@ -87,6 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Platform',
     items: [
       { label: 'Demo Settings', href: '/admin/demo-settings', icon: Settings },
+      { label: 'Institutes', href: '/admin/institutes', icon: Building2 },
       { label: 'Beta', href: '/admin/beta-features', icon: FlaskConical },
     ],
   },

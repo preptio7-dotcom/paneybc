@@ -174,6 +174,12 @@ enum BlogReferrerSource {
   other
 }
 
+enum InstituteSuggestionStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -527,6 +533,26 @@ model SystemSettings {
   updatedAt              DateTime @updatedAt
 
   activeAvatarPack       AvatarPack? @relation(fields: [activeAvatarPackId], references: [id])
+}
+
+model InstituteSuggestion {
+  id                String                    @id @default(cuid())
+  suggestedName     String                    @map("suggested_name")
+  normalizedName    String                    @unique @map("normalized_name")
+  status            InstituteSuggestionStatus @default(pending)
+  requestedByUserId String?                   @map("requested_by_user_id")
+  requestedByEmail  String?                   @map("requested_by_email")
+  requestedByName   String?                   @map("requested_by_name")
+  usageCount        Int                       @default(1) @map("usage_count")
+  reviewedBy        String?                   @map("reviewed_by")
+  reviewNote        String?                   @map("review_note")
+  reviewedAt        DateTime?                 @map("reviewed_at")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([usageCount])
+  @@map("institute_suggestions")
 }
 
 model AvatarPack {

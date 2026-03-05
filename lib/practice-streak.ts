@@ -27,6 +27,23 @@ type StreakTransitionOutput = {
   bestAfter: number
 }
 
+type ResolvedPersistedStreakInput = {
+  current: number
+  best: number
+  lastPracticeKey: string | null
+  todayKey: string
+}
+
+type ResolvedPersistedStreakOutput = {
+  current: number
+  best: number
+  lastPracticeDate: string | null
+  practicedToday: boolean
+  daysSinceLastPractice: number | null
+  atRiskOfReset: boolean
+  shouldResetPersistedCurrent: boolean
+}
+
 type StreakUpdateOptions = {
   endpoint?: string
 }
@@ -94,6 +111,40 @@ export function resolveStreakTransition(input: StreakTransitionInput): StreakTra
 export function isStreakBroken(lastPracticeKey: string | null, todayKey: string) {
   if (!lastPracticeKey) return false
   return getDayDiffByDateKey(lastPracticeKey, todayKey) > 1
+}
+
+export function resolvePersistedStreakSnapshot(
+  input: ResolvedPersistedStreakInput
+): ResolvedPersistedStreakOutput {
+  const current = Math.max(0, Number(input.current) || 0)
+  const best = Math.max(0, Number(input.best) || 0)
+  const lastPracticeKey = input.lastPracticeKey
+
+  if (!lastPracticeKey) {
+    return {
+      current,
+      best,
+      lastPracticeDate: null,
+      practicedToday: false,
+      daysSinceLastPractice: null,
+      atRiskOfReset: false,
+      shouldResetPersistedCurrent: false,
+    }
+  }
+
+  const dayDiff = Math.max(0, getDayDiffByDateKey(lastPracticeKey, input.todayKey))
+  const practicedToday = dayDiff === 0
+  const shouldResetPersistedCurrent = dayDiff >= 2 && current > 0
+
+  return {
+    current: shouldResetPersistedCurrent ? 0 : current,
+    best,
+    lastPracticeDate: lastPracticeKey,
+    practicedToday,
+    daysSinceLastPractice: dayDiff,
+    atRiskOfReset: dayDiff === 1 && current > 0,
+    shouldResetPersistedCurrent,
+  }
 }
 
 export function computePracticeStreak(keys: string[]) {
