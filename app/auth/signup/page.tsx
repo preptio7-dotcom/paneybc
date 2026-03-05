@@ -40,11 +40,13 @@ export default function SignupPage() {
     confirmPassword: '',
     degree: fallbackOptions.degrees[0],
     level: fallbackOptions.levels[0],
+    studyMode: '' as '' | 'institute' | 'selfStudy',
     institute: '',
     instituteSelectionMode: 'preset' as 'preset' | 'other',
     customInstitute: '',
     city: '',
     studentId: '',
+    cenNumber: '',
     instituteRating: 0,
     acceptTerms: false,
     verificationCode: '',
@@ -132,6 +134,26 @@ export default function SignupPage() {
     }))
   }
 
+  const handleStudyModeChange = (value: 'institute' | 'selfStudy') => {
+    if (value === 'selfStudy') {
+      setFormData((prev) => ({
+        ...prev,
+        studyMode: value,
+        institute: '',
+        instituteSelectionMode: 'preset',
+        customInstitute: '',
+        studentId: '',
+        instituteRating: 0,
+      }))
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      studyMode: value,
+    }))
+  }
+
   const validateStepOne = () => {
     if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.password || !formData.confirmPassword) {
       toast({
@@ -186,17 +208,34 @@ export default function SignupPage() {
     const normalizedCustomInstitute = formData.customInstitute.trim()
     const knownInstitutes = new Set(registrationOptions.institutes.map((item) => item.toLowerCase()))
     const usingOther = formData.instituteSelectionMode === 'other'
+    const isInstituteTrack = formData.studyMode === 'institute'
 
-    if (
-      !formData.degree ||
-      !formData.level ||
-      !normalizedInstitute ||
-      !formData.city.trim() ||
-      !formData.studentId.trim()
-    ) {
+    if (!formData.degree || !formData.level || !formData.city.trim()) {
       toast({
         title: 'Error',
-        description: 'Please complete degree, level, institute, city, and student ID.',
+        description: 'Please complete degree, level, and city.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!formData.studyMode) {
+      toast({
+        title: 'Error',
+        description: 'Please choose whether you are self-studying or enrolled in an institute.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!isInstituteTrack) {
+      return true
+    }
+
+    if (!normalizedInstitute || !formData.studentId.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please complete institute and student ID.',
         variant: 'destructive',
       })
       return false
@@ -300,15 +339,19 @@ export default function SignupPage() {
       await register(formData.email.trim(), formData.password, formData.name.trim(), {
         degree: formData.degree,
         level: formData.level,
+        enrollmentType: formData.studyMode === 'selfStudy' ? 'self_study' : 'institute',
         institute:
-          formData.instituteSelectionMode === 'other'
-            ? formData.customInstitute.trim()
-            : formData.institute.trim(),
+          formData.studyMode === 'institute'
+            ? formData.instituteSelectionMode === 'other'
+              ? formData.customInstitute.trim()
+              : formData.institute.trim()
+            : '',
         instituteSelectionMode: formData.instituteSelectionMode,
         city: formData.city.trim(),
-        studentId: formData.studentId.trim(),
+        studentId: formData.studyMode === 'institute' ? formData.studentId.trim() : '',
+        cenNumber: formData.cenNumber.trim(),
         phone: formData.phone.trim(),
-        instituteRating: formData.instituteRating,
+        instituteRating: formData.studyMode === 'institute' ? formData.instituteRating : undefined,
         acceptedTerms: formData.acceptTerms,
         verificationToken: verifyData.verificationToken,
         website: formData.website,
@@ -526,61 +569,30 @@ export default function SignupPage() {
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <label htmlFor="institute" className="text-sm font-medium text-gray-700">
-                          Institute *
-                        </label>
-                        <Input
-                          id="institute"
-                          name="institute"
-                          type="text"
-                          placeholder="Start typing and select your institute"
-                          value={formData.institute}
-                          onChange={(event) => handleInstituteSelectionChange(event.target.value)}
-                          disabled={isLoading}
-                          list="registration-institutes"
-                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                          required
-                        />
-                        <datalist id="registration-institutes">
-                          {registrationOptions.institutes.map((option) => (
-                            <option key={option} value={option} />
-                          ))}
-                          <option value="Other" />
-                        </datalist>
-                        <p className="text-xs text-slate-500">
-                          If your institute is not listed, choose <span className="font-semibold">Other</span>.
-                        </p>
-                      </div>
-
-                      {formData.instituteSelectionMode === 'other' ? (
-                        <div className="space-y-2 md:col-span-2">
-                          <label htmlFor="customInstitute" className="text-sm font-medium text-gray-700">
-                            Enter your institute name *
+                        <label className="text-sm font-medium text-gray-700">Study Preference *</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                            <input
+                              type="radio"
+                              name="studyMode"
+                              checked={formData.studyMode === 'selfStudy'}
+                              onChange={() => handleStudyModeChange('selfStudy')}
+                              disabled={isLoading}
+                            />
+                            Self-study
                           </label>
-                          <Input
-                            id="customInstitute"
-                            name="customInstitute"
-                            type="text"
-                            placeholder="Type your institute name"
-                            value={formData.customInstitute}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                            className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                            required
-                          />
+                          <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                            <input
+                              type="radio"
+                              name="studyMode"
+                              checked={formData.studyMode === 'institute'}
+                              onChange={() => handleStudyModeChange('institute')}
+                              disabled={isLoading}
+                            />
+                            Enrolled in an institute
+                          </label>
                         </div>
-                      ) : null}
-
-                      {formData.institute.trim() &&
-                      formData.instituteSelectionMode !== 'other' &&
-                      !registrationOptions.institutes.some(
-                        (item) => item.toLowerCase() === formData.institute.trim().toLowerCase()
-                      ) ? (
-                        <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                          Can&apos;t find your institute? Select <span className="font-semibold">Other</span> from
-                          the list and enter it manually.
-                        </div>
-                      ) : null}
+                      </div>
 
                       <div className="space-y-2">
                         <label htmlFor="city" className="text-sm font-medium text-gray-700">
@@ -599,46 +611,134 @@ export default function SignupPage() {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <label htmlFor="studentId" className="text-sm font-medium text-gray-700">
-                          Student ID *
-                        </label>
-                        <Input
-                          id="studentId"
-                          name="studentId"
-                          type="text"
-                          placeholder="Institute student ID"
-                          value={formData.studentId}
-                          onChange={handleChange}
-                          disabled={isLoading}
-                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                          required
-                        />
-                      </div>
+                      {formData.studyMode === 'institute' ? (
+                        <>
+                          <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium text-gray-700">Institute *</label>
+                            <Select
+                              value={
+                                formData.instituteSelectionMode === 'other'
+                                  ? 'Other'
+                                  : formData.institute || undefined
+                              }
+                              onValueChange={handleInstituteSelectionChange}
+                              disabled={isLoading || isLoadingOptions}
+                            >
+                              <SelectTrigger className="w-full border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]">
+                                <SelectValue placeholder="Select your institute" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[190px]">
+                                {registrationOptions.institutes.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-slate-500">
+                              Only 5 institutes are shown at once. Scroll to view more.
+                            </p>
+                          </div>
+
+                          {formData.instituteSelectionMode === 'other' ? (
+                            <div className="space-y-2 md:col-span-2">
+                              <label htmlFor="customInstitute" className="text-sm font-medium text-gray-700">
+                                Enter your institute name *
+                              </label>
+                              <Input
+                                id="customInstitute"
+                                name="customInstitute"
+                                type="text"
+                                placeholder="Type your institute name"
+                                value={formData.customInstitute}
+                                onChange={handleChange}
+                                disabled={isLoading}
+                                className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                                required
+                              />
+                            </div>
+                          ) : null}
+
+                          <div className="space-y-2">
+                            <label htmlFor="studentId" className="text-sm font-medium text-gray-700">
+                              Student ID *
+                            </label>
+                            <Input
+                              id="studentId"
+                              name="studentId"
+                              type="text"
+                              placeholder="Institute student ID"
+                              value={formData.studentId}
+                              onChange={handleChange}
+                              disabled={isLoading}
+                              className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                              required
+                            />
+                            <p className="text-xs text-slate-500">Enter the ID issued by your institute.</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label htmlFor="cenNumber" className="text-sm font-medium text-gray-700">
+                              CEN Number (Optional)
+                            </label>
+                            <Input
+                              id="cenNumber"
+                              name="cenNumber"
+                              type="text"
+                              placeholder="Enter CEN number"
+                              value={formData.cenNumber}
+                              onChange={handleChange}
+                              disabled={isLoading}
+                              className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                            />
+                          </div>
+                        </>
+                      ) : null}
+
+                      {formData.studyMode === 'selfStudy' ? (
+                        <div className="space-y-2 md:col-span-2">
+                          <label htmlFor="cenNumber" className="text-sm font-medium text-gray-700">
+                            CEN Number (Optional)
+                          </label>
+                          <Input
+                            id="cenNumber"
+                            name="cenNumber"
+                            type="text"
+                            placeholder="Enter CEN number"
+                            value={formData.cenNumber}
+                            onChange={handleChange}
+                            disabled={isLoading}
+                            className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          />
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Rate Your Institute *</label>
-                      <div className="flex items-center gap-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => setFormData((prev) => ({ ...prev, instituteRating: star }))}
-                            className="p-1"
-                            aria-label={`Rate ${star} star`}
-                          >
-                            <Star
-                              size={20}
-                              className={star <= formData.instituteRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
-                            />
-                          </button>
-                        ))}
-                        <span className="text-xs text-slate-500">
-                          {formData.instituteRating ? `${formData.instituteRating}/5` : 'Select rating'}
-                        </span>
+                    {formData.studyMode === 'institute' ? (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Rate Your Institute *</label>
+                        <div className="flex items-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, instituteRating: star }))}
+                              className="p-1"
+                              aria-label={`Rate ${star} star`}
+                            >
+                              <Star
+                                size={20}
+                                className={star <= formData.instituteRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
+                              />
+                            </button>
+                          ))}
+                          <span className="text-xs text-slate-500">
+                            {formData.instituteRating ? `${formData.instituteRating}/5` : 'Select rating'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    ) : null}
                   </>
                 )}
 

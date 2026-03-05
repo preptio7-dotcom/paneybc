@@ -26,8 +26,10 @@ interface AuthContextType {
       level?: string
       institute?: string
       instituteSelectionMode?: 'preset' | 'other'
+      enrollmentType?: 'institute' | 'self_study'
       city?: string
       studentId?: string
+      cenNumber?: string
       phone?: string
       instituteRating?: number
       acceptedTerms?: boolean
@@ -102,8 +104,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       level?: string
       institute?: string
       instituteSelectionMode?: 'preset' | 'other'
+      enrollmentType?: 'institute' | 'self_study'
       city?: string
       studentId?: string
+      cenNumber?: string
       phone?: string
       instituteRating?: number
       acceptedTerms?: boolean

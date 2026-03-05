@@ -62,6 +62,13 @@ export async function GET(request: NextRequest) {
     const role = (searchParams.get('role') || '').trim()
     const studentRole = (searchParams.get('studentRole') || '').trim()
     const status = (searchParams.get('status') || '').trim()
+    const pageParam = Number(searchParams.get('page') || '1')
+    const pageSizeParam = Number(searchParams.get('pageSize') || '5')
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1
+    const pageSize =
+      Number.isFinite(pageSizeParam) && pageSizeParam > 0
+        ? Math.min(Math.floor(pageSizeParam), 50)
+        : 5
 
     const where: any = { role: 'student' }
     if (query) {
@@ -86,9 +93,15 @@ export async function GET(request: NextRequest) {
       where.isBanned = false
     }
 
+    const total = await prisma.user.count({ where })
+    const totalPages = Math.max(1, Math.ceil(total / pageSize))
+    const safePage = Math.min(page, totalPages)
+
     const users = await prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      skip: (safePage - 1) * pageSize,
+      take: pageSize,
       select: {
         id: true,
         name: true,
@@ -107,9 +120,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const total = await prisma.user.count({ where })
-
-    return NextResponse.json({ users, total })
+    return NextResponse.json({ users, total, currentPage: safePage, pageSize, totalPages })
   } catch (error: any) {
     console.error('Admin users list error:', error)
     return NextResponse.json({ error: 'Failed to load users' }, { status: 500 })

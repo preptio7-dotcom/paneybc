@@ -49,11 +49,14 @@ type EditForm = {
 }
 
 const studentRoleOptions: EditForm['studentRole'][] = ['user', 'ambassador', 'paid', 'unpaid']
+const PAGE_SIZE = 5
 
 export default function AdminUsersPage() {
   const { toast } = useToast()
   const [users, setUsers] = useState<UserRow[]>([])
   const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<'all' | 'student'>('all')
@@ -83,8 +86,10 @@ export default function AdminUsersPage() {
     if (roleFilter !== 'all') params.set('role', roleFilter)
     if (studentRoleFilter !== 'all') params.set('studentRole', studentRoleFilter)
     if (statusFilter !== 'all') params.set('status', statusFilter)
+    params.set('page', String(currentPage))
+    params.set('pageSize', String(PAGE_SIZE))
     return params.toString()
-  }, [search, roleFilter, studentRoleFilter, statusFilter])
+  }, [search, roleFilter, studentRoleFilter, statusFilter, currentPage])
 
   const loadUsers = async () => {
     try {
@@ -94,6 +99,8 @@ export default function AdminUsersPage() {
       if (!response.ok) throw new Error(data.error || 'Failed to load users')
       setUsers(data.users || [])
       setTotal(data.total || 0)
+      setTotalPages(Math.max(1, Number(data.totalPages || 1)))
+      setCurrentPage(Math.max(1, Number(data.currentPage || 1)))
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -173,7 +180,7 @@ export default function AdminUsersPage() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Failed to delete user')
 
-      setUsers((prev) => prev.filter((u) => u.id !== userId))
+      await loadUsers()
       toast({
         title: 'User deleted',
         description: 'The user has been removed.',
@@ -280,10 +287,20 @@ export default function AdminUsersPage() {
           <Card className="border border-border">
             <CardContent className="p-4 md:p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <Input placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                />
                 <select
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value as 'all' | 'student')}
+                  onChange={(e) => {
+                    setRoleFilter(e.target.value as 'all' | 'student')
+                    setCurrentPage(1)
+                  }}
                   className="border border-border rounded-md px-3 py-2 text-sm"
                 >
                   <option value="all">All users</option>
@@ -291,7 +308,10 @@ export default function AdminUsersPage() {
                 </select>
                 <select
                   value={studentRoleFilter}
-                  onChange={(e) => setStudentRoleFilter(e.target.value as 'all' | 'user' | 'ambassador' | 'paid' | 'unpaid')}
+                  onChange={(e) => {
+                    setStudentRoleFilter(e.target.value as 'all' | 'user' | 'ambassador' | 'paid' | 'unpaid')
+                    setCurrentPage(1)
+                  }}
                   className="border border-border rounded-md px-3 py-2 text-sm"
                 >
                   <option value="all">All student roles</option>
@@ -302,7 +322,10 @@ export default function AdminUsersPage() {
                 </select>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'banned')}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as 'all' | 'active' | 'banned')
+                    setCurrentPage(1)
+                  }}
                   className="border border-border rounded-md px-3 py-2 text-sm"
                 >
                   <option value="all">All status</option>
@@ -318,87 +341,119 @@ export default function AdminUsersPage() {
               ) : users.length === 0 ? (
                 <div className="text-center text-text-light py-10">No users found.</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1520px] text-sm">
-                    <thead className="text-left text-text-light bg-slate-50">
-                      <tr className="border-b border-border">
-                        <th className="px-4 py-3 font-semibold min-w-[170px]">Name</th>
-                        <th className="px-4 py-3 font-semibold min-w-[220px]">Email</th>
-                        <th className="px-4 py-3 font-semibold min-w-[120px]">Access Role</th>
-                        <th className="px-4 py-3 font-semibold min-w-[130px]">Student Role</th>
-                        <th className="px-4 py-3 font-semibold min-w-[140px]">Degree/Level</th>
-                        <th className="px-4 py-3 font-semibold min-w-[260px]">Institute</th>
-                        <th className="px-4 py-3 font-semibold min-w-[150px]">Phone</th>
-                        <th className="px-4 py-3 font-semibold min-w-[90px]">Rating</th>
-                        <th className="px-4 py-3 font-semibold min-w-[100px]">Status</th>
-                        <th className="px-4 py-3 font-semibold min-w-[110px]">Joined</th>
-                        <th className="px-4 py-3 font-semibold min-w-[230px] text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.map((user) => (
-                        <tr key={user.id} className="border-b border-border align-top">
-                          <td className="px-4 py-4 font-medium text-text-dark whitespace-nowrap">{user.name}</td>
-                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.email}</td>
-                          <td className="px-4 py-4 text-text-light uppercase text-xs whitespace-nowrap">{user.role}</td>
-                          <td className="px-4 py-4 text-text-light capitalize whitespace-nowrap">{user.studentRole || 'unpaid'}</td>
-                          <td className="px-4 py-4 text-text-light whitespace-nowrap">
-                            {user.degree || '--'} / {user.level || '--'}
-                          </td>
-                          <td className="px-4 py-4 text-text-light min-w-[260px]">
-                            <div className="space-y-1 leading-snug">
-                              <div className="font-medium text-text-dark">{user.institute || '--'}</div>
-                              <div className="text-xs">{user.city || '--'}</div>
-                              <div className="text-xs font-mono">{user.studentId || '--'}</div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.phone || '--'}</td>
-                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.instituteRating || '--'}/5</td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <span
-                              className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
-                              }`}
-                            >
-                              {user.isBanned ? 'Banned' : 'Active'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-text-light whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
-                          <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEdit(user)}
-                              disabled={busyUserId === user.id}
-                              className="gap-2"
-                            >
-                              <Pencil size={14} />
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleBanToggle(user.id, !user.isBanned)}
-                              disabled={busyUserId === user.id}
-                              className="gap-2"
-                            >
-                              {user.isBanned ? <ShieldAlert size={14} /> : <UserMinus size={14} />}
-                              {user.isBanned ? 'Unban' : 'Ban'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDelete(user.id)}
-                              disabled={busyUserId === user.id}
-                              className="text-error-red hover:text-error-red"
-                            >
-                              <UserX size={14} />
-                            </Button>
-                          </td>
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[1520px] text-sm">
+                      <thead className="text-left text-text-light bg-slate-50">
+                        <tr className="border-b border-border">
+                          <th className="px-4 py-3 font-semibold min-w-[170px]">Name</th>
+                          <th className="px-4 py-3 font-semibold min-w-[220px]">Email</th>
+                          <th className="px-4 py-3 font-semibold min-w-[120px]">Access Role</th>
+                          <th className="px-4 py-3 font-semibold min-w-[130px]">Student Role</th>
+                          <th className="px-4 py-3 font-semibold min-w-[140px]">Degree/Level</th>
+                          <th className="px-4 py-3 font-semibold min-w-[260px]">Institute</th>
+                          <th className="px-4 py-3 font-semibold min-w-[150px]">Phone</th>
+                          <th className="px-4 py-3 font-semibold min-w-[90px]">Rating</th>
+                          <th className="px-4 py-3 font-semibold min-w-[100px]">Status</th>
+                          <th className="px-4 py-3 font-semibold min-w-[110px]">Joined</th>
+                          <th className="px-4 py-3 font-semibold min-w-[230px] text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {users.map((user) => (
+                          <tr key={user.id} className="border-b border-border align-top">
+                            <td className="px-4 py-4 font-medium text-text-dark whitespace-nowrap">{user.name}</td>
+                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.email}</td>
+                            <td className="px-4 py-4 text-text-light uppercase text-xs whitespace-nowrap">{user.role}</td>
+                            <td className="px-4 py-4 text-text-light capitalize whitespace-nowrap">{user.studentRole || 'unpaid'}</td>
+                            <td className="px-4 py-4 text-text-light whitespace-nowrap">
+                              {user.degree || '--'} / {user.level || '--'}
+                            </td>
+                            <td className="px-4 py-4 text-text-light min-w-[260px]">
+                              <div className="space-y-1 leading-snug">
+                                <div className="font-medium text-text-dark">{user.institute || '--'}</div>
+                                <div className="text-xs">{user.city || '--'}</div>
+                                <div className="text-xs font-mono">{user.studentId || '--'}</div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.phone || '--'}</td>
+                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.instituteRating || '--'}/5</td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span
+                                className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                  user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
+                                }`}
+                              >
+                                {user.isBanned ? 'Banned' : 'Active'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
+                            <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEdit(user)}
+                                disabled={busyUserId === user.id}
+                                className="gap-2"
+                              >
+                                <Pencil size={14} />
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleBanToggle(user.id, !user.isBanned)}
+                                disabled={busyUserId === user.id}
+                                className="gap-2"
+                              >
+                                {user.isBanned ? <ShieldAlert size={14} /> : <UserMinus size={14} />}
+                                {user.isBanned ? 'Unban' : 'Ban'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDelete(user.id)}
+                                disabled={busyUserId === user.id}
+                                className="text-error-red hover:text-error-red"
+                              >
+                                <UserX size={14} />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-sm text-text-light">
+                      Showing {total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1} to{' '}
+                      {Math.min(currentPage * PAGE_SIZE, total)} of {total} students
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage <= 1 || isLoading}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-text-light">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage >= totalPages || isLoading}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

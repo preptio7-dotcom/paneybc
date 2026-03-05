@@ -85,9 +85,11 @@ export async function POST(request: NextRequest) {
       name,
       degree,
       level,
+      enrollmentType,
       institute,
       city,
       studentId,
+      cenNumber,
       phone,
       instituteRating,
       instituteSelectionMode,
@@ -103,9 +105,11 @@ export async function POST(request: NextRequest) {
       name,
       degree,
       level,
+      enrollmentType,
       institute,
       city,
       studentId,
+      cenNumber,
       phone,
       website,
     })
@@ -123,9 +127,24 @@ export async function POST(request: NextRequest) {
     const normalizedName = sanitizeText(name || '', 100)
     const normalizedDegree = sanitizeText(degree || '', 40)
     const normalizedLevel = sanitizeText(level || '', 40)
+    const rawEnrollmentType = String(enrollmentType || '')
+      .trim()
+      .toLowerCase()
+    if (
+      rawEnrollmentType &&
+      !['institute', 'self_study', 'self-study', 'selfstudy'].includes(rawEnrollmentType)
+    ) {
+      return NextResponse.json({ error: 'Invalid enrollment type' }, { status: 400 })
+    }
+    const normalizedEnrollmentType =
+      rawEnrollmentType === 'self_study' || rawEnrollmentType === 'self-study' || rawEnrollmentType === 'selfstudy'
+        ? 'self_study'
+        : 'institute'
+    const isInstituteEnrollment = normalizedEnrollmentType === 'institute'
     const normalizedInstitute = sanitizeText(institute || '', 120)
     const normalizedCity = sanitizeText(city || '', 80)
     const normalizedStudentId = sanitizeText(studentId || '', 60)
+    const normalizedCenNumber = sanitizeText(cenNumber || '', 60)
     const normalizedPhone = normalizePkPhone(phone || '')
     const parsedRating = Number(instituteRating)
 
@@ -151,18 +170,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
-    if (
-      !normalizedDegree ||
-      !normalizedLevel ||
-      !normalizedInstitute ||
-      !normalizedCity ||
-      !normalizedStudentId ||
-      !normalizedPhone
-    ) {
+    if (!normalizedDegree || !normalizedLevel || !normalizedCity || !normalizedPhone) {
       return NextResponse.json({ error: 'Please complete all required profile fields' }, { status: 400 })
     }
 
-    if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+    if (isInstituteEnrollment && (!normalizedInstitute || !normalizedStudentId)) {
+      return NextResponse.json({ error: 'Please complete institute and student ID details' }, { status: 400 })
+    }
+
+    if (isInstituteEnrollment && (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5)) {
       return NextResponse.json({ error: 'Institute rating must be between 1 and 5' }, { status: 400 })
     }
 
@@ -191,12 +207,16 @@ export async function POST(request: NextRequest) {
     if (!registrationSettings.levels.includes(normalizedLevel)) {
       return NextResponse.json({ error: 'Selected level is no longer available' }, { status: 400 })
     }
-    const normalizedInstituteKey = normalizedInstitute.toLowerCase()
-    const isKnownInstitute = registrationSettings.institutes.some(
-      (item) => item.toLowerCase() === normalizedInstituteKey
-    )
-    const shouldNotifyInstituteSuggestion =
-      String(instituteSelectionMode || '').toLowerCase() === 'other' || !isKnownInstitute
+
+    let shouldNotifyInstituteSuggestion = false
+    if (isInstituteEnrollment && normalizedInstitute) {
+      const normalizedInstituteKey = normalizedInstitute.toLowerCase()
+      const isKnownInstitute = registrationSettings.institutes.some(
+        (item) => item.toLowerCase() === normalizedInstituteKey
+      )
+      shouldNotifyInstituteSuggestion =
+        String(instituteSelectionMode || '').toLowerCase() === 'other' || !isKnownInstitute
+    }
 
     const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
     if (existingUser) {
@@ -205,7 +225,8 @@ export async function POST(request: NextRequest) {
 
     const duplicateWhere: any[] = [{ email: normalizedEmail }]
     if (normalizedPhone) duplicateWhere.push({ phone: normalizedPhone })
-    if (normalizedStudentId) duplicateWhere.push({ studentId: normalizedStudentId })
+    if (isInstituteEnrollment && normalizedStudentId) duplicateWhere.push({ studentId: normalizedStudentId })
+    if (normalizedCenNumber) duplicateWhere.push({ cenNumber: normalizedCenNumber })
     const duplicateUser = await prisma.user.findFirst({ where: { OR: duplicateWhere } })
     if (duplicateUser) {
       if (duplicateUser.phone === normalizedPhone) {
@@ -213,6 +234,9 @@ export async function POST(request: NextRequest) {
       }
       if (duplicateUser.studentId === normalizedStudentId) {
         return NextResponse.json({ error: 'Student ID is already in use' }, { status: 409 })
+      }
+      if (duplicateUser.cenNumber === normalizedCenNumber) {
+        return NextResponse.json({ error: 'CEN number is already in use' }, { status: 409 })
       }
       return NextResponse.json({ error: 'User already exists' }, { status: 409 })
     }
@@ -230,11 +254,13 @@ export async function POST(request: NextRequest) {
         studentRole: 'unpaid',
         degree: normalizedDegree,
         level: normalizedLevel,
-        institute: normalizedInstitute,
+        enrollmentType: normalizedEnrollmentType,
+        institute: isInstituteEnrollment ? normalizedInstitute : null,
         city: normalizedCity,
-        studentId: normalizedStudentId,
+        studentId: isInstituteEnrollment ? normalizedStudentId : null,
+        cenNumber: normalizedCenNumber || null,
         phone: normalizedPhone,
-        instituteRating: parsedRating,
+        instituteRating: isInstituteEnrollment ? parsedRating : null,
         termsAcceptedAt: new Date(),
       },
       select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, studentRole: true },
@@ -250,7 +276,7 @@ export async function POST(request: NextRequest) {
 
     const resolvedAvatar = await resolveAvatarForUser(createdUserWithAvatar)
 
-    if (shouldNotifyInstituteSuggestion) {
+    if (isInstituteEnrollment && shouldNotifyInstituteSuggestion) {
       const normalizedInstituteName = normalizedInstitute
       const normalizedInstituteSuggestionKey = getInstituteKey(normalizedInstituteName)
       let shouldSendInstituteSuggestionEmail = false

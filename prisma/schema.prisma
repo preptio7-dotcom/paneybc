@@ -19,6 +19,11 @@ enum StudentRole {
   unpaid
 }
 
+enum EnrollmentType {
+  institute
+  self_study
+}
+
 enum QuestionDifficulty {
   easy
   medium
@@ -193,9 +198,11 @@ model User {
   adminOtpFailedAttempts Int    @default(0)
   degree               String   @default("")
   level                String   @default("")
+  enrollmentType       EnrollmentType @default(institute)
   institute            String?
   city                 String?
   studentId            String?  @unique
+  cenNumber            String?  @unique
   phone                String?  @unique
   instituteRating      Int?
   termsAcceptedAt      DateTime?
