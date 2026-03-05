@@ -1,53 +1,121 @@
 import type { MetadataRoute } from 'next'
 
-export default function robots(): MetadataRoute.Robots {
-  const raw = process.env.NEXT_PUBLIC_APP_URL || 'https://preptio.com'
-  const baseUrl = /^https?:\/\//i.test(raw) ? raw.replace(/\/$/, '') : `https://${raw.replace(/\/$/, '')}`
+const BASE_URL = 'https://www.preptio.com'
 
+export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: [
-          // Private or internal routes.
-          '/admin',
-          '/admin/*',
-          '/sKy9108-3~620_admin',
-          '/sKy9108-3~620_admin/*',
-          '/api',
-          '/api/*',
-          '/dashboard',
-          '/dashboard/*',
-          '/auth',
-          '/auth/*',
+        allow: [
+          '/',
+          '/about',
+          '/subjects',
+          '/blog',
+          '/blog/',
+          '/ambassador',
+          '/contact',
           '/login',
           '/register',
+          '/join-us',
+          '/privacy',
+          '/terms',
+        ],
+        disallow: [
+          // Admin / superadmin routes
+          '/admin',
+          '/admin/',
+          '/admin/*',
+          '/superadmin',
+          '/superadmin/',
+          '/superadmin/*',
+          '/sKy9108-3~620_admin',
+          '/sKy9108-3~620_admin/',
+          '/sKy9108-3~620_admin/*',
+
+          // Internal/authenticated areas
+          '/dashboard',
+          '/dashboard/',
+          '/dashboard/*',
+          '/settings',
+          '/settings/',
+          '/settings/*',
+          '/profile',
+          '/profile/',
+          '/profile/*',
+
+          // API / internal tools
+          '/api',
+          '/api/',
+          '/api/*',
+          '/cron',
+          '/cron/',
+          '/cron/*',
+
+          // Auth callback/internal auth paths
+          '/auth',
+          '/auth/',
+          '/auth/*',
+
+          // Practice/test internal flows
+          '/practice',
+          '/practice/',
+          '/practice/*',
           '/results',
+          '/results/',
           '/results/*',
           '/review',
+          '/review/',
           '/review/*',
-          '/test',
-          '/test/*',
+          '/study-session',
+          '/study-session/*',
+          '/study-planner',
+          '/study-planner/*',
+          '/notes',
+          '/notes/*',
+          '/analytics',
+          '/analytics/*',
+          '/weak-area',
+          '/weak-area/*',
+          '/exam-simulator',
+          '/exam-simulator/*',
+          '/financial-statements',
+          '/financial-statements/*',
           '/custom-test',
           '/custom-test/*',
           '/custom-quiz',
           '/custom-quiz/*',
-          '/study-session',
-          '/study-planner',
-          '/notes',
-          '/analytics',
-          '/weak-area',
-          '/exam-simulator',
-          '/financial-statements',
-          '/financial-statements/*',
-          '/practice',
-          '/practice/*',
-          '/subjects/*/practice',
-          '/subjects/*/test',
+          '/test',
+          '/test/*',
+
+          // Staging / test routes
+          '/staging',
+          '/staging/*',
+          '/dev',
+          '/dev/*',
         ],
       },
+      {
+        userAgent: ['AhrefsBot', 'SemrushBot', 'DotBot', 'MJ12bot', 'BLEXBot', 'DataForSeoBot'],
+        disallow: ['/'],
+      },
+      {
+        userAgent: [
+          'GPTBot',
+          'ChatGPT-User',
+          'CCBot',
+          'anthropic-ai',
+          'Claude-Web',
+          'cohere-ai',
+          'PerplexityBot',
+          'Omgilibot',
+          'FacebookBot',
+          'Diffbot',
+        ],
+        disallow: ['/'],
+      },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${BASE_URL}/sitemap.xml`,
+    host: BASE_URL,
   }
 }

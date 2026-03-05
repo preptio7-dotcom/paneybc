@@ -1,17 +1,13 @@
-﻿import type { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
 import { BlogPostStatus, BlogPostVisibility } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
-function getBaseUrl() {
-  const raw = process.env.NEXT_PUBLIC_APP_URL || 'https://preptio.com'
-  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/$/, '')
-  return `https://${raw.replace(/\/$/, '')}`
-}
+const BASE_URL = 'https://www.preptio.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = getBaseUrl()
   const now = new Date()
 
+  // Public-facing pages only.
   const staticRoutes = [
     '/',
     '/about',
@@ -19,19 +15,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/blog',
     '/ambassador',
     '/contact',
+    '/login',
+    '/register',
     '/join-us',
     '/privacy',
     '/terms',
   ]
 
   const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
-    url: `${baseUrl}${route}`,
+    url: `${BASE_URL}${route}`,
     lastModified: now,
-    changeFrequency: 'weekly',
-    priority: route === '/' ? 1 : route === '/blog' ? 0.9 : 0.7,
+    changeFrequency:
+      route === '/blog'
+        ? 'daily'
+        : route === '/'
+          ? 'weekly'
+          : route === '/login' || route === '/register'
+            ? 'yearly'
+            : 'monthly',
+    priority:
+      route === '/'
+        ? 1
+        : route === '/subjects' || route === '/blog'
+          ? 0.9
+          : route === '/about'
+            ? 0.8
+            : route === '/ambassador'
+              ? 0.7
+              : route === '/contact'
+                ? 0.6
+                : 0.5,
   }))
 
   try {
+    // Blog post URLs are added automatically when published public posts exist.
+    // For now, if there are no published posts, only /blog listing remains in sitemap.
     const posts = await prisma.blogPost.findMany({
       where: {
         status: BlogPostStatus.published,
@@ -46,7 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
 
     const postEntries: MetadataRoute.Sitemap = posts.map((post) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
+      url: `${BASE_URL}/blog/${post.slug}`,
       lastModified: post.updatedAt,
       changeFrequency: 'weekly',
       priority: 0.8,

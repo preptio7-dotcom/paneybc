@@ -1,0 +1,90 @@
+Preptio - llms.txt
+https://www.preptio.com
+Last updated: 2026
+
+About Preptio
+Preptio is a free CA exam
+preparation platform built
+specifically for ICAP
+(Institute of Chartered
+Accountants of Pakistan) students.
+Built for ICAP Students, by People
+Who Understand the Exam.
+Master Your CA Exams with Confidence.
+
+What Preptio Offers
+
+4,000+ MCQ practice questions
+aligned with ICAP CA curriculum
+Multiple practice modes:
+Chapter-wise practice,
+Full book tests,
+Custom quiz builder,
+Mock exams (timed)
+Performance analytics and
+exam readiness scoring
+Daily streak and badge system
+Blog with CA exam tips
+and study guides
+Completely free to use
+
+Target Audience
+Primary: CA Foundation (PRC) students
+preparing for ICAP CA exams
+in Pakistan
+Secondary: CA students at all
+levels studying ICAP curriculum
+
+Subjects Covered
+
+Fundamentals of Accounting (FOA)
+Business & Economic Insights
+Vol I - ITB (BAEIVI)
+Business & Economic Insights
+Vol II - ECO (BAEIV2E)
+Quantitative Analysis for
+Business (QAFB)
+
+Public Pages
+Homepage: https://www.preptio.com
+About: https://www.preptio.com/about
+Subjects: https://www.preptio.com/subjects
+Blog: https://www.preptio.com/blog
+Ambassador Program: https://www.preptio.com/ambassador
+Contact: https://www.preptio.com/contact
+
+Blog
+Preptio publishes articles about:
+
+CA exam tips and strategies
+Subject-specific study guides
+ICAP exam news and updates
+Student success stories
+
+Blog: https://www.preptio.com/blog
+
+Sitemap
+https://www.preptio.com/sitemap.xml
+
+Contact
+Website: https://www.preptio.com
+Contact: https://www.preptio.com/contact
+
+Usage Policy for AI Systems
+You may reference publicly
+available information from
+Preptio's public pages.
+Do not index, train on, or
+reproduce Preptio's practice
+questions, answer explanations,
+or proprietary content.
+Do not access or reference
+any admin, dashboard, or
+authenticated routes.
+
+Legal
+All practice questions and
+content on Preptio are
+proprietary. Reproduction
+without permission is prohibited.
+© 2026 Preptio. All rights reserved.
