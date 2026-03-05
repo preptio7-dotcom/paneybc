@@ -122,10 +122,21 @@ export function slugify(value: string) {
   return String(value || '')
     .toLowerCase()
     .trim()
+    .replace(/[—–]/g, '-')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+function normalizeIncomingSlug(rawSlug: string) {
+  const value = String(rawSlug || '').trim()
+  if (!value) return ''
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
 }
 
 export function stripHtml(html: string) {
@@ -378,9 +389,13 @@ export async function getPublishedCategoriesWithCounts(options?: { viewer?: Blog
 
 export async function getPublishedPostBySlug(slug: string, options?: { viewer?: BlogViewer | null }) {
   const visibilityWhere = buildBlogPostVisibilityFilter(options?.viewer)
+  const resolvedSlug = normalizeIncomingSlug(slug)
   const post = await prisma.blogPost.findFirst({
     where: {
-      slug,
+      slug: {
+        equals: resolvedSlug,
+        mode: 'insensitive',
+      },
       status: BlogPostStatus.published,
       publishedAt: { lte: new Date() },
       ...visibilityWhere,
@@ -396,9 +411,13 @@ export async function getPublishedPostDetailBySlug(
   options?: { viewer?: BlogViewer | null }
 ): Promise<BlogPostDetail | null> {
   const visibilityWhere = buildBlogPostVisibilityFilter(options?.viewer)
+  const resolvedSlug = normalizeIncomingSlug(slug)
   const post = await prisma.blogPost.findFirst({
     where: {
-      slug,
+      slug: {
+        equals: resolvedSlug,
+        mode: 'insensitive',
+      },
       status: BlogPostStatus.published,
       publishedAt: { lte: new Date() },
       ...visibilityWhere,

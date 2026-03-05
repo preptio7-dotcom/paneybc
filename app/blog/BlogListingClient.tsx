@@ -188,6 +188,7 @@ export function BlogListingClient({
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
                   backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%), url(${getProxyMediaUrl(featuredPost.coverImageUrl)})`,
+                  backgroundPosition: 'center center',
                 }}
               />
             ) : (

@@ -534,7 +534,7 @@ export function BlogPostClient({
                   src={getProxyMediaUrl(post.coverImageUrl)}
                   alt={post.title}
                   fill
-                  className="object-cover"
+                  className="object-cover object-center"
                   sizes="(max-width: 767px) 100vw, 720px"
                   priority
                 />

@@ -46,7 +46,7 @@ export function BlogCard({
             src={getProxyMediaUrl(post.coverImageUrl)}
             alt={post.title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
             loading={priority ? 'eager' : 'lazy'}
             sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
           />
@@ -65,7 +65,7 @@ export function BlogCard({
           {post.category.name}
         </span>
 
-        <h3 className="mt-3 line-clamp-2 text-[17px] font-bold leading-[1.4] text-[#0f172a]">
+        <h3 className="mt-3 mb-2 line-clamp-2 min-h-[47.6px] text-[17px] font-bold leading-[1.4] text-[#0f172a]">
           {post.title}
         </h3>
         <p className="mt-2 line-clamp-3 text-[13px] leading-[1.6] text-[#64748b]">{post.excerpt}</p>
