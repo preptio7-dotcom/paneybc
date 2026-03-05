@@ -3,6 +3,8 @@ import { BlogPostStatus, BlogPostVisibility } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 const BASE_URL = 'https://www.preptio.com'
+export const revalidate = 300
+export const runtime = 'nodejs'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
@@ -71,7 +73,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
 
     return [...staticEntries, ...postEntries]
-  } catch {
+  } catch (error) {
+    console.error('Failed to build dynamic sitemap blog entries:', error)
     return staticEntries
   }
 }

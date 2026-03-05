@@ -5,6 +5,7 @@ export function revalidateBlogPaths(options?: { slug?: string | null; previousSl
   const previousSlug = options?.previousSlug || null
 
   revalidatePath('/blog')
+  revalidatePath('/sitemap.xml')
   revalidatePath('/')
 
   if (slug) {
@@ -15,4 +16,3 @@ export function revalidateBlogPaths(options?: { slug?: string | null; previousSl
     revalidatePath(`/blog/${previousSlug}`)
   }
 }
-
