@@ -29,6 +29,7 @@ export default function SignupPage() {
   const { register, user, loading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingOptions, setIsLoadingOptions] = useState(true)
+  const [isInstituteDropdownOpen, setIsInstituteDropdownOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [registrationOptions, setRegistrationOptions] = useState<RegistrationOptions>(fallbackOptions)
   const [formStartedAt] = useState(() => Date.now())
@@ -133,6 +134,30 @@ export default function SignupPage() {
       customInstitute: '',
     }))
   }
+
+  const handleInstituteInputChange = (value: string) => {
+    const rawValue = String(value || '')
+    const normalizedValue = rawValue.trim()
+    if (normalizedValue.toLowerCase() === 'other') {
+      handleInstituteSelectionChange('Other')
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      institute: rawValue,
+      instituteSelectionMode: 'preset',
+      customInstitute: '',
+    }))
+  }
+
+  const filteredInstituteOptions = useMemo(() => {
+    const query = formData.institute.trim().toLowerCase()
+    if (!query || formData.instituteSelectionMode === 'other') {
+      return registrationOptions.institutes
+    }
+    return registrationOptions.institutes.filter((option) => option.toLowerCase().includes(query))
+  }, [registrationOptions.institutes, formData.institute, formData.instituteSelectionMode])
 
   const handleStudyModeChange = (value: 'institute' | 'selfStudy') => {
     if (value === 'selfStudy') {
@@ -614,28 +639,61 @@ export default function SignupPage() {
                       {formData.studyMode === 'institute' ? (
                         <>
                           <div className="space-y-2 md:col-span-2">
-                            <label className="text-sm font-medium text-gray-700">Institute *</label>
-                            <Select
-                              value={
-                                formData.instituteSelectionMode === 'other'
-                                  ? 'Other'
-                                  : formData.institute || undefined
-                              }
-                              onValueChange={handleInstituteSelectionChange}
-                              disabled={isLoading || isLoadingOptions}
-                            >
-                              <SelectTrigger className="w-full border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]">
-                                <SelectValue placeholder="Select your institute" />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-[190px]">
-                                {registrationOptions.institutes.map((option) => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="Other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <label htmlFor="institute" className="text-sm font-medium text-gray-700">
+                              Institute *
+                            </label>
+                            <div className="relative">
+                              <Input
+                                id="institute"
+                                name="institute"
+                                type="text"
+                                placeholder="Type to search institute"
+                                value={formData.institute}
+                                onChange={(event) => handleInstituteInputChange(event.target.value)}
+                                onFocus={() => setIsInstituteDropdownOpen(true)}
+                                onBlur={() => {
+                                  setTimeout(() => setIsInstituteDropdownOpen(false), 120)
+                                }}
+                                disabled={isLoading || isLoadingOptions}
+                                className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                                required
+                              />
+                              {isInstituteDropdownOpen ? (
+                                <div className="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
+                                  <div className="max-h-[190px] overflow-y-auto p-1">
+                                    {filteredInstituteOptions.length ? (
+                                      filteredInstituteOptions.map((option) => (
+                                        <button
+                                          key={option}
+                                          type="button"
+                                          className="w-full rounded-sm px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                                          onMouseDown={(event) => {
+                                            event.preventDefault()
+                                            handleInstituteSelectionChange(option)
+                                            setIsInstituteDropdownOpen(false)
+                                          }}
+                                        >
+                                          {option}
+                                        </button>
+                                      ))
+                                    ) : (
+                                      <p className="px-3 py-2 text-sm text-slate-500">No matching institute found.</p>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className="w-full rounded-sm px-3 py-2 text-left text-sm font-medium text-[#0F7938] hover:bg-slate-100"
+                                      onMouseDown={(event) => {
+                                        event.preventDefault()
+                                        handleInstituteSelectionChange('Other')
+                                        setIsInstituteDropdownOpen(false)
+                                      }}
+                                    >
+                                      Other
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
                             <p className="text-xs text-slate-500">
                               Only 5 institutes are shown at once. Scroll to view more.
                             </p>
