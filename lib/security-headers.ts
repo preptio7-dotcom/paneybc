@@ -1,4 +1,5 @@
 import type { NextRequest, NextResponse } from 'next/server'
+import { isPrivateCrawlPath } from '@/lib/private-crawl-routes'
 
 const BASE_SCRIPT_SOURCES = [
   "'self'",
@@ -76,6 +77,10 @@ export function applySecurityHeaders(
     "require-trusted-types-for 'script'; trusted-types default"
   )
 
+  if (isPrivateCrawlPath(request.nextUrl.pathname)) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet')
+  }
+
   if (request.nextUrl.protocol === 'https:') {
     response.headers.set(
       'Strict-Transport-Security',
@@ -85,4 +90,3 @@ export function applySecurityHeaders(
 
   return response
 }
-
