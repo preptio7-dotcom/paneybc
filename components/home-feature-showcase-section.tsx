@@ -500,7 +500,6 @@ export function HomeFeatureShowcaseSection({
   return (
     <section
       ref={sectionRef}
-      id="platform-features-showcase"
       className={`w-full bg-[#f8fafc] py-[80px] ${
         shouldPauseAnimation ? 'feature-showcase-paused' : ''
       }`}

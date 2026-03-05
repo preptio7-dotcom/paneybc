@@ -160,7 +160,11 @@ export function HomepageContent() {
         <HowItWorksSection themeVariant={sectionConfig.howItWorks} reduceMotion={reduceMotion} />
       </LazyHomeSection>
       {canShowFeatureShowcase ? (
-        <LazyHomeSection minHeight={860}>
+        <LazyHomeSection
+          id="platform-features-showcase"
+          className="scroll-mt-24"
+          minHeight={860}
+        >
           <HomeFeatureShowcaseSection reduceMotion={reduceMotion} />
         </LazyHomeSection>
       ) : null}

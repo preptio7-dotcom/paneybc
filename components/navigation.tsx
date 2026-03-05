@@ -146,6 +146,9 @@ export function Navigation() {
   }, [betaFeatures, user?.studentRole])
   const showBlogInMainNav =
     betaFeatures.blog === 'public' || isPrivilegedUser
+  const showFeatureShowcaseInMainNav =
+    isPrivilegedUser ||
+    canAccessBetaFeature(betaFeatures.homepageFeatureShowcase, user?.studentRole)
   const canAccessBlogRoute =
     showBlogInMainNav ||
     canAccessBetaFeature(betaFeatures.blog, user?.studentRole) ||
@@ -254,9 +257,14 @@ export function Navigation() {
               <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors">
                 Subjects
               </Link>
-              <Link href="/#platform-features-showcase" className="text-text-dark hover:text-primary-green transition-colors">
-                See Features in Action
-              </Link>
+              {showFeatureShowcaseInMainNav ? (
+                <Link
+                  href="/#platform-features-showcase"
+                  className="text-text-dark hover:text-primary-green transition-colors"
+                >
+                  Features
+                </Link>
+              ) : null}
               {showBlogInMainNav ? (
                 <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors">
                   Blog
@@ -485,9 +493,15 @@ export function Navigation() {
                 <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                   Subjects
                 </Link>
-                <Link href="/#platform-features-showcase" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
-                  See Features in Action
-                </Link>
+                {showFeatureShowcaseInMainNav ? (
+                  <Link
+                    href="/#platform-features-showcase"
+                    className="text-text-dark hover:text-primary-green transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Features
+                  </Link>
+                ) : null}
                 {showBlogInMainNav ? (
                   <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                     Blog

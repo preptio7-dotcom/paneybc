@@ -6,12 +6,16 @@ type LazyHomeSectionProps = {
   children: React.ReactNode
   minHeight?: number
   rootMargin?: string
+  id?: string
+  className?: string
 }
 
 export function LazyHomeSection({
   children,
   minHeight = 320,
   rootMargin = '300px 0px',
+  id,
+  className,
 }: LazyHomeSectionProps) {
   const markerRef = useRef<HTMLDivElement | null>(null)
   const [shouldRender, setShouldRender] = useState(false)
@@ -43,9 +47,13 @@ export function LazyHomeSection({
   }, [rootMargin])
 
   return (
-    <div ref={markerRef} style={{ minHeight: shouldRender ? undefined : minHeight }}>
+    <div
+      id={id}
+      className={className}
+      ref={markerRef}
+      style={{ minHeight: shouldRender ? undefined : minHeight }}
+    >
       {shouldRender ? children : null}
     </div>
   )
 }
-
