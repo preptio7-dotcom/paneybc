@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import Script from 'next/script'
 
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
 
 import { AuthProvider } from '@/lib/auth-context'
@@ -149,6 +150,7 @@ export default function RootLayout({
         <Toaster />
         <SonnerToaster position="top-center" richColors />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
