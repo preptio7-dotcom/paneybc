@@ -41,7 +41,13 @@ export function Footer() {
               The ultimate platform for CA exam candidates. Master your professional exams with over {questionCountLabel} real exam-style questions and detailed explanations.
             </p>
             <div className="flex gap-4">
-              <Link href="#" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white" aria-label="Preptio Facebook">
+              <Link
+                href="https://www.facebook.com/share/p/1DNc73qUH9/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-white"
+                aria-label="Preptio Facebook"
+              >
                 <Facebook size={18} />
               </Link>
               <Link

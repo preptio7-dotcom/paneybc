@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Check, Loader2, Star } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/dialog'
 import { STREAK_BADGE_DEFINITIONS, type StreakBadgeType } from '@/lib/streak-badges'
 import { PRELOAD_AVATAR_COUNT, parsePackedAvatarId } from '@/lib/avatar'
-import { normalizePkPhone } from '@/lib/account-utils'
+import { DEFAULT_REGISTRATION_INSTITUTES, normalizePkPhone } from '@/lib/account-utils'
 
 type BadgeProgress = {
   badgeType: StreakBadgeType
@@ -86,6 +86,8 @@ export default function DashboardSettingsPage() {
   const isStudentProfile = user?.role === 'student'
   const [degreeOptions, setDegreeOptions] = useState<string[]>(FALLBACK_DEGREES)
   const [caLevelOptions, setCaLevelOptions] = useState<string[]>(FALLBACK_CA_LEVELS)
+  const [instituteOptions, setInstituteOptions] = useState<string[]>([...DEFAULT_REGISTRATION_INSTITUTES])
+  const [isInstituteDropdownOpen, setIsInstituteDropdownOpen] = useState(false)
   const [avatarPacks, setAvatarPacks] = useState<AvatarPackOption[]>([])
   const [activeAvatarPackTab, setActiveAvatarPackTab] = useState('')
   const [isSwitchingPack, setIsSwitchingPack] = useState(false)
@@ -165,11 +167,18 @@ export default function DashboardSettingsPage() {
                 .map((value: unknown) => String(value || '').trim())
                 .filter(Boolean)
             : []
+          const institutes = Array.isArray(settingsData?.testSettings?.registrationInstitutes)
+            ? settingsData.testSettings.registrationInstitutes
+                .map((value: unknown) => String(value || '').trim())
+                .filter(Boolean)
+            : []
           setDegreeOptions(degrees.length ? degrees : FALLBACK_DEGREES)
           setCaLevelOptions(levels.length ? levels : FALLBACK_CA_LEVELS)
+          setInstituteOptions(institutes.length ? institutes : [...DEFAULT_REGISTRATION_INSTITUTES])
         } else {
           setDegreeOptions(FALLBACK_DEGREES)
           setCaLevelOptions(FALLBACK_CA_LEVELS)
+          setInstituteOptions([...DEFAULT_REGISTRATION_INSTITUTES])
         }
 
         let parsedAvatarPacks: AvatarPackOption[] = []
@@ -266,6 +275,26 @@ export default function DashboardSettingsPage() {
     if (degreeOptions.includes(profileForm.degree)) return
     setDegreeOptions((prev) => [...prev, profileForm.degree])
   }, [degreeOptions, profileForm.degree])
+
+  const filteredInstituteOptions = useMemo(() => {
+    const query = profileForm.institute.trim().toLowerCase()
+    if (!query) return instituteOptions
+    return instituteOptions.filter((option) => option.toLowerCase().includes(query))
+  }, [instituteOptions, profileForm.institute])
+
+  const handleInstituteInputChange = (value: string) => {
+    setProfileForm((prev) => ({ ...prev, institute: value }))
+  }
+
+  const handleInstituteOptionSelect = (value: string) => {
+    const normalizedValue = String(value || '').trim()
+    if (normalizedValue.toLowerCase() === 'other') {
+      setProfileForm((prev) => ({ ...prev, institute: 'Other' }))
+    } else {
+      setProfileForm((prev) => ({ ...prev, institute: normalizedValue }))
+    }
+    setIsInstituteDropdownOpen(false)
+  }
 
   const activePack =
     avatarPacks.find((pack) => pack.id === activeAvatarPackTab) ||
@@ -835,17 +864,57 @@ export default function DashboardSettingsPage() {
                       />
                     </div>
                     {isStudentProfile ? (
-                      <div className="space-y-1 md:col-span-2">
+                      <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="profile-institute">Coaching Institute / Academy</Label>
-                        <Input
-                          id="profile-institute"
-                          placeholder="e.g. Skans, PAIB, Self Study"
-                          value={profileForm.institute}
-                          onChange={(event) =>
-                            setProfileForm((prev) => ({ ...prev, institute: event.target.value }))
-                          }
-                          disabled={isProfileLoading}
-                        />
+                        <div className="relative">
+                          <Input
+                            id="profile-institute"
+                            placeholder="Type to search institute"
+                            value={profileForm.institute}
+                            onChange={(event) => handleInstituteInputChange(event.target.value)}
+                            onFocus={() => setIsInstituteDropdownOpen(true)}
+                            onBlur={() => {
+                              setTimeout(() => setIsInstituteDropdownOpen(false), 120)
+                            }}
+                            disabled={isProfileLoading}
+                          />
+                          {isInstituteDropdownOpen ? (
+                            <div className="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
+                              <div className="max-h-[190px] overflow-y-auto p-1">
+                                {filteredInstituteOptions.length ? (
+                                  filteredInstituteOptions.map((option) => (
+                                    <button
+                                      key={option}
+                                      type="button"
+                                      className="w-full rounded-sm px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                                      onMouseDown={(event) => {
+                                        event.preventDefault()
+                                        handleInstituteOptionSelect(option)
+                                      }}
+                                    >
+                                      {option}
+                                    </button>
+                                  ))
+                                ) : (
+                                  <p className="px-3 py-2 text-sm text-slate-500">No matching institute found.</p>
+                                )}
+                                <button
+                                  type="button"
+                                  className="w-full rounded-sm px-3 py-2 text-left text-sm font-medium text-[#0F7938] hover:bg-slate-100"
+                                  onMouseDown={(event) => {
+                                    event.preventDefault()
+                                    handleInstituteOptionSelect('Other')
+                                  }}
+                                >
+                                  Other
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Only 5 institutes are shown at once. Scroll to view more.
+                        </p>
                       </div>
                     ) : null}
                     {isStudentProfile ? (

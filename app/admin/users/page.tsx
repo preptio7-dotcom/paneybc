@@ -48,8 +48,34 @@ type EditForm = {
   studentRole: 'user' | 'ambassador' | 'paid' | 'unpaid'
 }
 
+type UserTableColumnKey =
+  | 'email'
+  | 'accessRole'
+  | 'studentRole'
+  | 'degreeLevel'
+  | 'institute'
+  | 'phone'
+  | 'rating'
+  | 'status'
+  | 'joined'
+  | 'actions'
+
+type SelectedColumnState = 'all' | UserTableColumnKey
+
 const studentRoleOptions: EditForm['studentRole'][] = ['user', 'ambassador', 'paid', 'unpaid']
 const PAGE_SIZE = 5
+const ADVANCED_COLUMN_OPTIONS: Array<{ key: UserTableColumnKey; label: string }> = [
+  { key: 'email', label: 'Email' },
+  { key: 'accessRole', label: 'Access Role' },
+  { key: 'studentRole', label: 'Student Role' },
+  { key: 'degreeLevel', label: 'Degree/Level' },
+  { key: 'institute', label: 'Institute' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'rating', label: 'Rating' },
+  { key: 'status', label: 'Status' },
+  { key: 'joined', label: 'Joined' },
+  { key: 'actions', label: 'Actions' },
+]
 
 export default function AdminUsersPage() {
   const { toast } = useToast()
@@ -79,6 +105,7 @@ export default function AdminUsersPage() {
     degrees: ['CA'],
     levels: ['PRC', 'CAF'],
   })
+  const [selectedColumn, setSelectedColumn] = useState<SelectedColumnState>('all')
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams()
@@ -138,6 +165,9 @@ export default function AdminUsersPage() {
     }
     loadSettings()
   }, [])
+
+  const isColumnVisible = (columnKey: UserTableColumnKey) =>
+    selectedColumn === 'all' || selectedColumn === columnKey
 
   const handleBanToggle = async (userId: string, nextState: boolean) => {
     if (busyUserId) return
@@ -333,6 +363,41 @@ export default function AdminUsersPage() {
                   <option value="banned">Banned</option>
                 </select>
               </div>
+              <div className="rounded-md border border-border bg-slate-50 px-3 py-3">
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-text-dark">Advanced Columns (Single Select)</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-[#0F7938] bg-[#0F7938]/10 px-3 py-1 text-xs font-semibold text-[#0F7938]">
+                      Name (always shown)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedColumn('all')}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                        selectedColumn === 'all'
+                          ? 'border-[#0F7938] bg-[#0F7938] text-white'
+                          : 'border-border bg-white text-text-light hover:border-slate-400'
+                      }`}
+                    >
+                      All columns
+                    </button>
+                    {ADVANCED_COLUMN_OPTIONS.map((column) => (
+                      <button
+                        key={column.key}
+                        type="button"
+                        onClick={() => setSelectedColumn(column.key)}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                          selectedColumn === column.key
+                            ? 'border-[#0F7938] bg-[#0F7938] text-white'
+                            : 'border-border bg-white text-text-light hover:border-slate-400'
+                        }`}
+                      >
+                        {column.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-10">
@@ -347,78 +412,118 @@ export default function AdminUsersPage() {
                       <thead className="text-left text-text-light bg-slate-50">
                         <tr className="border-b border-border">
                           <th className="px-4 py-3 font-semibold min-w-[170px]">Name</th>
-                          <th className="px-4 py-3 font-semibold min-w-[220px]">Email</th>
-                          <th className="px-4 py-3 font-semibold min-w-[120px]">Access Role</th>
-                          <th className="px-4 py-3 font-semibold min-w-[130px]">Student Role</th>
-                          <th className="px-4 py-3 font-semibold min-w-[140px]">Degree/Level</th>
-                          <th className="px-4 py-3 font-semibold min-w-[260px]">Institute</th>
-                          <th className="px-4 py-3 font-semibold min-w-[150px]">Phone</th>
-                          <th className="px-4 py-3 font-semibold min-w-[90px]">Rating</th>
-                          <th className="px-4 py-3 font-semibold min-w-[100px]">Status</th>
-                          <th className="px-4 py-3 font-semibold min-w-[110px]">Joined</th>
-                          <th className="px-4 py-3 font-semibold min-w-[230px] text-right">Actions</th>
+                          {isColumnVisible('email') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[220px]">Email</th>
+                          ) : null}
+                          {isColumnVisible('accessRole') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[120px]">Access Role</th>
+                          ) : null}
+                          {isColumnVisible('studentRole') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[130px]">Student Role</th>
+                          ) : null}
+                          {isColumnVisible('degreeLevel') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[140px]">Degree/Level</th>
+                          ) : null}
+                          {isColumnVisible('institute') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[260px]">Institute</th>
+                          ) : null}
+                          {isColumnVisible('phone') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[150px]">Phone</th>
+                          ) : null}
+                          {isColumnVisible('rating') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[90px]">Rating</th>
+                          ) : null}
+                          {isColumnVisible('status') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[100px]">Status</th>
+                          ) : null}
+                          {isColumnVisible('joined') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[110px]">Joined</th>
+                          ) : null}
+                          {isColumnVisible('actions') ? (
+                            <th className="px-4 py-3 font-semibold min-w-[230px] text-right">Actions</th>
+                          ) : null}
                         </tr>
                       </thead>
                       <tbody>
                         {users.map((user) => (
                           <tr key={user.id} className="border-b border-border align-top">
                             <td className="px-4 py-4 font-medium text-text-dark whitespace-nowrap">{user.name}</td>
-                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.email}</td>
-                            <td className="px-4 py-4 text-text-light uppercase text-xs whitespace-nowrap">{user.role}</td>
-                            <td className="px-4 py-4 text-text-light capitalize whitespace-nowrap">{user.studentRole || 'unpaid'}</td>
-                            <td className="px-4 py-4 text-text-light whitespace-nowrap">
-                              {user.degree || '--'} / {user.level || '--'}
-                            </td>
-                            <td className="px-4 py-4 text-text-light min-w-[260px]">
-                              <div className="space-y-1 leading-snug">
-                                <div className="font-medium text-text-dark">{user.institute || '--'}</div>
-                                <div className="text-xs">{user.city || '--'}</div>
-                                <div className="text-xs font-mono">{user.studentId || '--'}</div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.phone || '--'}</td>
-                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.instituteRating || '--'}/5</td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span
-                                className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                  user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
-                                }`}
-                              >
-                                {user.isBanned ? 'Banned' : 'Active'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-text-light whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
-                            <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openEdit(user)}
-                                disabled={busyUserId === user.id}
-                                className="gap-2"
-                              >
-                                <Pencil size={14} />
-                                Edit
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleBanToggle(user.id, !user.isBanned)}
-                                disabled={busyUserId === user.id}
-                                className="gap-2"
-                              >
-                                {user.isBanned ? <ShieldAlert size={14} /> : <UserMinus size={14} />}
-                                {user.isBanned ? 'Unban' : 'Ban'}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(user.id)}
-                                disabled={busyUserId === user.id}
-                                className="text-error-red hover:text-error-red"
-                              >
-                                <UserX size={14} />
-                              </Button>
-                            </td>
+                            {isColumnVisible('email') ? (
+                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.email}</td>
+                            ) : null}
+                            {isColumnVisible('accessRole') ? (
+                              <td className="px-4 py-4 text-text-light uppercase text-xs whitespace-nowrap">{user.role}</td>
+                            ) : null}
+                            {isColumnVisible('studentRole') ? (
+                              <td className="px-4 py-4 text-text-light capitalize whitespace-nowrap">{user.studentRole || 'unpaid'}</td>
+                            ) : null}
+                            {isColumnVisible('degreeLevel') ? (
+                              <td className="px-4 py-4 text-text-light whitespace-nowrap">
+                                {user.degree || '--'} / {user.level || '--'}
+                              </td>
+                            ) : null}
+                            {isColumnVisible('institute') ? (
+                              <td className="px-4 py-4 text-text-light min-w-[260px]">
+                                <div className="space-y-1 leading-snug">
+                                  <div className="font-medium text-text-dark">{user.institute || '--'}</div>
+                                  <div className="text-xs">{user.city || '--'}</div>
+                                  <div className="text-xs font-mono">{user.studentId || '--'}</div>
+                                </div>
+                              </td>
+                            ) : null}
+                            {isColumnVisible('phone') ? (
+                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.phone || '--'}</td>
+                            ) : null}
+                            {isColumnVisible('rating') ? (
+                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.instituteRating || '--'}/5</td>
+                            ) : null}
+                            {isColumnVisible('status') ? (
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span
+                                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                    user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
+                                  }`}
+                                >
+                                  {user.isBanned ? 'Banned' : 'Active'}
+                                </span>
+                              </td>
+                            ) : null}
+                            {isColumnVisible('joined') ? (
+                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
+                            ) : null}
+                            {isColumnVisible('actions') ? (
+                              <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEdit(user)}
+                                  disabled={busyUserId === user.id}
+                                  className="gap-2"
+                                >
+                                  <Pencil size={14} />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleBanToggle(user.id, !user.isBanned)}
+                                  disabled={busyUserId === user.id}
+                                  className="gap-2"
+                                >
+                                  {user.isBanned ? <ShieldAlert size={14} /> : <UserMinus size={14} />}
+                                  {user.isBanned ? 'Unban' : 'Ban'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(user.id)}
+                                  disabled={busyUserId === user.id}
+                                  className="text-error-red hover:text-error-red"
+                                >
+                                  <UserX size={14} />
+                                </Button>
+                              </td>
+                            ) : null}
                           </tr>
                         ))}
                       </tbody>

@@ -304,7 +304,7 @@ export function BlogPostClient({
       if (platform === 'whatsapp') {
         window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`, '_blank', 'noopener,noreferrer')
       } else if (platform === 'facebook') {
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer')
+        window.open('https://www.facebook.com/share/p/1DNc73qUH9/', '_blank', 'noopener,noreferrer')
       }
     },
     [isAdminPreview, post.slug, post.title, trackAnalytics]
