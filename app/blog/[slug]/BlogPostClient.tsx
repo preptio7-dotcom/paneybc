@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation'
 import { BlogCard } from '@/components/blog/blog-card'
 import type { BlogCategoryDto, BlogPostDto } from '@/lib/blog-types'
 import { BLOG_SUBJECT_META } from '@/lib/blog-related-subjects'
+import { getProxyMediaUrl, proxyImageSourcesInHtml } from '@/lib/media-url'
 
 type TocItem = {
   id: string
@@ -233,7 +234,8 @@ export function BlogPostClient({
   const readCompleteTrackedRef = useRef(false)
   const startedAtRef = useRef(0)
 
-  const prepared = useMemo(() => withHeadingIds(post.content), [post.content])
+  const proxiedContent = useMemo(() => proxyImageSourcesInHtml(post.content), [post.content])
+  const prepared = useMemo(() => withHeadingIds(proxiedContent), [proxiedContent])
   const paragraphSplit = useMemo(() => splitAfterParagraph(prepared.content, 3), [prepared.content])
   const showToc = prepared.toc.length >= 3
   const relatedSubjects = useMemo(
@@ -486,7 +488,13 @@ export function BlogPostClient({
               <div className="flex items-center gap-3">
                 <div className="h-11 w-11 overflow-hidden rounded-full border-2 border-[#dcfce7] bg-[#f0fdf4]">
                   {post.author.avatarUrl ? (
-                    <Image src={post.author.avatarUrl} alt={post.author.name} width={44} height={44} className="h-full w-full object-cover" />
+                    <Image
+                      src={getProxyMediaUrl(post.author.avatarUrl)}
+                      alt={post.author.name}
+                      width={44}
+                      height={44}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-primary-green">
                       {post.author.name.slice(0, 1).toUpperCase()}
@@ -522,7 +530,14 @@ export function BlogPostClient({
 
             {post.coverImageUrl ? (
               <div className="relative my-8 h-[260px] overflow-hidden rounded-2xl md:h-[480px]">
-                <Image src={post.coverImageUrl} alt={post.title} fill className="object-cover" sizes="(max-width: 767px) 100vw, 720px" priority />
+                <Image
+                  src={getProxyMediaUrl(post.coverImageUrl)}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 767px) 100vw, 720px"
+                  priority
+                />
               </div>
             ) : null}
 
@@ -594,7 +609,13 @@ export function BlogPostClient({
               <div className="flex flex-wrap items-start gap-4">
                 <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-[#dcfce7] bg-white">
                   {post.author.avatarUrl ? (
-                    <Image src={post.author.avatarUrl} alt={post.author.name} width={64} height={64} className="h-full w-full object-cover" />
+                    <Image
+                      src={getProxyMediaUrl(post.author.avatarUrl)}
+                      alt={post.author.name}
+                      width={64}
+                      height={64}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <span className="flex h-full w-full items-center justify-center text-lg font-semibold text-primary-green">
                       {post.author.name.slice(0, 1).toUpperCase()}

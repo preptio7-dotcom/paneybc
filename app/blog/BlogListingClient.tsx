@@ -7,6 +7,7 @@ import { BlogCard } from '@/components/blog/blog-card'
 import type { BlogCategoryDto, BlogPostDto } from '@/lib/blog-types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { getProxyMediaUrl } from '@/lib/media-url'
 
 const POSTS_PER_PAGE = 9
 
@@ -186,7 +187,7 @@ export function BlogListingClient({
               <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
-                  backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%), url(${featuredPost.coverImageUrl})`,
+                  backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%), url(${getProxyMediaUrl(featuredPost.coverImageUrl)})`,
                 }}
               />
             ) : (

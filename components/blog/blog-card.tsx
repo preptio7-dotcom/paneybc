@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Clock3, Eye } from 'lucide-react'
 import type { BlogPostDto } from '@/lib/blog-types'
+import { getProxyMediaUrl } from '@/lib/media-url'
 
 function formatDate(value: string | null) {
   if (!value) return 'Draft'
@@ -42,7 +43,7 @@ export function BlogCard({
       <div className={`relative w-full overflow-hidden ${compact ? 'h-44' : 'h-52'}`}>
         {post.coverImageUrl ? (
           <Image
-            src={post.coverImageUrl}
+            src={getProxyMediaUrl(post.coverImageUrl)}
             alt={post.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
@@ -89,7 +90,7 @@ export function BlogCard({
             <div className="h-6 w-6 overflow-hidden rounded-full border border-[#dcfce7] bg-[#f0fdf4]">
               {post.author.avatarUrl ? (
                 <Image
-                  src={post.author.avatarUrl}
+                  src={getProxyMediaUrl(post.author.avatarUrl)}
                   alt={post.author.name}
                   width={24}
                   height={24}
@@ -120,4 +121,3 @@ export function BlogCard({
     </Link>
   )
 }
-
