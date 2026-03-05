@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
         // 3. Send email to user
         const mailOptions = {
-            from: `"Preptio Support" <${process.env.SMTP_USER}>`,
+            from: 'Preptio <support@preptio.com>',
             to: message.email,
             subject: `Re: ${message.subject}`,
             html: `

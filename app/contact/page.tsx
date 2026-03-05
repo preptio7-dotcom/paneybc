@@ -47,7 +47,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-900">Email Us</h3>
-                                    <p className="text-gray-500">preptio7@gmail.com</p>
+                                    <p className="text-gray-500">support@preptio.com</p>
                                 </div>
                             </div>
 

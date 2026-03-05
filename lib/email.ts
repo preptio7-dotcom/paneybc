@@ -21,7 +21,7 @@ const transporter = smtpHost
 
 export async function sendOTPEmail(email: string, code: string) {
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Super Admin Login - Verification Code',
     html: `
@@ -43,7 +43,7 @@ export async function sendOTPEmail(email: string, code: string) {
 
 export async function sendAdminOTPEmail(email: string, code: string) {
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Admin Login - Verification Code',
     html: `
@@ -71,7 +71,7 @@ export async function sendPasswordResetEmail(
   const resetUrl = `${appBaseUrl}/auth/reset-password/${token}`
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Reset Your Password - Preptio',
     html: `
@@ -95,7 +95,7 @@ export async function sendPasswordResetEmail(
 
 export async function sendSignupVerificationEmail(email: string, code: string) {
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Verify Your Email - Preptio',
     html: `
@@ -117,7 +117,7 @@ export async function sendSignupVerificationEmail(email: string, code: string) {
 
 export async function sendAccountDeletionOTPEmail(email: string, code: string) {
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Account Deletion - Verification Code',
     html: `
@@ -141,7 +141,7 @@ export async function sendReviewDueEmail(email: string, name: string, count: num
   const reviewUrl = `${resolveAppBaseUrl()}/review`
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Review Due - Preptio',
     html: `
@@ -164,7 +164,7 @@ export async function sendReviewDueEmail(email: string, name: string, count: num
 
 export async function sendCampaignEmail(email: string, subject: string, body: string) {
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject,
     html: `
@@ -185,7 +185,7 @@ export async function sendQuestionReportReceivedEmail(email: string, details: { 
   const questionText = details.questionText ? details.questionText : 'Question text not available.'
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'We received your question report',
     html: `
@@ -213,7 +213,7 @@ export async function sendQuestionReportReplyEmail(email: string, message: strin
   const questionText = details?.questionText ? details.questionText : 'Question text not available.'
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Update on your question report',
     html: `
@@ -255,7 +255,7 @@ export async function sendQuestionReportAdminEmail(
   const questionText = payload.questionText ? payload.questionText : 'Question text not available.'
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: recipients.join(','),
     subject: 'New Question Report Submitted',
     html: `
@@ -287,7 +287,7 @@ export async function sendFinancialStatementReportReceivedEmail(
   const itemLine = details.heading ? `${details.section || 'Section'} - ${details.heading}` : details.section || 'Line item'
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'We received your financial statement report',
     html: `
@@ -327,7 +327,7 @@ export async function sendFinancialStatementReportAdminEmail(
   const itemLine = payload.heading ? `${payload.section || 'Section'} - ${payload.heading}` : payload.section || 'Line item'
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: recipients.join(','),
     subject: 'New Financial Statement Report Submitted',
     html: `
@@ -353,7 +353,7 @@ export async function sendFinancialStatementReportAdminEmail(
 export async function sendJoinUsThankYouEmail(email: string, name: string, type: string) {
   const typeLabel = type === 'ambassador' ? 'Brand Ambassador' : type === 'reviews' ? 'Review & Feedback' : 'MCQ Data'
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: `Thank you for joining Preptio (${typeLabel})`,
     html: `
@@ -376,7 +376,7 @@ export async function sendJoinUsThankYouEmail(email: string, name: string, type:
 export async function sendJoinUsReplyEmail(email: string, name: string, type: string, message: string) {
   const typeLabel = type === 'ambassador' ? 'Brand Ambassador' : type === 'reviews' ? 'Review & Feedback' : 'MCQ Data'
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: `Your Preptio request update (${typeLabel})`,
     html: `
@@ -407,7 +407,7 @@ export async function sendJoinUsAdminEmail(payload: {
 }) {
   const typeLabel = payload.type === 'ambassador' ? 'Brand Ambassador' : payload.type === 'reviews' ? 'Review & Feedback' : 'MCQ Data'
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: process.env.SMTP_USER,
     subject: `New Join Us submission (${typeLabel})`,
     html: `
@@ -440,7 +440,7 @@ export async function sendInstituteSuggestionAdminEmail(payload: {
   if (!adminRecipient) return null
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: adminRecipient,
     subject: 'New Institute Suggestion from Signup',
     html: `
@@ -465,7 +465,7 @@ export async function sendContactConfirmationEmail(payload: {
   message: string
 }) {
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: payload.email,
     subject: 'We received your message - Preptio',
     html: `
@@ -492,7 +492,7 @@ export async function sendContactAdminEmail(payload: {
   message: string
 }) {
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: process.env.SMTP_USER,
     subject: `New Contact Message: ${payload.subject}`,
     html: `
@@ -515,7 +515,7 @@ export async function sendSecurityAlertEmail(email: string, name?: string) {
   const resetUrl = `${resolveAppBaseUrl()}/auth/forgot-password`
 
   const mailOptions = {
-    from: `"Preptio" <${process.env.SMTP_USER}>`,
+    from: 'Preptio <support@preptio.com>',
     to: email,
     subject: 'Security Alert: Multiple Login Attempts Detected',
     html: `

@@ -109,7 +109,7 @@ export function Footer() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3 text-slate-400 text-sm">
                 <Mail size={16} className="text-primary-green" />
-                <span>preptio7@gmail.com</span>
+                <span>support@preptio.com</span>
               </div>
               <div className="flex items-center gap-3 text-slate-400 text-sm">
                 <Phone size={16} className="text-primary-green" />
