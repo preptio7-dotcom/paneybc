@@ -82,6 +82,7 @@ const NAV_GROUPS: NavGroup[] = [
       },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
+      { label: 'Analytics & Reports', href: '/admin/analytics', icon: BarChart2 },
     ],
   },
   {

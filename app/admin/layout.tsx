@@ -9,19 +9,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const { user, loading } = useAuth()
     const router = useRouter()
     const pathname = usePathname()
+    const hasAdminAccess = user?.role === 'admin' || user?.role === 'super_admin'
 
     useEffect(() => {
         if (pathname === '/admin/login' || pathname === '/admin/forgot-password') return
-        if (!loading && (!user || user.role !== 'admin')) {
-            router.push('/admin/login')
+        if (!loading && !hasAdminAccess) {
+            if (user) {
+                router.push('/dashboard?error=403')
+            } else {
+                router.push('/admin/login')
+            }
         }
-    }, [user, loading, router, pathname])
+    }, [hasAdminAccess, loading, pathname, router, user])
 
     if (pathname === '/admin/login' || pathname === '/admin/forgot-password') {
         return <>{children}</>
     }
 
-    if (loading || (!user || user.role !== 'admin')) {
+    if (loading || !hasAdminAccess) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light">
                 <div className="flex flex-col items-center gap-4">
