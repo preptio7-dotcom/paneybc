@@ -168,6 +168,8 @@ export default function AdminUsersPage() {
 
   const isColumnVisible = (columnKey: UserTableColumnKey) =>
     selectedColumn === 'all' || selectedColumn === columnKey
+  const tableClassName =
+    selectedColumn === 'all' ? 'w-full min-w-[1520px] text-sm' : 'w-max text-sm'
 
   const handleBanToggle = async (userId: string, nextState: boolean) => {
     if (busyUserId) return
@@ -408,7 +410,7 @@ export default function AdminUsersPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1520px] text-sm">
+                    <table className={tableClassName}>
                       <thead className="text-left text-text-light bg-slate-50">
                         <tr className="border-b border-border">
                           <th className="px-4 py-3 font-semibold min-w-[170px]">Name</th>
