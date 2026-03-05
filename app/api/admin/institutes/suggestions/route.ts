@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { InstituteSuggestionStatus } from '@prisma/client'
+import { InstituteSuggestionStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import {
@@ -16,6 +16,13 @@ async function requireAdmin(request: NextRequest) {
     return null
   }
   return currentUser
+}
+
+function isMissingSuggestionsTableError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false
+  if (error.code !== 'P2021') return false
+  const table = String((error.meta as Record<string, unknown> | undefined)?.table || '')
+  return table.includes('institute_suggestions')
 }
 
 export async function GET(request: NextRequest) {
@@ -40,11 +47,24 @@ export async function GET(request: NextRequest) {
       where.OR = [{ suggestedName: { contains: query, mode: 'insensitive' } }]
     }
 
-    const rows = await prisma.instituteSuggestion.findMany({
-      where,
-      orderBy: [{ status: 'asc' }, { usageCount: 'desc' }, { createdAt: 'desc' }],
-      take: 200,
-    })
+    let rows: Array<unknown> = []
+    try {
+      rows = await prisma.instituteSuggestion.findMany({
+        where,
+        orderBy: [{ status: 'asc' }, { usageCount: 'desc' }, { createdAt: 'desc' }],
+        take: 200,
+      })
+    } catch (error) {
+      if (isMissingSuggestionsTableError(error)) {
+        return NextResponse.json({
+          rows: [],
+          missingTable: true,
+          message:
+            'Institute suggestions storage is not initialized in this environment yet. Run migrations to enable the queue.',
+        })
+      }
+      throw error
+    }
 
     return NextResponse.json({ rows })
   } catch {
@@ -71,7 +91,18 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid suggestion status' }, { status: 400 })
     }
 
-    const suggestion = await prisma.instituteSuggestion.findUnique({ where: { id } })
+    let suggestion = null
+    try {
+      suggestion = await prisma.instituteSuggestion.findUnique({ where: { id } })
+    } catch (error) {
+      if (isMissingSuggestionsTableError(error)) {
+        return NextResponse.json(
+          { error: 'Institute suggestions storage is not initialized in this environment.' },
+          { status: 503 }
+        )
+      }
+      throw error
+    }
     if (!suggestion) {
       return NextResponse.json({ error: 'Suggestion not found' }, { status: 404 })
     }
@@ -103,15 +134,26 @@ export async function PATCH(request: NextRequest) {
     }
 
     const nextStatus = statusRaw as InstituteSuggestionStatus
-    const updated = await prisma.instituteSuggestion.update({
-      where: { id },
-      data: {
-        status: nextStatus,
-        reviewNote: reviewNote || null,
-        reviewedBy: currentUser.userId,
-        reviewedAt: nextStatus === 'pending' ? null : new Date(),
-      },
-    })
+    let updated
+    try {
+      updated = await prisma.instituteSuggestion.update({
+        where: { id },
+        data: {
+          status: nextStatus,
+          reviewNote: reviewNote || null,
+          reviewedBy: currentUser.userId,
+          reviewedAt: nextStatus === 'pending' ? null : new Date(),
+        },
+      })
+    } catch (error) {
+      if (isMissingSuggestionsTableError(error)) {
+        return NextResponse.json(
+          { error: 'Institute suggestions storage is not initialized in this environment.' },
+          { status: 503 }
+        )
+      }
+      throw error
+    }
 
     return NextResponse.json({ success: true, suggestion: updated })
   } catch {

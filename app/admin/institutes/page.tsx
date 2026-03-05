@@ -36,6 +36,7 @@ export default function AdminInstitutesPage() {
   const [suggestionsStatusFilter, setSuggestionsStatusFilter] = useState<
     'all' | InstituteSuggestionStatus
   >('pending')
+  const [suggestionsNotice, setSuggestionsNotice] = useState<string | null>(null)
   const [newInstitute, setNewInstitute] = useState('')
   const [editingInstitute, setEditingInstitute] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
@@ -76,12 +77,16 @@ export default function AdminInstitutesPage() {
         throw new Error(data.error || 'Failed to load institute suggestions')
       }
       setSuggestions(Array.isArray(data.rows) ? data.rows : [])
+      setSuggestionsNotice(
+        data?.missingTable ? String(data.message || 'Institute suggestions queue is unavailable.') : null
+      )
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to load institute suggestions.',
         variant: 'destructive',
       })
+      setSuggestionsNotice(null)
     } finally {
       setIsLoadingSuggestions(false)
     }
@@ -288,6 +293,10 @@ export default function AdminInstitutesPage() {
               {isLoadingSuggestions ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="animate-spin text-primary-green" size={28} />
+                </div>
+              ) : suggestionsNotice ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  {suggestionsNotice}
                 </div>
               ) : suggestions.length === 0 ? (
                 <p className="text-sm text-text-light">No institute suggestions in this status.</p>

@@ -256,51 +256,56 @@ export async function POST(request: NextRequest) {
       let shouldSendInstituteSuggestionEmail = false
 
       if (normalizedInstituteSuggestionKey) {
-        const existingSuggestion = await prisma.instituteSuggestion.findUnique({
-          where: {
-            normalizedName: normalizedInstituteSuggestionKey,
-          },
-          select: {
-            id: true,
-            status: true,
-          },
-        })
-
-        if (existingSuggestion) {
-          const shouldReopen = existingSuggestion.status === 'rejected'
-          await prisma.instituteSuggestion.update({
-            where: { id: existingSuggestion.id },
-            data: {
-              suggestedName: normalizedInstituteName,
-              requestedByUserId: createdUserWithAvatar.id,
-              requestedByEmail: normalizedEmail,
-              requestedByName: normalizedName,
-              usageCount: {
-                increment: 1,
-              },
-              ...(shouldReopen
-                ? {
-                    status: 'pending',
-                    reviewedAt: null,
-                    reviewedBy: null,
-                    reviewNote: null,
-                  }
-                : {}),
-            },
-          })
-          shouldSendInstituteSuggestionEmail = shouldReopen
-        } else {
-          await prisma.instituteSuggestion.create({
-            data: {
-              suggestedName: normalizedInstituteName,
+        try {
+          const existingSuggestion = await prisma.instituteSuggestion.findUnique({
+            where: {
               normalizedName: normalizedInstituteSuggestionKey,
-              status: 'pending',
-              requestedByUserId: createdUserWithAvatar.id,
-              requestedByEmail: normalizedEmail,
-              requestedByName: normalizedName,
-              usageCount: 1,
+            },
+            select: {
+              id: true,
+              status: true,
             },
           })
+
+          if (existingSuggestion) {
+            const shouldReopen = existingSuggestion.status === 'rejected'
+            await prisma.instituteSuggestion.update({
+              where: { id: existingSuggestion.id },
+              data: {
+                suggestedName: normalizedInstituteName,
+                requestedByUserId: createdUserWithAvatar.id,
+                requestedByEmail: normalizedEmail,
+                requestedByName: normalizedName,
+                usageCount: {
+                  increment: 1,
+                },
+                ...(shouldReopen
+                  ? {
+                      status: 'pending',
+                      reviewedAt: null,
+                      reviewedBy: null,
+                      reviewNote: null,
+                    }
+                  : {}),
+              },
+            })
+            shouldSendInstituteSuggestionEmail = shouldReopen
+          } else {
+            await prisma.instituteSuggestion.create({
+              data: {
+                suggestedName: normalizedInstituteName,
+                normalizedName: normalizedInstituteSuggestionKey,
+                status: 'pending',
+                requestedByUserId: createdUserWithAvatar.id,
+                requestedByEmail: normalizedEmail,
+                requestedByName: normalizedName,
+                usageCount: 1,
+              },
+            })
+            shouldSendInstituteSuggestionEmail = true
+          }
+        } catch (error) {
+          console.error('Failed to persist institute suggestion:', error)
           shouldSendInstituteSuggestionEmail = true
         }
       }
