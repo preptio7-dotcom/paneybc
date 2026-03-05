@@ -534,7 +534,7 @@ export function BlogPostClient({
                   src={getProxyMediaUrl(post.coverImageUrl)}
                   alt={post.title}
                   fill
-                  className="object-cover object-center"
+                  className="bg-slate-100 object-contain object-center"
                   sizes="(max-width: 767px) 100vw, 720px"
                   priority
                 />

@@ -46,7 +46,7 @@ export function BlogCard({
             src={getProxyMediaUrl(post.coverImageUrl)}
             alt={post.title}
             fill
-            className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
+            className="bg-slate-100 object-contain object-center transition-transform duration-300 group-hover:scale-[1.03]"
             loading={priority ? 'eager' : 'lazy'}
             sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
           />

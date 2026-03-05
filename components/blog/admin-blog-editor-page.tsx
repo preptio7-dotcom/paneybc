@@ -1535,7 +1535,7 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
                     <img
                       src={buildCoverPreviewSrc(form.coverImageUrl)}
                       alt="Cover preview"
-                      className="h-36 w-full rounded-lg object-cover object-center"
+                      className="h-36 w-full rounded-lg bg-slate-100 object-contain object-center"
                       loading="lazy"
                       onError={() => {
                         console.error('Cover image failed to load:', form.coverImageUrl)
@@ -1786,7 +1786,7 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
                 <img
                   src={buildCoverPreviewSrc(previewRevision.coverImageUrl)}
                   alt="Revision cover"
-                  className="h-52 w-full rounded-xl border border-slate-200 object-cover object-center"
+                  className="h-52 w-full rounded-xl border border-slate-200 bg-slate-100 object-contain object-center"
                   loading="lazy"
                   onError={() => {
                     console.error('Revision cover failed to load:', previewRevision.coverImageUrl)
