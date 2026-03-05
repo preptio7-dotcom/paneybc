@@ -60,8 +60,10 @@ export function Navigation() {
 
   const dashboardSectionLinks = [
     { href: '/dashboard/settings', label: 'Account Settings' },
-    { href: '/dashboard#subjects', label: 'Your Subjects' },
-    { href: '/dashboard#performance-tracking', label: 'Performance Tracking' },
+    { href: '/dashboard#continue-learning', label: 'Continue Learning' },
+    ...(canAccessAnalyticsFeature
+      ? [{ href: '/dashboard/analytics', label: 'View Analytics' }]
+      : []),
   ]
 
   useEffect(() => {

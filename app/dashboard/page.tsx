@@ -19,7 +19,6 @@ import {
   Zap,
 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
-import { RecentActivity } from '@/components/recent-activity'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -777,36 +776,6 @@ export default function DashboardPage() {
         .sort((a, b) => a.accuracy - b.accuracy)[0] || null
     )
   }, [qafbWeakArea])
-
-  const baeTrend = useMemo(() => {
-    const points = (baeWeakArea?.history || []).slice(0, 10).reverse()
-    if (points.length < 2) return null
-
-    const width = 420
-    const height = 140
-    const leftPadding = 12
-    const rightPadding = 12
-    const topPadding = 12
-    const bottomPadding = 20
-    const usableWidth = width - leftPadding - rightPadding
-    const usableHeight = height - topPadding - bottomPadding
-
-    const toPath = (key: 'vol1Accuracy' | 'vol2Accuracy') =>
-      points
-        .map((point, index) => {
-          const x = leftPadding + (index / Math.max(1, points.length - 1)) * usableWidth
-          const y = topPadding + ((100 - Number(point[key])) / 100) * usableHeight
-          return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
-        })
-        .join(' ')
-
-    return {
-      width,
-      height,
-      pathVol1: toPath('vol1Accuracy'),
-      pathVol2: toPath('vol2Accuracy'),
-    }
-  }, [baeWeakArea?.history])
 
   const getSubjectPracticeLabel = (lastPracticedAt: string | null) => {
     if (!lastPracticedAt) {
@@ -2073,95 +2042,6 @@ export default function DashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-
-              <div id="performance-tracking" className="dashboard-reveal scroll-mt-24">
-                <h2 className="dashboard-section-title">Performance Tracking</h2>
-                {baeWeakArea?.history?.length ? (
-                  <Card className="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">BAE Mock Test History</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary-green"
-                          onClick={() => window.location.assign('/practice/bae-mock')}
-                        >
-                          New Attempt
-                        </Button>
-                      </div>
-
-                      {baeTrend ? (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
-                            <span>Vol I vs Vol II Accuracy Trend</span>
-                            <span className="flex items-center gap-3">
-                              <span className="inline-flex items-center gap-1">
-                                <span className="h-2 w-2 rounded-full bg-[#16a34a]" />
-                                Vol I
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <span className="h-2 w-2 rounded-full bg-[#2563eb]" />
-                                Vol II
-                              </span>
-                            </span>
-                          </div>
-                          <svg viewBox={`0 0 ${baeTrend.width} ${baeTrend.height}`} className="w-full h-28">
-                            <path d={baeTrend.pathVol1} fill="none" stroke="#16a34a" strokeWidth="2.5" />
-                            <path d={baeTrend.pathVol2} fill="none" stroke="#2563eb" strokeWidth="2.5" />
-                          </svg>
-                        </div>
-                      ) : null}
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[640px] text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-slate-500 text-left">
-                              <th className="pb-2 pr-3">Date</th>
-                              <th className="pb-2 pr-3">Score</th>
-                              <th className="pb-2 pr-3">Ratio</th>
-                              <th className="pb-2 pr-3">Vol I</th>
-                              <th className="pb-2 pr-3">Vol II</th>
-                              <th className="pb-2 pr-3">Time</th>
-                              <th className="pb-2">Change</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {baeWeakArea.history.slice(0, 10).map((attempt) => (
-                              <tr key={attempt.id} className="border-b border-slate-100 text-slate-700">
-                                <td className="py-2 pr-3">{new Date(attempt.date).toLocaleDateString()}</td>
-                                <td className="py-2 pr-3">{attempt.scoreText} ({attempt.scorePercent}%)</td>
-                                <td className="py-2 pr-3">{attempt.ratioText}</td>
-                                <td className="py-2 pr-3">{attempt.vol1Accuracy}%</td>
-                                <td className="py-2 pr-3">{attempt.vol2Accuracy}%</td>
-                                <td className="py-2 pr-3">
-                                  {Math.round((attempt.timeTaken / Math.max(1, attempt.timeAllowed * 60)) * 100)}%
-                                </td>
-                                <td className="py-2">
-                                  <span
-                                    className={
-                                      attempt.improvementDelta > 0
-                                        ? 'text-emerald-600 font-semibold'
-                                        : attempt.improvementDelta < 0
-                                          ? 'text-rose-600 font-semibold'
-                                          : 'text-slate-500'
-                                    }
-                                  >
-                                    {attempt.improvementDelta > 0 ? `+${attempt.improvementDelta}%` : `${attempt.improvementDelta}%`}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : null}
-                <div className="mt-4">
-                  <RecentActivity />
-                </div>
               </div>
 
               <div className="dashboard-reveal py-2">

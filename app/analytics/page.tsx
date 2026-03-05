@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Navigation } from '@/components/navigation'
+import { RecentActivity } from '@/components/recent-activity'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
@@ -86,6 +87,23 @@ type DeepAnalytics = {
     percentileTop: number | null
   }
   mockHistory: {
+    bae: Array<{
+      id: string
+      date: string
+      totalQuestions: number
+      scorePercent: number
+      scoreText: string
+      ratioText: string
+      vol1Accuracy: number
+      vol2Accuracy: number
+      vol1Count: number
+      vol2Count: number
+      vol1Correct: number
+      vol2Correct: number
+      timeAllowed: number
+      timeTaken: number
+      improvementDelta: number
+    }>
     foa: Array<{
       id: string
       date: string
@@ -255,6 +273,16 @@ export default function AnalyticsPage() {
     return buildSparklinePath(scores)
   }, [analytics?.mockHistory.foa])
 
+  const baeVol1TrendPath = useMemo(() => {
+    const scores = (analytics?.mockHistory.bae || []).slice().reverse().map((row) => row.vol1Accuracy)
+    return buildSparklinePath(scores)
+  }, [analytics?.mockHistory.bae])
+
+  const baeVol2TrendPath = useMemo(() => {
+    const scores = (analytics?.mockHistory.bae || []).slice().reverse().map((row) => row.vol2Accuracy)
+    return buildSparklinePath(scores)
+  }, [analytics?.mockHistory.bae])
+
   const qafbTrendPath = useMemo(() => {
     const scores = (analytics?.mockHistory.qafb || []).slice().reverse().map((row) => row.scorePercent)
     return buildSparklinePath(scores)
@@ -422,6 +450,89 @@ export default function AnalyticsPage() {
                     </p>
                   </CardContent>
                 </Card>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <Card>
+                  <CardContent className="p-5">
+                    <h2 className="text-lg font-bold">BAE Mock Test History</h2>
+                    {analytics.mockHistory.bae.length ? (
+                      <>
+                        {baeVol1TrendPath && baeVol2TrendPath ? (
+                          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                              <span>Vol I vs Vol II Accuracy Trend</span>
+                              <span className="flex items-center gap-3">
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="h-2 w-2 rounded-full bg-[#16a34a]" />
+                                  Vol I
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="h-2 w-2 rounded-full bg-[#2563eb]" />
+                                  Vol II
+                                </span>
+                              </span>
+                            </div>
+                            <svg viewBox="0 0 260 80" className="h-20 w-full">
+                              <path d={baeVol1TrendPath} fill="none" stroke="#16a34a" strokeWidth="2.5" />
+                              <path d={baeVol2TrendPath} fill="none" stroke="#2563eb" strokeWidth="2.5" />
+                            </svg>
+                          </div>
+                        ) : null}
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[640px] text-xs">
+                            <thead>
+                              <tr className="border-b border-slate-200 text-left text-slate-500">
+                                <th className="pb-2 pr-3">Date</th>
+                                <th className="pb-2 pr-3">Score</th>
+                                <th className="pb-2 pr-3">Ratio</th>
+                                <th className="pb-2 pr-3">Vol I</th>
+                                <th className="pb-2 pr-3">Vol II</th>
+                                <th className="pb-2 pr-3">Time</th>
+                                <th className="pb-2">Change</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {analytics.mockHistory.bae.map((row) => (
+                                <tr key={row.id} className="border-b border-slate-100 text-slate-700">
+                                  <td className="py-2 pr-3">{new Date(row.date).toLocaleDateString()}</td>
+                                  <td className="py-2 pr-3">
+                                    {row.scoreText} ({row.scorePercent}%)
+                                  </td>
+                                  <td className="py-2 pr-3">{row.ratioText}</td>
+                                  <td className="py-2 pr-3">{row.vol1Accuracy}%</td>
+                                  <td className="py-2 pr-3">{row.vol2Accuracy}%</td>
+                                  <td className="py-2 pr-3">
+                                    {Math.round((row.timeTaken / Math.max(1, row.timeAllowed * 60)) * 100)}%
+                                  </td>
+                                  <td
+                                    className={`py-2 font-semibold ${
+                                      row.improvementDelta > 0
+                                        ? 'text-emerald-600'
+                                        : row.improvementDelta < 0
+                                          ? 'text-rose-600'
+                                          : 'text-slate-500'
+                                    }`}
+                                  >
+                                    {row.improvementDelta > 0
+                                      ? `+${row.improvementDelta}%`
+                                      : `${row.improvementDelta}%`}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-600">No BAE mock attempts yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div>
+                  <RecentActivity />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

@@ -141,6 +141,10 @@ type MockSessionRecord = {
   scorePercent: number
   timeAllowed: number
   timeTaken: number | null
+  vol1Count: number
+  vol2Count: number
+  vol1Correct: number
+  vol2Correct: number
   chapterBreakdown: unknown
   completedAt: Date | null
   createdAt: Date
@@ -245,6 +249,23 @@ export type DeepAnalyticsPayload = {
     percentileTop: number | null
   }
   mockHistory: {
+    bae: Array<{
+      id: string
+      date: string
+      totalQuestions: number
+      scorePercent: number
+      scoreText: string
+      ratioText: string
+      vol1Accuracy: number
+      vol2Accuracy: number
+      vol1Count: number
+      vol2Count: number
+      vol1Correct: number
+      vol2Correct: number
+      timeAllowed: number
+      timeTaken: number
+      improvementDelta: number
+    }>
     foa: Array<{
       id: string
       date: string
@@ -422,6 +443,48 @@ function buildSingleMockHistory(rows: MockSessionRecord[], chapterLabels: Record
       timeAllowed: Math.max(0, Number(row.timeAllowed) || 0),
       timeTaken: Math.max(0, Number(row.timeTaken) || 0),
       improvementDelta: previous ? (Number(row.scorePercent) || 0) - (Number(previous.scorePercent) || 0) : 0,
+    }
+  })
+
+  return history.slice(-10).reverse()
+}
+
+function buildBaeMockHistory(rows: MockSessionRecord[]) {
+  const sortedRows = rows
+    .slice()
+    .sort(
+      (a, b) =>
+        (a.completedAt || a.createdAt).getTime() - (b.completedAt || b.createdAt).getTime()
+    )
+
+  const history = sortedRows.map((row, index) => {
+    const previous = sortedRows[index - 1]
+    const totalQuestions = Math.max(0, Number(row.totalQuestions) || 0)
+    const vol1Count = Math.max(0, Number(row.vol1Count) || 0)
+    const vol2Count = Math.max(0, Number(row.vol2Count) || 0)
+    const vol1Correct = Math.max(0, Number(row.vol1Correct) || 0)
+    const vol2Correct = Math.max(0, Number(row.vol2Correct) || 0)
+    const vol1Accuracy = vol1Count > 0 ? Math.round((vol1Correct / vol1Count) * 100) : 0
+    const vol2Accuracy = vol2Count > 0 ? Math.round((vol2Correct / vol2Count) * 100) : 0
+
+    return {
+      id: row.id,
+      date: (row.completedAt || row.createdAt).toISOString(),
+      totalQuestions,
+      scorePercent: Math.max(0, Number(row.scorePercent) || 0),
+      scoreText: `${Math.max(0, Number(row.correctAnswers) || 0)}/${Math.max(1, totalQuestions)}`,
+      ratioText: `Vol I: ${vol1Count} · Vol II: ${vol2Count}`,
+      vol1Accuracy,
+      vol2Accuracy,
+      vol1Count,
+      vol2Count,
+      vol1Correct,
+      vol2Correct,
+      timeAllowed: Math.max(0, Number(row.timeAllowed) || 0),
+      timeTaken: Math.max(0, Number(row.timeTaken) || 0),
+      improvementDelta: previous
+        ? (Number(row.scorePercent) || 0) - (Number(previous.scorePercent) || 0)
+        : 0,
     }
   })
 
@@ -878,6 +941,10 @@ export async function buildDeepPerformanceAnalytics(
           scorePercent: true,
           timeAllowed: true,
           timeTaken: true,
+          vol1Count: true,
+          vol2Count: true,
+          vol1Correct: true,
+          vol2Correct: true,
           chapterBreakdown: true,
           completedAt: true,
           createdAt: true,
@@ -1341,7 +1408,8 @@ export async function buildDeepPerformanceAnalytics(
       : 0
 
   const completedMockSessions = mockSessions as MockSessionRecord[]
-  const baeAttempts = completedMockSessions.filter((row) => row.testType === 'bae_mock').length
+  const baeSessions = completedMockSessions.filter((row) => row.testType === 'bae_mock')
+  const baeAttempts = baeSessions.length
   const foaSessions = completedMockSessions.filter((row) => row.testType === 'foa_mock')
   const qafbSessions = completedMockSessions.filter((row) => row.testType === 'qafb_mock')
   const foaMockAttempts = foaSessions.length
@@ -1353,6 +1421,7 @@ export async function buildDeepPerformanceAnalytics(
   const foaChapterLabels = chapterLabelsBySubject.get('FOA') || {}
   const qafbChapterLabels = chapterLabelsBySubject.get('QAFB') || {}
 
+  const baeMockHistory = buildBaeMockHistory(baeSessions)
   const foaMockHistory = buildSingleMockHistory(foaSessions, foaChapterLabels)
   const qafbMockHistory = buildSingleMockHistory(qafbSessions, qafbChapterLabels)
 
@@ -1530,6 +1599,7 @@ export async function buildDeepPerformanceAnalytics(
       percentileTop,
     },
     mockHistory: {
+      bae: baeMockHistory,
       foa: foaMockHistory,
       qafb: qafbMockHistory,
     },
