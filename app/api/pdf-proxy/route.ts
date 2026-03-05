@@ -2,11 +2,33 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 
+function getEnvAllowedHosts() {
+  const hosts = new Set<string>()
+  const values = [
+    process.env.R2_PUBLIC_URL,
+    process.env.R2_PUBLIC_BASE_URL,
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL,
+  ]
+  for (const raw of values) {
+    if (!raw) continue
+    try {
+      const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+      const parsed = new URL(withScheme)
+      if (parsed.hostname) hosts.add(parsed.hostname.toLowerCase())
+    } catch {
+      // ignore invalid URL-like env value
+    }
+  }
+  return hosts
+}
+const ENV_ALLOWED_HOSTS = getEnvAllowedHosts()
+
 const isAllowedHost = (host: string) => {
   const normalized = host.toLowerCase()
   if (normalized === 'res.cloudinary.com') return true
   if (normalized.endsWith('.r2.dev')) return true
   if (normalized.endsWith('.r2.cloudflarestorage.com')) return true
+  if (ENV_ALLOWED_HOSTS.has(normalized)) return true
   return false
 }
 
@@ -35,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     const upstream = await fetch(url.toString(), { cache: 'no-store' })
     if (!upstream.ok) {
-      return NextResponse.json({ error: 'Failed to fetch PDF' }, { status: upstream.status })
+      return NextResponse.json({ error: 'Failed to fetch media' }, { status: upstream.status })
     }
 
     const contentType = upstream.headers.get('content-type') || 'application/pdf'

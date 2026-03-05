@@ -12,6 +12,17 @@ function getFileExtension(name: string) {
   return match?.[1] || 'jpg'
 }
 
+function detectContentTypeFromExt(ext: string) {
+  const contentTypeMap: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp',
+    gif: 'image/gif',
+  }
+  return contentTypeMap[String(ext || '').toLowerCase()] || 'image/jpeg'
+}
+
 function sanitizeFilename(name: string) {
   return String(name || 'image')
     .replace(/\.[^.]+$/, '')
@@ -49,24 +60,43 @@ export async function POST(request: NextRequest) {
     }
 
     const fileBuffer = Buffer.from(await file.arrayBuffer())
-    const optimized = await sharp(fileBuffer)
-      .rotate()
-      .resize({ width: 1600, withoutEnlargement: true })
-      .webp({ quality: 86 })
-      .toBuffer()
+    const sourceExt = getFileExtension(file.name)
+    let bodyToUpload = fileBuffer
+    let finalExt = sourceExt
+    let finalContentType = detectContentTypeFromExt(sourceExt)
+
+    try {
+      bodyToUpload = await sharp(fileBuffer)
+        .rotate()
+        .resize({ width: 1600, withoutEnlargement: true })
+        .webp({ quality: 86 })
+        .toBuffer()
+      finalExt = 'webp'
+      finalContentType = 'image/webp'
+    } catch {
+      // Fallback to original file bytes/type if sharp transformation fails.
+      bodyToUpload = fileBuffer
+      finalExt = sourceExt
+      finalContentType = detectContentTypeFromExt(sourceExt)
+    }
 
     const now = new Date()
     const key = `blog/covers/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(
       2,
       '0'
-    )}/${Date.now()}-${sanitizeFilename(file.name)}.webp`
+    )}/${Date.now()}-${sanitizeFilename(file.name)}.${finalExt}`
 
     const publicUrl = await uploadBufferToR2({
       key,
-      body: optimized,
-      contentType: 'image/webp',
+      body: bodyToUpload,
+      contentType: finalContentType,
       cacheControl: 'public, max-age=31536000, immutable',
     })
+
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_R2_UPLOAD === '1') {
+      console.log('R2_PUBLIC_URL:', process.env.R2_PUBLIC_URL || process.env.R2_PUBLIC_BASE_URL || '')
+      console.log('Generated image URL:', publicUrl)
+    }
 
     return NextResponse.json({
       publicUrl,
@@ -80,4 +110,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

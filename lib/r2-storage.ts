@@ -8,6 +8,13 @@ type R2Config = {
   publicUrlBase: string
 }
 
+function normalizePublicBaseUrl(value: string) {
+  const trimmed = String(value || '').trim()
+  if (!trimmed) return ''
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+  return withScheme.replace(/\/+$/, '')
+}
+
 function readR2Env() {
   const endpoint =
     process.env.R2_ENDPOINT ||
@@ -17,20 +24,20 @@ function readR2Env() {
   const accessKeyId = process.env.R2_ACCESS_KEY || process.env.R2_ACCESS_KEY_ID || ''
   const secretAccessKey = process.env.R2_SECRET_KEY || process.env.R2_SECRET_ACCESS_KEY || ''
   const bucketName = process.env.R2_BUCKET_NAME || process.env.R2_BUCKET || ''
-  const publicUrlBase = (
+  const rawPublicUrlBase = (
     process.env.R2_PUBLIC_URL ||
     process.env.R2_PUBLIC_BASE_URL ||
     (process.env.R2_ACCOUNT_ID && bucketName
       ? `https://${bucketName}.${process.env.R2_ACCOUNT_ID}.r2.dev`
       : '')
-  ).replace(/\/$/, '')
+  )
 
   return {
     endpoint: endpoint.replace(/\/$/, ''),
     accessKeyId,
     secretAccessKey,
     bucketName,
-    publicUrlBase,
+    publicUrlBase: normalizePublicBaseUrl(rawPublicUrlBase),
   }
 }
 
@@ -82,6 +89,6 @@ export async function uploadBufferToR2(params: {
     })
   )
 
-  return `${config.publicUrlBase}/${params.key}`
+  const sanitizedKey = String(params.key || '').replace(/^\/+/, '')
+  return `${config.publicUrlBase}/${sanitizedKey}`
 }
-

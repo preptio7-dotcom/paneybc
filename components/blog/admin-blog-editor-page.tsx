@@ -232,6 +232,13 @@ function stripHtml(value: string) {
     .trim()
 }
 
+function buildCoverPreviewSrc(rawUrl: string) {
+  const source = String(rawUrl || '').trim()
+  if (!source) return ''
+  if (!/^https?:\/\//i.test(source)) return source
+  return `/api/pdf-proxy?url=${encodeURIComponent(source)}`
+}
+
 function makeSteps() {
   return BASE_UPLOAD_STEPS.map((step, index) => ({ ...step, status: index === 0 ? 'active' : 'pending' as const }))
 }
@@ -1523,7 +1530,19 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <h2 className="text-sm font-semibold text-slate-800">Cover Image</h2>
                 <div className="mt-3 cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-center" onClick={() => coverInputRef.current?.click()}>
-                  {form.coverImageUrl ? <img src={form.coverImageUrl} alt="Cover preview" className="h-36 w-full rounded-lg object-cover" loading="lazy" /> : <div className="py-6 text-xs text-slate-500">Click to upload (JPG, PNG, WebP, max 2MB)</div>}
+                  {form.coverImageUrl ? (
+                    <img
+                      src={buildCoverPreviewSrc(form.coverImageUrl)}
+                      alt="Cover preview"
+                      className="h-36 w-full rounded-lg object-cover"
+                      loading="lazy"
+                      onError={() => {
+                        console.error('Cover image failed to load:', form.coverImageUrl)
+                      }}
+                    />
+                  ) : (
+                    <div className="py-6 text-xs text-slate-500">Click to upload (JPG, PNG, WebP, max 2MB)</div>
+                  )}
                 </div>
                 <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => {
                   const file = event.target.files?.[0]
@@ -1764,10 +1783,13 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
               </div>
               {previewRevision.coverImageUrl ? (
                 <img
-                  src={previewRevision.coverImageUrl}
+                  src={buildCoverPreviewSrc(previewRevision.coverImageUrl)}
                   alt="Revision cover"
                   className="h-52 w-full rounded-xl border border-slate-200 object-cover"
                   loading="lazy"
+                  onError={() => {
+                    console.error('Revision cover failed to load:', previewRevision.coverImageUrl)
+                  }}
                 />
               ) : null}
               <div
