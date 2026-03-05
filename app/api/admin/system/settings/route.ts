@@ -111,6 +111,9 @@ export async function GET(request: NextRequest) {
       aiRecommendations: {
         visibility: normalizedBetaFeatures.aiRecommendations,
       },
+      homepageFeatureShowcase: {
+        visibility: normalizedBetaFeatures.homepageFeatureShowcase,
+      },
     }
 
     return NextResponse.json({
@@ -231,6 +234,9 @@ export async function POST(request: NextRequest) {
       },
       aiRecommendations: {
         visibility: mergedBetaFeatures.aiRecommendations,
+      },
+      homepageFeatureShowcase: {
+        visibility: mergedBetaFeatures.homepageFeatureShowcase,
       },
     }
 

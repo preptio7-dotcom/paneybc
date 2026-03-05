@@ -254,6 +254,9 @@ export function Navigation() {
               <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors">
                 Subjects
               </Link>
+              <Link href="/#platform-features-showcase" className="text-text-dark hover:text-primary-green transition-colors">
+                See Features in Action
+              </Link>
               {showBlogInMainNav ? (
                 <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors">
                   Blog
@@ -481,6 +484,9 @@ export function Navigation() {
                 </Link>
                 <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                   Subjects
+                </Link>
+                <Link href="/#platform-features-showcase" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                  See Features in Action
                 </Link>
                 {showBlogInMainNav ? (
                   <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>

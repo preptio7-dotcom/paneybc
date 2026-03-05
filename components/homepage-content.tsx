@@ -13,6 +13,8 @@ import {
   type HomepageSectionThemeSettings,
 } from '@/lib/homepage-theme'
 import { useMotionGuard } from '@/lib/use-motion-guard'
+import { useAuth } from '@/lib/auth-context'
+import { canAccessBetaFeature, extractBetaFeatureSettings, type BetaFeatureVisibility } from '@/lib/beta-features'
 
 const HomeAdBanner = dynamic(
   () => import('@/components/home-ad-banner').then((module) => module.HomeAdBanner),
@@ -24,6 +26,13 @@ const FeaturesSection = dynamic(
 )
 const HowItWorksSection = dynamic(
   () => import('@/components/how-it-works-section').then((module) => module.HowItWorksSection),
+  { ssr: false, loading: () => null }
+)
+const HomeFeatureShowcaseSection = dynamic(
+  () =>
+    import('@/components/home-feature-showcase-section').then(
+      (module) => module.HomeFeatureShowcaseSection
+    ),
   { ssr: false, loading: () => null }
 )
 const StatsSection = dynamic(
@@ -56,7 +65,10 @@ export function HomepageContent() {
   const [heroMotion, setHeroMotion] = useState<HomepageHeroMotionSettings>(
     DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS
   )
+  const [featureShowcaseVisibility, setFeatureShowcaseVisibility] =
+    useState<BetaFeatureVisibility>('beta_ambassador')
   const reduceMotion = useMotionGuard()
+  const { user } = useAuth()
 
   useEffect(() => {
     let isMounted = true
@@ -73,6 +85,8 @@ export function HomepageContent() {
         const source = data?.testSettings || {}
         setThemes(extractHomepageThemeSettings(source))
         setHeroMotion(extractHomepageHeroMotionSettings(source))
+        const betaSettings = extractBetaFeatureSettings(source)
+        setFeatureShowcaseVisibility(betaSettings.homepageFeatureShowcase)
       } catch {
         // keep defaults
       }
@@ -124,6 +138,14 @@ export function HomepageContent() {
     [themes]
   )
 
+  const canShowFeatureShowcase = useMemo(() => {
+    const privileged = user?.role === 'admin' || user?.role === 'super_admin'
+    return (
+      privileged ||
+      canAccessBetaFeature(featureShowcaseVisibility, user?.studentRole)
+    )
+  }, [featureShowcaseVisibility, user?.role, user?.studentRole])
+
   return (
     <>
       <HeroSection
@@ -131,14 +153,19 @@ export function HomepageContent() {
         motionSettings={heroMotion}
         reduceMotion={reduceMotion}
       />
-      <LazyHomeSection minHeight={520}>
-        <StatsSection themeVariant={sectionConfig.stats} reduceMotion={reduceMotion} />
-      </LazyHomeSection>
       <LazyHomeSection minHeight={620}>
         <FeaturesSection themeVariant={sectionConfig.whyChoose} reduceMotion={reduceMotion} />
       </LazyHomeSection>
       <LazyHomeSection minHeight={640}>
         <HowItWorksSection themeVariant={sectionConfig.howItWorks} reduceMotion={reduceMotion} />
+      </LazyHomeSection>
+      {canShowFeatureShowcase ? (
+        <LazyHomeSection minHeight={860}>
+          <HomeFeatureShowcaseSection reduceMotion={reduceMotion} />
+        </LazyHomeSection>
+      ) : null}
+      <LazyHomeSection minHeight={520}>
+        <StatsSection themeVariant={sectionConfig.stats} reduceMotion={reduceMotion} />
       </LazyHomeSection>
       <LazyHomeSection minHeight={180}>
         <HomeAdBanner />

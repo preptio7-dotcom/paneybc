@@ -4,6 +4,7 @@ export const BETA_FEATURE_KEYS = [
   'blog',
   'performanceAnalytics',
   'aiRecommendations',
+  'homepageFeatureShowcase',
 ] as const
 
 export type BetaFeatureKey = (typeof BETA_FEATURE_KEYS)[number]
@@ -16,6 +17,7 @@ export const DEFAULT_BETA_FEATURE_SETTINGS: BetaFeatureSettings = {
   blog: 'beta_ambassador',
   performanceAnalytics: 'beta_ambassador',
   aiRecommendations: 'beta_ambassador',
+  homepageFeatureShowcase: 'beta_ambassador',
 }
 
 function asRecord(value: unknown) {
@@ -38,6 +40,8 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
   const aiRecommendationsFallback =
     asRecord(asRecord(testSettings).aiRecommendations).visibility ??
     asRecord(asRecord(testSettings).recommendations).visibility
+  const homepageFeatureShowcaseFallback =
+    asRecord(asRecord(testSettings).homepageFeatureShowcase).visibility
 
   return {
     faq: normalizeBetaFeatureVisibility(source.faq ?? faqFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.faq),
@@ -54,6 +58,11 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
     ),
     aiRecommendations: normalizeBetaFeatureVisibility(
       source.aiRecommendations ?? aiRecommendationsFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.aiRecommendations
+    ),
+    homepageFeatureShowcase: normalizeBetaFeatureVisibility(
+      source.homepageFeatureShowcase ??
+        homepageFeatureShowcaseFallback ??
+        DEFAULT_BETA_FEATURE_SETTINGS.homepageFeatureShowcase
     ),
   }
 }

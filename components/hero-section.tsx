@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Button } from './ui/button'
 import { ArrowRight, Check, CheckCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -131,6 +132,14 @@ export function HeroSection({
                   Try Demo
                 </Button>
               ) : null}
+              <Button
+                size="lg"
+                variant="outline"
+                className="hero-secondary-btn w-full sm:w-auto bg-transparent"
+                asChild
+              >
+                <Link href="/#platform-features-showcase">See Features in Action</Link>
+              </Button>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-[10px] justify-center sm:justify-start">

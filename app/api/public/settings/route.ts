@@ -116,6 +116,9 @@ export async function GET(request: NextRequest) {
       aiRecommendations: {
         visibility: betaFeatures.aiRecommendations,
       },
+      homepageFeatureShowcase: {
+        visibility: betaFeatures.homepageFeatureShowcase,
+      },
     }
 
     return NextResponse.json(
@@ -172,6 +175,9 @@ export async function GET(request: NextRequest) {
           },
           aiRecommendations: {
             visibility: fallbackBetaFeatures.aiRecommendations,
+          },
+          homepageFeatureShowcase: {
+            visibility: fallbackBetaFeatures.homepageFeatureShowcase,
           },
         },
       },

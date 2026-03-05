@@ -9,6 +9,12 @@ export type BetaFeatureDefinition = {
 
 export const betaFeatureDefinitions: BetaFeatureDefinition[] = [
   {
+    key: 'homepageFeatureShowcase',
+    label: 'Homepage Feature Showcase',
+    description: 'Animated product showcase section on the homepage.',
+    href: '/#platform-features-showcase',
+  },
+  {
     key: 'performanceAnalytics',
     label: 'Performance Analytics',
     description: 'Deep student analytics with readiness score, heatmap, and platform comparison.',
