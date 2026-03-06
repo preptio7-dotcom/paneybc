@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import AuthSignupPage from '../auth/signup/page'
+import AuthSignupPage from '../../auth/signup/page'
 import { buildPublicMetadata } from '@/lib/seo'
 
 export const metadata: Metadata = buildPublicMetadata({
