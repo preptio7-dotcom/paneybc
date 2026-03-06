@@ -37,6 +37,7 @@ const poppins = Poppins({
 const defaultTitle = 'Preptio - Free CA Foundation Exam Prep for ICAP Students Pakistan'
 const defaultDescription =
   "Pakistan's free CA Foundation exam prep platform. 4,000+ ICAP-aligned MCQs, mock tests, analytics - completely free. Start at preptio.com"
+const enableVercelTelemetry = Boolean(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV)
 
 export const metadata: Metadata = {
   metadataBase: new URL(PREPTIO_SITE_URL),
@@ -157,8 +158,8 @@ export default function RootLayout({
         </AuthProvider>
         <Toaster />
         <SonnerToaster position="top-center" richColors />
-        <Analytics />
-        <SpeedInsights />
+        {enableVercelTelemetry ? <Analytics /> : null}
+        {enableVercelTelemetry ? <SpeedInsights /> : null}
       </body>
     </html>
   )
