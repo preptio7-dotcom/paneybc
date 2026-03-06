@@ -8,6 +8,7 @@ type ManualQuestion = {
   chapter?: string
   question: string
   options: string[]
+  optionImageUrls?: string[]
   correctIndex: number
   explanation: string
   difficulty?: string
@@ -43,12 +44,18 @@ export async function POST(request: Request) {
     const payload = questions.map((row: ManualQuestion) => {
       const correctIndex = Number(row.correctIndex)
       const difficulty = String(row.difficulty || 'medium').toLowerCase().trim()
+      const optionImageUrls = Array.isArray(row.optionImageUrls)
+        ? row.optionImageUrls.slice(0, 4).map((url) => String(url || '').trim())
+        : []
+      while (optionImageUrls.length < 4) optionImageUrls.push('')
+
       return {
         subject,
         chapter: row.chapter ? String(row.chapter).trim() : undefined,
         questionNumber: Number(row.questionNumber),
         question: String(row.question || '').trim(),
         options: (row.options || []).map((opt) => String(opt || '').trim()),
+        optionImageUrls,
         correctAnswer: Math.max(0, Math.min(3, correctIndex - 1)),
         explanation: String(row.explanation || 'No explanation provided').trim() || 'No explanation provided',
         difficulty: ['easy', 'medium', 'hard'].includes(difficulty) ? difficulty : 'medium',
@@ -57,8 +64,14 @@ export async function POST(request: Request) {
       }
     })
 
-    const invalid = payload.find((q) => {
-      return !q.question || q.options.length !== 4 || q.options.some((opt) => !opt) || Number.isNaN(q.questionNumber)
+    const invalid = payload.find((q: (typeof payload)[number]) => {
+      return (
+        !q.question ||
+        q.options.length !== 4 ||
+        q.options.some((opt: string) => !opt) ||
+        q.optionImageUrls.length !== 4 ||
+        Number.isNaN(q.questionNumber)
+      )
     })
     if (invalid) {
       await prisma.upload.update({

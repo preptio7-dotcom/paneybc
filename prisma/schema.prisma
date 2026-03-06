@@ -256,6 +256,7 @@ model Question {
   question      String
   imageUrl      String?
   options       String[]
+  optionImageUrls String[] @default([])
   correctAnswer Int?
   correctAnswers Int[] @default([])
   allowMultiple Boolean            @default(false)

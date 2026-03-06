@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
 import { Label } from './ui/label'
@@ -35,28 +35,45 @@ interface Subject {
   }[]
 }
 
+interface ManualInputRow {
+  questionNumber: string
+  chapter: string
+  question: string
+  options: string[]
+  optionImageUrls: string[]
+  correctIndex: string
+  explanation: string
+  difficulty: string
+  imageUrl: string
+}
+
+const optionLetters = ['A', 'B', 'C', 'D'] as const
+
 export function TextInputArea() {
   const { toast } = useToast()
   const [subject, setSubject] = useState('')
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [uploadingImageRow, setUploadingImageRow] = useState<number | null>(null)
+  const [uploadingImageKey, setUploadingImageKey] = useState<string | null>(null)
   const [previewRow, setPreviewRow] = useState<number | null>(null)
-  const imageFileInputRefs = useRef<Array<HTMLInputElement | null>>([])
 
-  const createRow = () => ({
+  const questionImageInputRefs = useRef<Array<HTMLInputElement | null>>([])
+  const optionImageInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  const createRow = (): ManualInputRow => ({
     questionNumber: '',
     chapter: '',
     question: '',
     options: ['', '', '', ''],
+    optionImageUrls: ['', '', '', ''],
     correctIndex: '1',
     explanation: '',
     difficulty: 'medium',
     imageUrl: '',
   })
 
-  const [rows, setRows] = useState([createRow()])
+  const [rows, setRows] = useState<ManualInputRow[]>([createRow()])
 
   useEffect(() => {
     fetchSubjects()
@@ -65,6 +82,39 @@ export function TextInputArea() {
   useEffect(() => {
     setRows([createRow()])
   }, [subject])
+
+  const updateRow = (rowIndex: number, updater: (row: ManualInputRow) => ManualInputRow) => {
+    setRows((prev) =>
+      prev.map((row, idx) => {
+        if (idx !== rowIndex) return row
+        return updater(row)
+      })
+    )
+  }
+
+  const updateRowField = <K extends keyof ManualInputRow>(
+    rowIndex: number,
+    field: K,
+    value: ManualInputRow[K]
+  ) => {
+    updateRow(rowIndex, (row) => ({ ...row, [field]: value }))
+  }
+
+  const updateOptionValue = (rowIndex: number, optionIndex: number, value: string) => {
+    updateRow(rowIndex, (row) => ({
+      ...row,
+      options: row.options.map((option, idx) => (idx === optionIndex ? value : option)),
+    }))
+  }
+
+  const updateOptionImageValue = (rowIndex: number, optionIndex: number, value: string) => {
+    updateRow(rowIndex, (row) => ({
+      ...row,
+      optionImageUrls: row.optionImageUrls.map((imageUrl, idx) =>
+        idx === optionIndex ? value : imageUrl
+      ),
+    }))
+  }
 
   const fetchSubjects = async () => {
     try {
@@ -85,18 +135,18 @@ export function TextInputArea() {
     const hasValidRows = rows.some((row) => row.question.trim().length > 0)
     if (!hasValidRows) {
       toast({
-        title: "Input Required",
-        description: "Please enter at least one MCQ before submitting.",
-        variant: "destructive"
+        title: 'Input Required',
+        description: 'Please enter at least one MCQ before submitting.',
+        variant: 'destructive',
       })
       return
     }
 
     if (!subject) {
       toast({
-        title: "Subject Required",
-        description: "Please select a subject for the MCQs.",
-        variant: "destructive"
+        title: 'Subject Required',
+        description: 'Please select a subject for the MCQs.',
+        variant: 'destructive',
       })
       return
     }
@@ -111,6 +161,7 @@ export function TextInputArea() {
           chapter: row.chapter.trim(),
           question: row.question.trim(),
           options: row.options.map((opt) => opt.trim()),
+          optionImageUrls: row.optionImageUrls.map((url) => url.trim()),
           correctIndex: Number(row.correctIndex),
           explanation: row.explanation.trim(),
           difficulty: row.difficulty,
@@ -127,7 +178,7 @@ export function TextInputArea() {
 
       if (response.ok) {
         toast({
-          title: "Success",
+          title: 'Success',
           description: `Submitted ${data.count} questions successfully!`,
         })
         setRows([createRow()])
@@ -136,28 +187,35 @@ export function TextInputArea() {
       }
     } catch (error: any) {
       toast({
-        title: "Submission Failed",
+        title: 'Submission Failed',
         description: error.message,
-        variant: "destructive"
+        variant: 'destructive',
       })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleImageUpload = async (rowIndex: number, file: File) => {
+  const handleImageUpload = async (
+    rowIndex: number,
+    file: File,
+    target: 'question' | 'option',
+    optionIndex?: number
+  ) => {
     if (!file) return
     if (!file.type?.startsWith('image/')) {
       toast({
-        title: "Invalid file",
-        description: "Please upload an image file.",
-        variant: "destructive"
+        title: 'Invalid file',
+        description: 'Please upload an image file.',
+        variant: 'destructive',
       })
       return
     }
 
+    const imageKey = target === 'question' ? `q-${rowIndex}` : `o-${rowIndex}-${optionIndex ?? 0}`
+
     try {
-      setUploadingImageRow(rowIndex)
+      setUploadingImageKey(imageKey)
       const formData = new FormData()
       formData.append('file', file)
 
@@ -174,41 +232,46 @@ export function TextInputArea() {
         throw new Error('Upload succeeded but no URL was returned')
       }
 
-      setRows((prev) => {
-        if (!prev[rowIndex]) return prev
-        const next = [...prev]
-        next[rowIndex].imageUrl = data.publicUrl
-        return next
-      })
+      if (target === 'question') {
+        updateRowField(rowIndex, 'imageUrl', data.publicUrl)
+      } else if (typeof optionIndex === 'number') {
+        updateOptionImageValue(rowIndex, optionIndex, data.publicUrl)
+      }
 
       toast({
-        title: "Uploaded",
-        description: "Image uploaded and URL filled automatically.",
+        title: 'Uploaded',
+        description: 'Image uploaded and URL filled automatically.',
       })
     } catch (error: any) {
       toast({
-        title: "Upload failed",
+        title: 'Upload failed',
         description: error.message || 'Unable to upload image.',
-        variant: "destructive"
+        variant: 'destructive',
       })
     } finally {
-      setUploadingImageRow((prev) => (prev === rowIndex ? null : prev))
-      const inputRef = imageFileInputRefs.current[rowIndex]
-      if (inputRef) inputRef.value = ''
+      setUploadingImageKey((prev) => (prev === imageKey ? null : prev))
+
+      if (target === 'question') {
+        const inputRef = questionImageInputRefs.current[rowIndex]
+        if (inputRef) inputRef.value = ''
+      } else if (typeof optionIndex === 'number') {
+        const optionInputKey = `o-${rowIndex}-${optionIndex}`
+        const inputRef = optionImageInputRefs.current[optionInputKey]
+        if (inputRef) inputRef.value = ''
+      }
     }
   }
 
   return (
     <Card className="border-2 border-border">
-      <CardContent className="pt-8 pb-6 space-y-4">
-        {/* Subject Selection */}
-        <div>
-          <Label htmlFor="subject-text" className="text-sm font-semibold mb-2 block">
+      <CardContent className="space-y-6 pt-6 pb-6">
+        <div className="rounded-xl border border-border bg-slate-50/50 p-4">
+          <Label htmlFor="subject-text" className="mb-2 block text-sm font-semibold">
             Select Subject
           </Label>
           <Select value={subject} onValueChange={setSubject} disabled={isLoadingSubjects}>
             <SelectTrigger id="subject-text">
-              <SelectValue placeholder={isLoadingSubjects ? "Loading subjects..." : "Choose a subject"} />
+              <SelectValue placeholder={isLoadingSubjects ? 'Loading subjects...' : 'Choose a subject'} />
             </SelectTrigger>
             <SelectContent>
               {subjects.map((sub, idx) => (
@@ -219,10 +282,12 @@ export function TextInputArea() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold">Direct Input Table</Label>
+
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label className="text-sm font-semibold">Direct Input</Label>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setRows((prev) => [...prev, createRow()])}
@@ -232,212 +297,242 @@ export function TextInputArea() {
               Add Row
             </Button>
           </div>
-          <div className="overflow-x-auto border border-border rounded-xl">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600">
-                <tr>
-                  <th className="px-3 py-2 text-left">#</th>
-                  <th className="px-3 py-2 text-left">Chapter</th>
-                  <th className="px-3 py-2 text-left min-w-[220px]">Question</th>
-                  <th className="px-3 py-2 text-left min-w-[160px]">Opt A</th>
-                  <th className="px-3 py-2 text-left min-w-[160px]">Opt B</th>
-                  <th className="px-3 py-2 text-left min-w-[160px]">Opt C</th>
-                  <th className="px-3 py-2 text-left min-w-[160px]">Opt D</th>
-                  <th className="px-3 py-2 text-left">Correct</th>
-                  <th className="px-3 py-2 text-left min-w-[200px]">Explanation</th>
-                  <th className="px-3 py-2 text-left">Difficulty</th>
-                  <th className="px-3 py-2 text-left min-w-[200px]">Image URL</th>
-                  <th className="px-3 py-2 text-left">Preview</th>
-                  <th className="px-3 py-2 text-left">Remove</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="border-t border-border">
-                    <td className="px-3 py-2">
-                      <Input
-                        value={row.questionNumber}
-                        onChange={(e) => {
-                          const next = [...rows]
-                          next[rowIndex].questionNumber = e.target.value
-                          setRows(next)
-                        }}
-                        placeholder="1"
-                        className="w-16"
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <Input
-                        value={row.chapter}
-                        onChange={(e) => {
-                          const next = [...rows]
-                          next[rowIndex].chapter = e.target.value
-                          setRows(next)
-                        }}
-                        placeholder="CH1"
-                        className="w-20"
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <Textarea
-                        rows={2}
-                        value={row.question}
-                        onChange={(e) => {
-                          const next = [...rows]
-                          next[rowIndex].question = e.target.value
-                          setRows(next)
-                        }}
-                        placeholder="Question text"
-                      />
-                    </td>
-                    {row.options.map((opt, idx) => (
-                      <td className="px-3 py-2" key={idx}>
-                        <Input
-                          value={opt}
-                          onChange={(e) => {
-                            const next = [...rows]
-                            next[rowIndex].options[idx] = e.target.value
-                            setRows(next)
-                          }}
-                          placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-                        />
-                      </td>
-                    ))}
-                    <td className="px-3 py-2">
-                      <Select
-                        value={row.correctIndex}
-                        onValueChange={(value) => {
-                          const next = [...rows]
-                          next[rowIndex].correctIndex = value
-                          setRows(next)
-                        }}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">A</SelectItem>
-                          <SelectItem value="2">B</SelectItem>
-                          <SelectItem value="3">C</SelectItem>
-                          <SelectItem value="4">D</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-3 py-2">
-                      <Textarea
-                        rows={2}
-                        value={row.explanation}
-                        onChange={(e) => {
-                          const next = [...rows]
-                          next[rowIndex].explanation = e.target.value
-                          setRows(next)
-                        }}
-                        placeholder="Explanation"
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <Select
-                        value={row.difficulty}
-                        onValueChange={(value) => {
-                          const next = [...rows]
-                          next[rowIndex].difficulty = value
-                          setRows(next)
-                        }}
-                      >
-                        <SelectTrigger className="w-24">
-                          <SelectValue placeholder="medium" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="easy">Easy</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="hard">Hard</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="min-w-[220px] space-y-2">
-                        <Input
-                          value={row.imageUrl}
-                          onChange={(e) => {
-                            const next = [...rows]
-                            next[rowIndex].imageUrl = e.target.value
-                            setRows(next)
-                          }}
-                          placeholder="https://..."
-                          className="min-w-[180px]"
-                        />
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() => imageFileInputRefs.current[rowIndex]?.click()}
-                            disabled={uploadingImageRow === rowIndex}
-                          >
-                            {uploadingImageRow === rowIndex ? (
-                              <>
-                                <Loader2 size={14} className="animate-spin" />
-                                Uploading...
-                              </>
-                            ) : (
-                              <>
-                                <Upload size={14} />
-                                Upload Image
-                              </>
-                            )}
-                          </Button>
-                          <input
-                            ref={(el) => {
-                              imageFileInputRefs.current[rowIndex] = el
-                            }}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) {
-                                handleImageUpload(rowIndex, file)
-                              }
-                            }}
+
+          <div className="space-y-4">
+            {rows.map((row, rowIndex) => (
+              <div key={rowIndex} className="space-y-4 rounded-xl border border-border bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Question Row {rowIndex + 1}</h3>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPreviewRow(rowIndex)}
+                      className="gap-2"
+                    >
+                      <ImageIcon size={14} />
+                      Preview
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== rowIndex))}
+                      disabled={rows.length === 1}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                  <div>
+                    <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Question #
+                    </Label>
+                    <Input
+                      value={row.questionNumber}
+                      onChange={(e) => updateRowField(rowIndex, 'questionNumber', e.target.value)}
+                      placeholder="1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Chapter
+                    </Label>
+                    <Input
+                      value={row.chapter}
+                      onChange={(e) => updateRowField(rowIndex, 'chapter', e.target.value)}
+                      placeholder="CH1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Correct Option
+                    </Label>
+                    <Select
+                      value={row.correctIndex}
+                      onValueChange={(value) => updateRowField(rowIndex, 'correctIndex', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">A</SelectItem>
+                        <SelectItem value="2">B</SelectItem>
+                        <SelectItem value="3">C</SelectItem>
+                        <SelectItem value="4">D</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Difficulty
+                    </Label>
+                    <Select
+                      value={row.difficulty}
+                      onValueChange={(value) => updateRowField(rowIndex, 'difficulty', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="medium" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="easy">Easy</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="hard">Hard</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Question Text
+                  </Label>
+                  <Textarea
+                    rows={3}
+                    value={row.question}
+                    onChange={(e) => updateRowField(rowIndex, 'question', e.target.value)}
+                    placeholder="Question text"
+                  />
+                </div>
+
+                <div>
+                  <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Question Image URL (optional)
+                  </Label>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Input
+                      value={row.imageUrl}
+                      onChange={(e) => updateRowField(rowIndex, 'imageUrl', e.target.value)}
+                      placeholder="https://..."
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 sm:w-auto"
+                      onClick={() => questionImageInputRefs.current[rowIndex]?.click()}
+                      disabled={uploadingImageKey === `q-${rowIndex}`}
+                    >
+                      {uploadingImageKey === `q-${rowIndex}` ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={14} />
+                          Upload Image
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      ref={(el) => {
+                        questionImageInputRefs.current[rowIndex] = el
+                      }}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          handleImageUpload(rowIndex, file, 'question')
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Options</Label>
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    {row.options.map((opt, idx) => {
+                      const optionInputKey = `o-${rowIndex}-${idx}`
+                      const optionImageUrl = row.optionImageUrls[idx] || ''
+
+                      return (
+                        <div key={idx} className="space-y-2 rounded-lg border border-border bg-slate-50 p-3">
+                          <Label className="text-xs font-semibold text-slate-600">
+                            Option {optionLetters[idx]}
+                          </Label>
+                          <Input
+                            value={opt}
+                            onChange={(e) => updateOptionValue(rowIndex, idx, e.target.value)}
+                            placeholder={`Option ${optionLetters[idx]}`}
                           />
+
+                          <Label className="text-xs font-semibold text-slate-600">
+                            Option {optionLetters[idx]} Image URL (optional)
+                          </Label>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <Input
+                              value={optionImageUrl}
+                              onChange={(e) => updateOptionImageValue(rowIndex, idx, e.target.value)}
+                              placeholder="https://..."
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-2 sm:w-auto"
+                              onClick={() => optionImageInputRefs.current[optionInputKey]?.click()}
+                              disabled={uploadingImageKey === optionInputKey}
+                            >
+                              {uploadingImageKey === optionInputKey ? (
+                                <>
+                                  <Loader2 size={14} className="animate-spin" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload size={14} />
+                                  Upload
+                                </>
+                              )}
+                            </Button>
+                            <input
+                              ref={(el) => {
+                                optionImageInputRefs.current[optionInputKey] = el
+                              }}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) {
+                                  handleImageUpload(rowIndex, file, 'option', idx)
+                                }
+                              }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={!row.imageUrl.trim()}
-                        onClick={() => setPreviewRow(rowIndex)}
-                        className="gap-2"
-                      >
-                        <ImageIcon size={14} />
-                        Preview
-                      </Button>
-                    </td>
-                    <td className="px-3 py-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== rowIndex))}
-                        disabled={rows.length === 1}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Explanation
+                  </Label>
+                  <Textarea
+                    rows={3}
+                    value={row.explanation}
+                    onChange={(e) => updateRowField(rowIndex, 'explanation', e.target.value)}
+                    placeholder="Explanation"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Submit Button */}
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting || !subject}
-          className="w-full gap-2 bg-[#0F7938] hover:bg-[#0F7938]/90 text-white shadow-md transition-all"
+          className="w-full gap-2 bg-[#0F7938] text-white shadow-md transition-all hover:bg-[#0F7938]/90"
           size="lg"
         >
           {isSubmitting ? (
@@ -445,39 +540,54 @@ export function TextInputArea() {
               <Loader2 className="animate-spin" size={20} />
               Submitting...
             </>
-          ) : 'Submit MCQs'}
+          ) : (
+            'Submit MCQs'
+          )}
         </Button>
       </CardContent>
 
       <Dialog open={previewRow !== null} onOpenChange={() => setPreviewRow(null)}>
-        <DialogContent className="bg-white max-w-2xl">
+        <DialogContent className="max-w-2xl bg-white">
           <DialogHeader>
             <DialogTitle>Question Preview</DialogTitle>
             <DialogDescription>Preview how this question will appear in tests.</DialogDescription>
           </DialogHeader>
           {previewRow !== null && rows[previewRow] ? (
             <div className="space-y-4">
-              <div className="text-sm text-slate-500">Question #{rows[previewRow].questionNumber || '—'}</div>
-              <div className="text-lg font-semibold text-text-dark">{rows[previewRow].question || 'Question text'}</div>
+              <div className="text-sm text-slate-500">
+                Question #{rows[previewRow].questionNumber || '-'}
+              </div>
+              <div className="text-lg font-semibold text-text-dark">
+                {rows[previewRow].question || 'Question text'}
+              </div>
               {rows[previewRow].imageUrl?.trim() ? (
                 <img
                   src={rows[previewRow].imageUrl.trim()}
                   alt="Question diagram preview"
-                  className="w-full max-h-80 object-contain rounded-lg border border-border bg-white"
+                  className="max-h-80 w-full rounded-lg border border-border bg-white object-contain"
                 />
               ) : null}
               <div className="grid grid-cols-1 gap-2">
                 {rows[previewRow].options.map((opt, idx) => (
-                  <div key={idx} className="border border-border rounded-lg px-3 py-2 text-sm text-slate-700">
-                    <span className="font-semibold mr-2">{String.fromCharCode(65 + idx)}.</span>
-                    {opt || `Option ${String.fromCharCode(65 + idx)}`}
+                  <div key={idx} className="rounded-lg border border-border px-3 py-2 text-sm text-slate-700">
+                    <span className="mr-2 font-semibold">{optionLetters[idx]}.</span>
+                    {opt || `Option ${optionLetters[idx]}`}
+                    {rows[previewRow].optionImageUrls[idx]?.trim() ? (
+                      <img
+                        src={rows[previewRow].optionImageUrls[idx].trim()}
+                        alt={`Option ${optionLetters[idx]} preview`}
+                        className="mt-2 max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                      />
+                    ) : null}
                   </div>
                 ))}
               </div>
             </div>
           ) : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewRow(null)}>Close</Button>
+            <Button variant="outline" onClick={() => setPreviewRow(null)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
