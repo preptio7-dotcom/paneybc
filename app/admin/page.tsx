@@ -343,25 +343,25 @@ export default function AdminDashboardPage() {
         <main className="min-h-screen bg-background-light">
             <AdminHeader />
 
-            <div className="pt-[80px] pb-12">
-                <div className="max-w-7xl mx-auto px-6">
+            <div className="pt-[72px] lg:pt-[80px] pb-12">
+                <div className="max-w-7xl mx-auto px-4 md:px-6">
                     <div className="mb-8">
                         <h1 className="font-heading text-3xl font-bold text-text-dark">Admin Dashboard</h1>
                         <p className="text-text-light">Overview of platform content and activity</p>
                     </div>
 
                     {/* Stats Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-6 mb-12">
                         {stats.map((stat, index) => (
                             <Card key={index} className="border-border">
-                                <CardContent className="p-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-3 rounded-xl ${stat.bg}`}>
+                                <CardContent className="p-4 md:p-6">
+                                    <div className="flex items-center gap-3 md:gap-4">
+                                        <div className={`rounded-xl p-2.5 md:p-3 ${stat.bg}`}>
                                             <stat.icon size={24} className={stat.color} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-text-light">{stat.title}</p>
-                                            <p className="text-2xl font-bold text-text-dark">{stat.value}</p>
+                                            <p className="admin-kpi-label text-xs font-medium text-text-light md:text-sm">{stat.title}</p>
+                                            <p className="admin-kpi-value text-xl font-bold text-text-dark md:text-2xl">{stat.value}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -418,9 +418,9 @@ export default function AdminDashboardPage() {
                                             </span>
                                         ))}
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col gap-2 sm:flex-row">
                                         <Input value={newDegree} placeholder="Add degree" onChange={(e) => setNewDegree(e.target.value)} />
-                                        <Button type="button" variant="outline" onClick={() => addOption('degree')}>Add</Button>
+                                        <Button type="button" variant="outline" onClick={() => addOption('degree')} className="w-full sm:w-auto">Add</Button>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -435,9 +435,9 @@ export default function AdminDashboardPage() {
                                             </span>
                                         ))}
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col gap-2 sm:flex-row">
                                         <Input value={newLevel} placeholder="Add level (e.g. CAF)" onChange={(e) => setNewLevel(e.target.value)} />
-                                        <Button type="button" variant="outline" onClick={() => addOption('level')}>Add</Button>
+                                        <Button type="button" variant="outline" onClick={() => addOption('level')} className="w-full sm:w-auto">Add</Button>
                                     </div>
                                 </div>
                             </div>
@@ -452,7 +452,7 @@ export default function AdminDashboardPage() {
                                         }))
                                     }
                                 >
-                                    <SelectTrigger className="max-w-sm">
+                                    <SelectTrigger className="w-full md:max-w-sm">
                                         <SelectValue placeholder="Select timezone" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -568,7 +568,7 @@ export default function AdminDashboardPage() {
                                     </div>
                                 </div>
                             </div>
-                            <Button onClick={handleSaveTestSettings} disabled={isSavingTestSettings}>
+                            <Button onClick={handleSaveTestSettings} disabled={isSavingTestSettings} className="w-full md:w-auto">
                                 {isSavingTestSettings ? 'Saving...' : 'Save Test Settings'}
                             </Button>
                         </CardContent>
@@ -645,3 +645,4 @@ export default function AdminDashboardPage() {
         </main>
     )
 }
+

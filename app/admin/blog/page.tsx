@@ -500,7 +500,7 @@ export default function AdminBlogPage() {
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
-      <div className="pt-[80px] pb-10">
+      <div className="pt-[72px] lg:pt-[80px] pb-10">
         <div className="mx-auto max-w-7xl px-4 md:px-6">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -903,4 +903,5 @@ export default function AdminBlogPage() {
     </main>
   )
 }
+
 

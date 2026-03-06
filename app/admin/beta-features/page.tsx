@@ -84,8 +84,8 @@ export default function AdminBetaFeaturesPage() {
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
-      <div className="pt-[80px] pb-12">
-        <div className="max-w-5xl mx-auto px-6 space-y-8">
+      <div className="pt-[72px] lg:pt-[80px] pb-12">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 space-y-8">
           <div>
             <h1 className="font-heading text-3xl font-bold text-text-dark">Beta Features</h1>
             <p className="text-text-light">
@@ -134,4 +134,5 @@ export default function AdminBetaFeaturesPage() {
     </main>
   )
 }
+
 

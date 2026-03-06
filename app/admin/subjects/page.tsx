@@ -399,8 +399,8 @@ export default function SubjectsManagementPage() {
         <main className="min-h-screen bg-background-light">
             <AdminHeader />
 
-            <div className="pt-[80px] pb-12">
-                <div className="max-w-5xl mx-auto px-6">
+            <div className="pt-[72px] lg:pt-[80px] pb-12">
+                <div className="max-w-5xl mx-auto px-4 md:px-6">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h1 className="font-heading text-3xl font-bold text-text-dark">Subject Management</h1>
@@ -498,25 +498,25 @@ export default function SubjectsManagementPage() {
                             ) : (
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="border-border px-6">
-                                            <TableHead className="pl-6">Code</TableHead>
+                                        <TableRow className="border-border">
+                                            <TableHead className="pl-3 md:pl-6">Code</TableHead>
                                             <TableHead>Subject Name</TableHead>
                                             <TableHead>Description</TableHead>
                                             <TableHead>Chapters</TableHead>
-                                            <TableHead className="text-right pr-6">Actions</TableHead>
+                                            <TableHead className="text-right pr-3 md:pr-6">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {subjects.length > 0 ? (
                                             subjects.map((sub, idx) => (
                                                 <TableRow key={sub.id ?? sub._id ?? `${sub.code ?? 'subject'}-${idx}`} className="border-border hover:bg-background-light/50">
-                                                    <TableCell className="pl-6 font-bold text-primary-green">{sub.code}</TableCell>
+                                                    <TableCell className="pl-3 font-bold text-primary-green md:pl-6">{sub.code}</TableCell>
                                                     <TableCell className="font-medium text-text-dark">{sub.name}</TableCell>
                                                     <TableCell className="text-text-light text-sm">{sub.description || '-'}</TableCell>
                                                     <TableCell className="text-text-light text-sm">
                                                         {sub.chapters?.length || 0}
                                                     </TableCell>
-                                                    <TableCell className="text-right pr-6">
+                                                    <TableCell className="text-right pr-3 md:pr-6">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <Button
                                                                 variant="ghost"
@@ -886,3 +886,4 @@ export default function SubjectsManagementPage() {
         </main>
     )
 }
+

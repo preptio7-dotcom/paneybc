@@ -4,15 +4,17 @@ import { useAuth } from '@/lib/auth-context'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
+import './admin-mobile.css'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth()
     const router = useRouter()
     const pathname = usePathname()
     const hasAdminAccess = user?.role === 'admin' || user?.role === 'super_admin'
+    const isAuthRoute = pathname === '/admin/login' || pathname === '/admin/forgot-password'
 
     useEffect(() => {
-        if (pathname === '/admin/login' || pathname === '/admin/forgot-password') return
+        if (isAuthRoute) return
         if (!loading && !hasAdminAccess) {
             if (user) {
                 router.push('/dashboard?error=403')
@@ -20,9 +22,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 router.push('/admin/login')
             }
         }
-    }, [hasAdminAccess, loading, pathname, router, user])
+    }, [hasAdminAccess, isAuthRoute, loading, pathname, router, user])
 
-    if (pathname === '/admin/login' || pathname === '/admin/forgot-password') {
+    useEffect(() => {
+        if (typeof document === 'undefined') return
+        if (isAuthRoute) {
+            document.body.classList.remove('admin-route')
+            return
+        }
+        document.body.classList.add('admin-route')
+        return () => {
+            document.body.classList.remove('admin-route')
+        }
+    }, [isAuthRoute])
+
+    if (isAuthRoute) {
         return <>{children}</>
     }
 
@@ -37,5 +51,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )
     }
 
-    return <div className="md:pl-16 xl:pl-60">{children}</div>
+    return <div className="admin-shell lg:pl-60">{children}</div>
 }

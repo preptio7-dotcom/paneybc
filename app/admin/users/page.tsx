@@ -106,6 +106,8 @@ export default function AdminUsersPage() {
     levels: ['PRC', 'CAF'],
   })
   const [selectedColumn, setSelectedColumn] = useState<SelectedColumnState>('all')
+  const [isSmallViewport, setIsSmallViewport] = useState(false)
+  const [mobileView, setMobileView] = useState<'table' | 'cards'>('cards')
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams()
@@ -165,6 +167,22 @@ export default function AdminUsersPage() {
     }
     loadSettings()
   }, [])
+
+  useEffect(() => {
+    const syncViewport = () => {
+      setIsSmallViewport(window.innerWidth < 480)
+    }
+
+    syncViewport()
+    window.addEventListener('resize', syncViewport)
+    return () => {
+      window.removeEventListener('resize', syncViewport)
+    }
+  }, [])
+
+  useEffect(() => {
+    setMobileView(isSmallViewport ? 'cards' : 'table')
+  }, [isSmallViewport])
 
   const isColumnVisible = (columnKey: UserTableColumnKey) =>
     selectedColumn === 'all' || selectedColumn === columnKey
@@ -304,8 +322,8 @@ export default function AdminUsersPage() {
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
 
-      <div className="pt-[80px] pb-12">
-        <div className="max-w-7xl mx-auto px-6 space-y-6">
+      <div className="pt-[72px] lg:pt-[80px] pb-12">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="font-heading text-3xl font-bold text-text-dark">User Management</h1>
@@ -409,128 +427,209 @@ export default function AdminUsersPage() {
                 <div className="text-center text-text-light py-10">No users found.</div>
               ) : (
                 <div className="space-y-4">
-                  <div className="overflow-x-auto">
-                    <table className={tableClassName}>
-                      <thead className="text-left text-text-light bg-slate-50">
-                        <tr className="border-b border-border">
-                          <th className="px-4 py-3 font-semibold min-w-[170px]">Name</th>
-                          {isColumnVisible('email') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[220px]">Email</th>
-                          ) : null}
-                          {isColumnVisible('accessRole') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[120px]">Access Role</th>
-                          ) : null}
-                          {isColumnVisible('studentRole') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[130px]">Student Role</th>
-                          ) : null}
-                          {isColumnVisible('degreeLevel') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[140px]">Degree/Level</th>
-                          ) : null}
-                          {isColumnVisible('institute') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[260px]">Institute</th>
-                          ) : null}
-                          {isColumnVisible('phone') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[150px]">Phone</th>
-                          ) : null}
-                          {isColumnVisible('rating') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[90px]">Rating</th>
-                          ) : null}
-                          {isColumnVisible('status') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[100px]">Status</th>
-                          ) : null}
-                          {isColumnVisible('joined') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[110px]">Joined</th>
-                          ) : null}
-                          {isColumnVisible('actions') ? (
-                            <th className="px-4 py-3 font-semibold min-w-[230px] text-right">Actions</th>
-                          ) : null}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.map((user) => (
-                          <tr key={user.id} className="border-b border-border align-top">
-                            <td className="px-4 py-4 font-medium text-text-dark whitespace-nowrap">{user.name}</td>
+                  {isSmallViewport ? (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={mobileView === 'table' ? 'default' : 'outline'}
+                        onClick={() => setMobileView('table')}
+                      >
+                        ⊞ Table
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={mobileView === 'cards' ? 'default' : 'outline'}
+                        onClick={() => setMobileView('cards')}
+                      >
+                        ▤ Cards
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  {!isSmallViewport || mobileView === 'table' ? (
+                    <div className="admin-table-scroll overflow-x-auto">
+                      <table className={tableClassName}>
+                        <thead className="text-left text-text-light bg-slate-50">
+                          <tr className="border-b border-border">
+                            <th className="px-4 py-3 font-semibold min-w-[170px]">Name</th>
                             {isColumnVisible('email') ? (
-                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.email}</td>
+                              <th className="px-4 py-3 font-semibold min-w-[220px]">Email</th>
                             ) : null}
                             {isColumnVisible('accessRole') ? (
-                              <td className="px-4 py-4 text-text-light uppercase text-xs whitespace-nowrap">{user.role}</td>
+                              <th className="px-4 py-3 font-semibold min-w-[120px]">Access Role</th>
                             ) : null}
                             {isColumnVisible('studentRole') ? (
-                              <td className="px-4 py-4 text-text-light capitalize whitespace-nowrap">{user.studentRole || 'unpaid'}</td>
+                              <th className="px-4 py-3 font-semibold min-w-[130px]">Student Role</th>
                             ) : null}
                             {isColumnVisible('degreeLevel') ? (
-                              <td className="px-4 py-4 text-text-light whitespace-nowrap">
-                                {user.degree || '--'} / {user.level || '--'}
-                              </td>
+                              <th className="px-4 py-3 font-semibold min-w-[140px]">Degree/Level</th>
                             ) : null}
                             {isColumnVisible('institute') ? (
-                              <td className="px-4 py-4 text-text-light min-w-[260px]">
-                                <div className="space-y-1 leading-snug">
-                                  <div className="font-medium text-text-dark">{user.institute || '--'}</div>
-                                  <div className="text-xs">{user.city || '--'}</div>
-                                  <div className="text-xs font-mono">{user.studentId || '--'}</div>
-                                </div>
-                              </td>
+                              <th className="px-4 py-3 font-semibold min-w-[260px]">Institute</th>
                             ) : null}
                             {isColumnVisible('phone') ? (
-                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.phone || '--'}</td>
+                              <th className="px-4 py-3 font-semibold min-w-[150px]">Phone</th>
                             ) : null}
                             {isColumnVisible('rating') ? (
-                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.instituteRating || '--'}/5</td>
+                              <th className="px-4 py-3 font-semibold min-w-[90px]">Rating</th>
                             ) : null}
                             {isColumnVisible('status') ? (
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span
-                                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                    user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
-                                  }`}
-                                >
-                                  {user.isBanned ? 'Banned' : 'Active'}
-                                </span>
-                              </td>
+                              <th className="px-4 py-3 font-semibold min-w-[100px]">Status</th>
                             ) : null}
                             {isColumnVisible('joined') ? (
-                              <td className="px-4 py-4 text-text-light whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
+                              <th className="px-4 py-3 font-semibold min-w-[110px]">Joined</th>
                             ) : null}
                             {isColumnVisible('actions') ? (
-                              <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => openEdit(user)}
-                                  disabled={busyUserId === user.id}
-                                  className="gap-2"
-                                >
-                                  <Pencil size={14} />
-                                  Edit
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleBanToggle(user.id, !user.isBanned)}
-                                  disabled={busyUserId === user.id}
-                                  className="gap-2"
-                                >
-                                  {user.isBanned ? <ShieldAlert size={14} /> : <UserMinus size={14} />}
-                                  {user.isBanned ? 'Unban' : 'Ban'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleDelete(user.id)}
-                                  disabled={busyUserId === user.id}
-                                  className="text-error-red hover:text-error-red"
-                                >
-                                  <UserX size={14} />
-                                </Button>
-                              </td>
+                              <th className="px-4 py-3 font-semibold min-w-[230px] text-right">Actions</th>
                             ) : null}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {users.map((user) => (
+                            <tr key={user.id} className="border-b border-border align-top">
+                              <td className="px-4 py-4 font-medium text-text-dark whitespace-nowrap">{user.name}</td>
+                              {isColumnVisible('email') ? (
+                                <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.email}</td>
+                              ) : null}
+                              {isColumnVisible('accessRole') ? (
+                                <td className="px-4 py-4 text-text-light uppercase text-xs whitespace-nowrap">{user.role}</td>
+                              ) : null}
+                              {isColumnVisible('studentRole') ? (
+                                <td className="px-4 py-4 text-text-light capitalize whitespace-nowrap">{user.studentRole || 'unpaid'}</td>
+                              ) : null}
+                              {isColumnVisible('degreeLevel') ? (
+                                <td className="px-4 py-4 text-text-light whitespace-nowrap">
+                                  {user.degree || '--'} / {user.level || '--'}
+                                </td>
+                              ) : null}
+                              {isColumnVisible('institute') ? (
+                                <td className="px-4 py-4 text-text-light min-w-[260px]">
+                                  <div className="space-y-1 leading-snug">
+                                    <div className="font-medium text-text-dark">{user.institute || '--'}</div>
+                                    <div className="text-xs">{user.city || '--'}</div>
+                                    <div className="text-xs font-mono">{user.studentId || '--'}</div>
+                                  </div>
+                                </td>
+                              ) : null}
+                              {isColumnVisible('phone') ? (
+                                <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.phone || '--'}</td>
+                              ) : null}
+                              {isColumnVisible('rating') ? (
+                                <td className="px-4 py-4 text-text-light whitespace-nowrap">{user.instituteRating || '--'}/5</td>
+                              ) : null}
+                              {isColumnVisible('status') ? (
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  <span
+                                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                      user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
+                                    }`}
+                                  >
+                                    {user.isBanned ? 'Banned' : 'Active'}
+                                  </span>
+                                </td>
+                              ) : null}
+                              {isColumnVisible('joined') ? (
+                                <td className="px-4 py-4 text-text-light whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</td>
+                              ) : null}
+                              {isColumnVisible('actions') ? (
+                                <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openEdit(user)}
+                                    disabled={busyUserId === user.id}
+                                    className="gap-2"
+                                  >
+                                    <Pencil size={14} />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleBanToggle(user.id, !user.isBanned)}
+                                    disabled={busyUserId === user.id}
+                                    className="gap-2"
+                                  >
+                                    {user.isBanned ? <ShieldAlert size={14} /> : <UserMinus size={14} />}
+                                    {user.isBanned ? 'Unban' : 'Ban'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDelete(user.id)}
+                                    disabled={busyUserId === user.id}
+                                    className="text-error-red hover:text-error-red"
+                                  >
+                                    <UserX size={14} />
+                                  </Button>
+                                </td>
+                              ) : null}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+
+                  {isSmallViewport && mobileView === 'cards' ? (
+                    <div className="space-y-3">
+                      {users.map((user) => (
+                        <div key={`card-${user.id}`} className="rounded-xl border border-border bg-white p-4 space-y-3">
+                          <div>
+                            <p className="text-base font-semibold text-text-dark">{user.name}</p>
+                            <p className="text-sm text-text-light break-all">{user.email}</p>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-1 text-xs text-text-light">
+                            <p>Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
+                            <p>Role: {user.role}</p>
+                            <p>Student Role: {user.studentRole || 'unpaid'}</p>
+                            <p>
+                              Status:{' '}
+                              <span className={user.isBanned ? 'text-rose-600 font-semibold' : 'text-emerald-600 font-semibold'}>
+                                {user.isBanned ? 'Banned' : 'Active'}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEdit(user)}
+                              disabled={busyUserId === user.id}
+                              className="justify-center gap-2"
+                            >
+                              <Pencil size={14} />
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleBanToggle(user.id, !user.isBanned)}
+                              disabled={busyUserId === user.id}
+                              className="justify-center gap-2"
+                            >
+                              {user.isBanned ? <ShieldAlert size={14} /> : <UserMinus size={14} />}
+                              {user.isBanned ? 'Unban' : 'Ban'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(user.id)}
+                              disabled={busyUserId === user.id}
+                              className="justify-center gap-2 text-error-red hover:text-error-red"
+                            >
+                              <UserX size={14} />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
 
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <p className="text-sm text-text-light">
@@ -667,3 +766,4 @@ export default function AdminUsersPage() {
     </main>
   )
 }
+

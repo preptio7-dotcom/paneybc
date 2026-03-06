@@ -327,8 +327,8 @@ function KpiCardView({
           <span>{card.trendDirection === 'flat' ? '--' : card.trendDirection === 'up' ? 'Up' : 'Down'}</span>
         </div>
       </div>
-      <p className="mt-4 text-3xl font-black text-slate-900">{display}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-700">{card.label}</p>
+      <p className="admin-kpi-value mt-4 text-2xl font-black text-slate-900 md:text-3xl">{display}</p>
+      <p className="admin-kpi-label mt-1 text-sm font-semibold text-slate-700">{card.label}</p>
       <p className="mt-2 text-xs text-slate-500">{card.subtext}</p>
     </div>
   )
@@ -377,6 +377,19 @@ export default function AdminAnalyticsPage() {
   const [isSavingAdsense, setIsSavingAdsense] = useState(false)
   const [adsenseThisMonth, setAdsenseThisMonth] = useState('')
   const [adsenseLastMonth, setAdsenseLastMonth] = useState('')
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
+
+  useEffect(() => {
+    const syncViewport = () => {
+      setIsMobileViewport(window.innerWidth < 768)
+    }
+
+    syncViewport()
+    window.addEventListener('resize', syncViewport)
+    return () => {
+      window.removeEventListener('resize', syncViewport)
+    }
+  }, [])
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams()
@@ -486,8 +499,8 @@ export default function AdminAnalyticsPage() {
     <main className="min-h-screen bg-[#f8fafc]">
       <AdminHeader />
 
-      <div className="pt-[60px]">
-        <section className="sticky top-[60px] z-10 border-b border-slate-200 bg-white px-4 py-4 md:px-8">
+      <div className="pt-[56px] lg:pt-[60px]">
+        <section className="sticky top-14 z-10 border-b border-slate-200 bg-white px-4 py-4 md:top-[60px] md:px-8">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <h1 className="text-2xl font-black text-[#0f172a]">Analytics &amp; Reports</h1>
@@ -495,7 +508,7 @@ export default function AdminAnalyticsPage() {
             </div>
 
             <div className="flex flex-col gap-3 xl:items-end">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 xl:flex-wrap">
                 {PRESET_OPTIONS.map((option) => (
                   <button
                     key={option.key}
@@ -520,7 +533,7 @@ export default function AdminAnalyticsPage() {
                   onClick={() => setPreset('custom')}
                 >
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  {startDate && endDate ? `${formatShortDate(startDate)} → ${formatShortDate(endDate)}` : 'Custom Range'}
+                  {startDate && endDate ? `${formatShortDate(startDate)} -> ${formatShortDate(endDate)}` : 'Custom Range'}
                 </Button>
                 {preset === 'custom' ? (
                   <>
@@ -528,13 +541,13 @@ export default function AdminAnalyticsPage() {
                       type="date"
                       value={startDate}
                       onChange={(event) => setStartDate(event.target.value)}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
                     />
                     <input
                       type="date"
                       value={endDate}
                       onChange={(event) => setEndDate(event.target.value)}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
                     />
                   </>
                 ) : null}
@@ -611,12 +624,12 @@ export default function AdminAnalyticsPage() {
                   </div>
                 </div>
 
-                <div className="h-72">
+                <div className="admin-chart-height h-[200px] md:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                      {!isMobileViewport ? <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /> : null}
+                      <XAxis dataKey="label" tick={{ fontSize: isMobileViewport ? 10 : 12 }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 12 }} hide={isMobileViewport} />
                       <Tooltip
                         formatter={(value: number, name: string) => {
                           if (name === 'newSignups') return [value, 'New Signups']
@@ -714,9 +727,9 @@ export default function AdminAnalyticsPage() {
                     <RetentionRing label="Day 7 Retention" value={report.heavy.retention.summary.day7} color="#f59e0b" />
                     <RetentionRing label="Day 30 Retention" value={report.heavy.retention.summary.day30} color="#3b82f6" />
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                      ⚠️ {report.heavy.retention.summary.atRiskCount} students haven't practiced in 7+ days
+                      {report.heavy.retention.summary.atRiskCount} students haven't practiced in 7+ days
                       <a href="/admin/users" className="ml-2 font-semibold underline">
-                        View List →
+                        View List
                       </a>
                     </div>
                   </div>
@@ -726,12 +739,12 @@ export default function AdminAnalyticsPage() {
               <section className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                 <SectionTitle title="Subject Popularity & Performance" subtitle="Platform-wide subject usage and accuracy data" />
                 <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="h-80">
+                  <div className="admin-chart-height h-[200px] md:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={subjectUsage} layout="vertical" margin={{ left: 20, right: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis type="number" />
-                        <YAxis type="category" dataKey="subjectCode" width={90} />
+                        {!isMobileViewport ? <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /> : null}
+                        <XAxis type="number" hide={isMobileViewport} />
+                        <YAxis type="category" dataKey="subjectCode" width={90} tick={{ fontSize: isMobileViewport ? 10 : 12 }} />
                         <Tooltip formatter={(value: number) => [value.toLocaleString(), 'Questions']} />
                         <Bar dataKey="attempts" radius={[6, 6, 6, 6]}>
                           {subjectUsage.map((row) => (
@@ -747,7 +760,7 @@ export default function AdminAnalyticsPage() {
                       {subjectUsage.map((row) => (
                         <div key={row.subjectCode} className="rounded-xl border border-slate-200 p-3">
                           <p className="text-xs font-semibold text-slate-500">{row.subjectCode}</p>
-                          <div className="mt-2 h-24">
+                          <div className="admin-donut-wrap mt-2 h-20 md:h-24">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                 <Pie
@@ -846,7 +859,7 @@ export default function AdminAnalyticsPage() {
               <section className="grid gap-4 xl:grid-cols-2">
                 <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                   <SectionTitle title="Signup Sources" subtitle="Where new students are discovering Preptio" />
-                  <div className="relative h-64">
+                  <div className="admin-donut-wrap relative h-[200px] sm:h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={sourceRows} dataKey="count" nameKey="source" innerRadius={55} outerRadius={90}>
@@ -950,12 +963,12 @@ export default function AdminAnalyticsPage() {
                   </table>
                 </div>
 
-                <div className="mt-5 h-72">
+                <div className="admin-chart-height mt-5 h-[200px] md:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={report.heavy.mockAnalytics.trend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      {!isMobileViewport ? <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /> : null}
                       <XAxis dataKey="dayKey" tick={{ fontSize: 10 }} />
-                      <YAxis allowDecimals={false} />
+                      <YAxis allowDecimals={false} hide={isMobileViewport} />
                       <Tooltip />
                       <Bar dataKey="bae" fill="#16a34a" />
                       <Bar dataKey="foa" fill="#7c3aed" />
@@ -1047,33 +1060,64 @@ export default function AdminAnalyticsPage() {
                     </button>
                   </div>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                      <tr>
-                        <th className="px-3 py-2 text-left">Rank</th>
-                        <th className="px-3 py-2 text-left">Student</th>
-                        <th className="px-3 py-2 text-left">Streak</th>
-                        <th className="px-3 py-2 text-left">Subjects</th>
-                        <th className="px-3 py-2 text-left">Accuracy</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leaderboardRows.map((row) => (
-                        <tr key={`${leaderboardMode}-${row.userId}`} className="border-t border-slate-100">
-                          <td className="px-3 py-2">{medalIcon(row.rank)}</td>
-                          <td className="px-3 py-2 font-medium text-slate-800">{row.displayName}</td>
-                          <td className={`px-3 py-2 font-semibold ${row.streak >= 30 ? 'text-orange-600' : row.streak >= 14 ? 'text-amber-600' : row.streak >= 7 ? 'text-emerald-600' : 'text-slate-500'}`}>
-                            {row.streak}d {row.streak >= 30 ? '🔥' : ''}
-                          </td>
-                          <td className="px-3 py-2">{row.subjects}</td>
-                          <td className="px-3 py-2">{row.accuracy.toFixed(1)}%</td>
+                <div className="hidden md:block">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[760px] text-sm">
+                      <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Rank</th>
+                          <th className="px-3 py-2 text-left">Student</th>
+                          <th className="px-3 py-2 text-left">Streak</th>
+                          <th className="px-3 py-2 text-left">Subjects</th>
+                          <th className="px-3 py-2 text-left">Accuracy</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {leaderboardRows.map((row) => (
+                          <tr key={`${leaderboardMode}-${row.userId}`} className="border-t border-slate-100">
+                            <td className="px-3 py-2">{medalIcon(row.rank)}</td>
+                            <td className="px-3 py-2 font-medium text-slate-800">{row.displayName}</td>
+                            <td
+                              className={`px-3 py-2 font-semibold ${
+                                row.streak >= 30
+                                  ? 'text-orange-600'
+                                  : row.streak >= 14
+                                    ? 'text-amber-600'
+                                    : row.streak >= 7
+                                      ? 'text-emerald-600'
+                                      : 'text-slate-500'
+                              }`}
+                            >
+                              {row.streak}d {row.streak >= 30 ? '(Hot)' : ''}
+                            </td>
+                            <td className="px-3 py-2">{row.subjects}</td>
+                            <td className="px-3 py-2">{row.accuracy.toFixed(1)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
+                <div className="space-y-3 md:hidden">
+                  {leaderboardRows.map((row) => (
+                    <div key={`card-${leaderboardMode}-${row.userId}`} className="rounded-xl border border-slate-200 bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{row.displayName}</p>
+                          <p className="text-xs text-slate-500">{row.subjects}</p>
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                          #{row.rank}
+                        </span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                        <p>Streak: {row.streak} days</p>
+                        <p>Accuracy: {row.accuracy.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 <div className="mt-4 space-y-2">
                   {report.leaderboard.distribution.map((row) => (
                     <div key={row.label}>
@@ -1155,12 +1199,12 @@ export default function AdminAnalyticsPage() {
                     <p className="mt-3 text-xs text-slate-500">
                       Revenue estimates are approximate. Check your Google AdSense dashboard for accurate figures.
                     </p>
-                    <div className="mt-4 h-40">
+                    <div className="admin-chart-height mt-4 h-[200px] md:h-40">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={report.heavy.adsense.manual.history}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          {!isMobileViewport ? <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /> : null}
                           <XAxis dataKey="monthKey" tick={{ fontSize: 10 }} />
-                          <YAxis />
+                          <YAxis hide={isMobileViewport} />
                           <Tooltip />
                           <Bar dataKey="valuePkr" fill="#16a34a" />
                         </BarChart>

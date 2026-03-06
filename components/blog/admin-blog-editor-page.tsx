@@ -275,7 +275,7 @@ function ToolbarButton({
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-200 px-2 text-slate-600 transition-colors hover:border-primary-green hover:text-primary-green disabled:opacity-40',
+        'inline-flex h-9 min-h-9 min-w-9 items-center justify-center rounded-md border border-slate-200 px-2 text-slate-600 transition-colors hover:border-primary-green hover:text-primary-green disabled:opacity-40 md:h-8 md:min-h-8 md:min-w-8',
         active ? 'border-primary-green bg-green-50 text-primary-green' : ''
       )}
     >
@@ -283,7 +283,6 @@ function ToolbarButton({
     </button>
   )
 }
-
 export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; postId?: string }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -304,6 +303,7 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
   const [manualSlug, setManualSlug] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
   const [showSeo, setShowSeo] = useState(true)
+  const [mobileEditorMode, setMobileEditorMode] = useState<'edit' | 'preview'>('edit')
   const [publishMode, setPublishMode] = useState<'publish_now' | 'schedule' | 'draft'>('publish_now')
   const [scheduleError, setScheduleError] = useState('')
   const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>(mode === 'edit' ? 'saved' : 'unsaved')
@@ -353,7 +353,7 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
     editorProps: {
       attributes: {
         class:
-          'min-h-[500px] w-full rounded-b-xl border border-t-0 border-slate-200 bg-white px-4 py-4 text-sm leading-7 text-slate-700 outline-none',
+          'min-h-[300px] w-full rounded-b-xl border border-t-0 border-slate-200 bg-white px-4 py-4 text-sm leading-7 text-slate-700 outline-none md:min-h-[500px]',
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -1211,7 +1211,7 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
     return (
       <main className="min-h-screen bg-background-light">
         <AdminHeader />
-        <div className="pt-[90px]">
+        <div className="pt-[76px] lg:pt-[90px]">
           <div className="mx-auto max-w-7xl px-4 md:px-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading post...</div>
           </div>
@@ -1223,7 +1223,7 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
-      <div className="pb-10 pt-[80px]">
+      <div className="pb-24 pt-[72px] lg:pb-10 lg:pt-[80px]">
         <div className="mx-auto max-w-[1400px] px-4 md:px-6">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1359,48 +1359,63 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
               </div>
 
               <div id="blog-editor-content" className="rounded-2xl border border-slate-200 bg-white p-5">
-                <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
-                  <ToolbarButton editor={editor} icon={<Heading1 size={14} />} label="Heading 1" active={Boolean(editor?.isActive('heading', { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} />
-                  <ToolbarButton editor={editor} icon={<Heading2 size={14} />} label="Heading 2" active={Boolean(editor?.isActive('heading', { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} />
-                  <ToolbarButton editor={editor} icon={<Heading3 size={14} />} label="Heading 3" active={Boolean(editor?.isActive('heading', { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} />
-                  <ToolbarButton editor={editor} icon={<Heading4 size={14} />} label="Heading 4" active={Boolean(editor?.isActive('heading', { level: 4 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 4 }).run()} />
-                  <div className="h-6 w-px bg-slate-200" />
-                  <ToolbarButton editor={editor} icon={<Bold size={14} />} label="Bold" active={Boolean(editor?.isActive('bold'))} onClick={() => editor?.chain().focus().toggleBold().run()} />
-                  <ToolbarButton editor={editor} icon={<Italic size={14} />} label="Italic" active={Boolean(editor?.isActive('italic'))} onClick={() => editor?.chain().focus().toggleItalic().run()} />
-                  <ToolbarButton editor={editor} icon={<Underline size={14} />} label="Underline" active={Boolean(editor?.isActive('underline'))} onClick={() => editor?.chain().focus().toggleUnderline().run()} />
-                  <ToolbarButton editor={editor} icon={<Strikethrough size={14} />} label="Strike" active={Boolean(editor?.isActive('strike'))} onClick={() => editor?.chain().focus().toggleStrike().run()} />
-                  <div className="h-6 w-px bg-slate-200" />
-                  <ToolbarButton editor={editor} icon={<List size={14} />} label="Bullet list" active={Boolean(editor?.isActive('bulletList'))} onClick={() => editor?.chain().focus().toggleBulletList().run()} />
-                  <ToolbarButton editor={editor} icon={<ListOrdered size={14} />} label="Ordered list" active={Boolean(editor?.isActive('orderedList'))} onClick={() => editor?.chain().focus().toggleOrderedList().run()} />
-                  <ToolbarButton editor={editor} icon={<Quote size={14} />} label="Blockquote" active={Boolean(editor?.isActive('blockquote'))} onClick={() => editor?.chain().focus().toggleBlockquote().run()} />
-                  <ToolbarButton editor={editor} icon={<Code2 size={14} />} label="Code block" active={Boolean(editor?.isActive('codeBlock'))} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} />
-                  <ToolbarButton editor={editor} icon={<Minus size={14} />} label="Horizontal rule" onClick={() => editor?.chain().focus().setHorizontalRule().run()} />
-                  <ToolbarButton editor={editor} icon={<Table2 size={14} />} label="Insert table" onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} />
-                  <div className="h-6 w-px bg-slate-200" />
-                  <ToolbarButton editor={editor} icon={<Link2 size={14} />} label="Add link" onClick={() => {
-                    if (!editor) return
-                    const current = editor.getAttributes('link').href as string | undefined
-                    const next = window.prompt('Enter URL', current || 'https://')
-                    if (next === null) return
-                    const trimmed = next.trim()
-                    if (!trimmed) { editor.chain().focus().unsetLink().run(); return }
-                    editor.chain().focus().setLink({ href: trimmed }).run()
+                <div className={cn(mobileEditorMode === 'preview' ? 'hidden md:block' : 'block')}>
+                  <div className="admin-editor-toolbar mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                    <ToolbarButton editor={editor} icon={<Heading1 size={14} />} label="Heading 1" active={Boolean(editor?.isActive('heading', { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} />
+                    <ToolbarButton editor={editor} icon={<Heading2 size={14} />} label="Heading 2" active={Boolean(editor?.isActive('heading', { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} />
+                    <ToolbarButton editor={editor} icon={<Heading3 size={14} />} label="Heading 3" active={Boolean(editor?.isActive('heading', { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} />
+                    <ToolbarButton editor={editor} icon={<Heading4 size={14} />} label="Heading 4" active={Boolean(editor?.isActive('heading', { level: 4 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 4 }).run()} />
+                    <div className="h-6 w-px bg-slate-200" />
+                    <ToolbarButton editor={editor} icon={<Bold size={14} />} label="Bold" active={Boolean(editor?.isActive('bold'))} onClick={() => editor?.chain().focus().toggleBold().run()} />
+                    <ToolbarButton editor={editor} icon={<Italic size={14} />} label="Italic" active={Boolean(editor?.isActive('italic'))} onClick={() => editor?.chain().focus().toggleItalic().run()} />
+                    <ToolbarButton editor={editor} icon={<Underline size={14} />} label="Underline" active={Boolean(editor?.isActive('underline'))} onClick={() => editor?.chain().focus().toggleUnderline().run()} />
+                    <ToolbarButton editor={editor} icon={<Strikethrough size={14} />} label="Strike" active={Boolean(editor?.isActive('strike'))} onClick={() => editor?.chain().focus().toggleStrike().run()} />
+                    <div className="h-6 w-px bg-slate-200" />
+                    <ToolbarButton editor={editor} icon={<List size={14} />} label="Bullet list" active={Boolean(editor?.isActive('bulletList'))} onClick={() => editor?.chain().focus().toggleBulletList().run()} />
+                    <ToolbarButton editor={editor} icon={<ListOrdered size={14} />} label="Ordered list" active={Boolean(editor?.isActive('orderedList'))} onClick={() => editor?.chain().focus().toggleOrderedList().run()} />
+                    <ToolbarButton editor={editor} icon={<Quote size={14} />} label="Blockquote" active={Boolean(editor?.isActive('blockquote'))} onClick={() => editor?.chain().focus().toggleBlockquote().run()} />
+                    <ToolbarButton editor={editor} icon={<Code2 size={14} />} label="Code block" active={Boolean(editor?.isActive('codeBlock'))} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} />
+                    <ToolbarButton editor={editor} icon={<Minus size={14} />} label="Horizontal rule" onClick={() => editor?.chain().focus().setHorizontalRule().run()} />
+                    <ToolbarButton editor={editor} icon={<Table2 size={14} />} label="Insert table" onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} />
+                    <div className="h-6 w-px bg-slate-200" />
+                    <ToolbarButton editor={editor} icon={<Link2 size={14} />} label="Add link" onClick={() => {
+                      if (!editor) return
+                      const current = editor.getAttributes('link').href as string | undefined
+                      const next = window.prompt('Enter URL', current || 'https://')
+                      if (next === null) return
+                      const trimmed = next.trim()
+                      if (!trimmed) { editor.chain().focus().unsetLink().run(); return }
+                      editor.chain().focus().setLink({ href: trimmed }).run()
+                    }} />
+                    <ToolbarButton editor={editor} icon={<Unlink2 size={14} />} label="Remove link" onClick={() => editor?.chain().focus().unsetLink().run()} />
+                    <ToolbarButton editor={editor} icon={<ImagePlus size={14} />} label="Upload image" onClick={() => editorImageInputRef.current?.click()} />
+                    <div className="h-6 w-px bg-slate-200" />
+                    <ToolbarButton editor={editor} icon={<Undo2 size={14} />} label="Undo" onClick={() => editor?.chain().focus().undo().run()} />
+                    <ToolbarButton editor={editor} icon={<Redo2 size={14} />} label="Redo" onClick={() => editor?.chain().focus().redo().run()} />
+                  </div>
+
+                  <input ref={editorImageInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void handleEditorUpload(file)
+                    event.target.value = ''
                   }} />
-                  <ToolbarButton editor={editor} icon={<Unlink2 size={14} />} label="Remove link" onClick={() => editor?.chain().focus().unsetLink().run()} />
-                  <ToolbarButton editor={editor} icon={<ImagePlus size={14} />} label="Upload image" onClick={() => editorImageInputRef.current?.click()} />
-                  <div className="h-6 w-px bg-slate-200" />
-                  <ToolbarButton editor={editor} icon={<Undo2 size={14} />} label="Undo" onClick={() => editor?.chain().focus().undo().run()} />
-                  <ToolbarButton editor={editor} icon={<Redo2 size={14} />} label="Redo" onClick={() => editor?.chain().focus().redo().run()} />
+
+                  <EditorContent editor={editor} />
+                  <div className="mt-3 text-xs text-slate-500">{stats.words} words - {stats.readingTime} min read</div>
                 </div>
 
-                <input ref={editorImageInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (file) void handleEditorUpload(file)
-                  event.target.value = ''
-                }} />
-
-                <EditorContent editor={editor} />
-                <div className="mt-3 text-xs text-slate-500">{stats.words} words - {stats.readingTime} min read</div>
+                <div
+                  className={cn(
+                    'rounded-xl border border-slate-200 bg-white p-4',
+                    mobileEditorMode === 'preview' ? 'block md:hidden' : 'hidden'
+                  )}
+                >
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Preview</p>
+                  <div
+                    className="prose prose-slate max-w-none min-h-[300px]"
+                    dangerouslySetInnerHTML={{ __html: form.content || '<p></p>' }}
+                  />
+                </div>
               </div>
             </section>
 
@@ -1645,6 +1660,30 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
         </div>
       </div>
 
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 p-3 backdrop-blur lg:hidden">
+        <div className="mx-auto max-w-[1400px]">
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={mobileEditorMode === 'edit' ? 'default' : 'outline'}
+              className={cn(mobileEditorMode === 'edit' ? 'bg-primary-green hover:bg-green-700' : '')}
+              onClick={() => setMobileEditorMode('edit')}
+            >
+              Edit
+            </Button>
+            <Button
+              type="button"
+              variant={mobileEditorMode === 'preview' ? 'default' : 'outline'}
+              className={cn(mobileEditorMode === 'preview' ? 'bg-primary-green hover:bg-green-700' : '')}
+              onClick={() => setMobileEditorMode('preview')}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Preview
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <Dialog open={showGuide} onOpenChange={setShowGuide}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
@@ -1823,4 +1862,5 @@ export function AdminBlogEditorPage({ mode, postId }: { mode: 'new' | 'edit'; po
     </main>
   )
 }
+
 

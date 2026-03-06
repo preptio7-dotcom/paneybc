@@ -73,8 +73,8 @@ export default function AdminSecurityOverviewPage() {
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
-      <div className="pt-[80px] pb-12">
-        <div className="mx-auto max-w-7xl px-6 space-y-8">
+      <div className="pt-[72px] lg:pt-[80px] pb-12">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 space-y-8">
           <div>
             <h1 className="font-heading text-3xl font-bold text-text-dark">Security Overview</h1>
             <p className="text-text-light">
@@ -82,17 +82,17 @@ export default function AdminSecurityOverviewPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-4 md:gap-4">
             {cards.map((card) => (
               <Card key={card.title} className="border-border">
-                <CardContent className="p-5">
+                <CardContent className="p-4 md:p-5">
                   <div className="flex items-center gap-4">
                     <div className={`rounded-xl p-3 ${card.iconBg}`}>
                       <card.icon size={20} className={card.iconClass} />
                     </div>
                     <div>
-                      <p className="text-sm text-text-light">{card.title}</p>
-                      <p className="text-2xl font-bold text-text-dark">
+                      <p className="admin-kpi-label text-xs text-text-light md:text-sm">{card.title}</p>
+                      <p className="admin-kpi-value text-xl font-bold text-text-dark md:text-2xl">
                         {loading ? '...' : card.value.toLocaleString()}
                       </p>
                     </div>
@@ -121,4 +121,5 @@ export default function AdminSecurityOverviewPage() {
     </main>
   )
 }
+
 

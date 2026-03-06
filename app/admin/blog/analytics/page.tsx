@@ -216,7 +216,7 @@ export default function AdminBlogAnalyticsPage() {
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
-      <div className="pt-[80px] pb-10">
+      <div className="pt-[72px] lg:pt-[80px] pb-10">
         <div className="mx-auto max-w-7xl px-4 md:px-6 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -241,27 +241,27 @@ export default function AdminBlogAnalyticsPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-4 md:gap-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs text-slate-500 inline-flex items-center gap-1"><Eye size={12} />Total Views</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{overview?.totalViews ?? 0}</p>
+              <p className="admin-kpi-label text-xs text-slate-500 inline-flex items-center gap-1"><Eye size={12} />Total Views</p>
+              <p className="admin-kpi-value mt-2 text-xl font-bold text-slate-900 md:text-2xl">{overview?.totalViews ?? 0}</p>
               <p className={`mt-1 text-xs ${(overview?.viewsChangePercent ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {(overview?.viewsChangePercent ?? 0).toFixed(1)}% vs previous period
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs text-slate-500 inline-flex items-center gap-1"><Clock3 size={12} />Avg Read Time</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{formatDuration(overview?.avgReadTimeSeconds ?? 0)}</p>
+              <p className="admin-kpi-label text-xs text-slate-500 inline-flex items-center gap-1"><Clock3 size={12} />Avg Read Time</p>
+              <p className="admin-kpi-value mt-2 text-xl font-bold text-slate-900 md:text-2xl">{formatDuration(overview?.avgReadTimeSeconds ?? 0)}</p>
               <p className="mt-1 text-xs text-slate-500">Avg scroll depth: {(overview?.avgScrollDepth ?? 0).toFixed(1)}%</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs text-slate-500 inline-flex items-center gap-1"><MousePointer size={12} />CTA Clicks</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{overview?.ctaClicks ?? 0}</p>
+              <p className="admin-kpi-label text-xs text-slate-500 inline-flex items-center gap-1"><MousePointer size={12} />CTA Clicks</p>
+              <p className="admin-kpi-value mt-2 text-xl font-bold text-slate-900 md:text-2xl">{overview?.ctaClicks ?? 0}</p>
               <p className="mt-1 text-xs text-slate-500">{(overview?.ctaCtr ?? 0).toFixed(1)}% CTR</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs text-slate-500 inline-flex items-center gap-1"><UserPlus size={12} />Signups from Blog</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{overview?.signups ?? 0}</p>
+              <p className="admin-kpi-label text-xs text-slate-500 inline-flex items-center gap-1"><UserPlus size={12} />Signups from Blog</p>
+              <p className="admin-kpi-value mt-2 text-xl font-bold text-slate-900 md:text-2xl">{overview?.signups ?? 0}</p>
               <p className="mt-1 text-xs text-slate-500">{(overview?.conversionRate ?? 0).toFixed(1)}% conversion</p>
             </div>
           </div>
@@ -269,7 +269,7 @@ export default function AdminBlogAnalyticsPage() {
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <h2 className="text-sm font-semibold text-slate-800">Where Are Your Readers Coming From?</h2>
-              <div className="mt-4 h-56">
+              <div className="admin-donut-wrap mt-4 h-[200px] md:h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={sources.sources} dataKey="count" nameKey="source" innerRadius={60} outerRadius={90}>
@@ -297,7 +297,7 @@ export default function AdminBlogAnalyticsPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <h2 className="text-sm font-semibold text-slate-800">Views Over Time</h2>
-              <div className="mt-4 h-64">
+              <div className="admin-chart-height mt-4 h-[200px] md:h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={timeline}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -407,7 +407,7 @@ export default function AdminBlogAnalyticsPage() {
                       />
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      Impressions: {row.impressions} • Clicks: {row.clicks} • Signups: {row.signups}
+                      Impressions: {row.impressions} | Clicks: {row.clicks} | Signups: {row.signups}
                     </p>
                   </div>
                 ))}
@@ -417,7 +417,7 @@ export default function AdminBlogAnalyticsPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <h2 className="text-sm font-semibold text-slate-800">How Far Are Readers Getting?</h2>
-              <div className="mt-4 h-72">
+              <div className="admin-chart-height mt-4 h-[200px] md:h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={funnel.levels} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
@@ -439,3 +439,4 @@ export default function AdminBlogAnalyticsPage() {
     </main>
   )
 }
+

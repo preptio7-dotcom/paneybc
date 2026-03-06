@@ -147,7 +147,7 @@ export function AdminBlogCategoriesPage() {
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
-      <div className="pb-10 pt-[80px]">
+      <div className="pb-10 pt-[72px] lg:pt-[80px]">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -289,4 +289,5 @@ export function AdminBlogCategoriesPage() {
     </main>
   )
 }
+
 

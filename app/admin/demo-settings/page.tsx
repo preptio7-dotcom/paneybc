@@ -97,8 +97,8 @@ export default function AdminDemoSettingsPage() {
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
 
-      <div className="pt-[80px] pb-12">
-        <div className="max-w-6xl mx-auto px-6">
+      <div className="pt-[72px] lg:pt-[80px] pb-12">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
           <Card className="border-border">
             <CardHeader>
               <CardTitle>Demo Test Settings</CardTitle>
@@ -225,3 +225,4 @@ export default function AdminDemoSettingsPage() {
     </main>
   )
 }
+

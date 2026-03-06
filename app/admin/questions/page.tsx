@@ -423,8 +423,8 @@ export default function QuestionsManagementPage() {
         <main className="min-h-screen bg-background-light">
             <AdminHeader />
 
-            <div className="pt-[80px] pb-12">
-                <div className="max-w-7xl mx-auto px-6">
+            <div className="pt-[72px] lg:pt-[80px] pb-12">
+                <div className="max-w-7xl mx-auto px-4 md:px-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                         <div>
                             <h1 className="font-heading text-3xl font-bold text-text-dark">Question Management</h1>
@@ -635,46 +635,35 @@ export default function QuestionsManagementPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow className="border-border sticky top-0 bg-white z-10">
-                                                <TableHead className="w-[90px]">#</TableHead>
-                                                <TableHead>Question</TableHead>
-                                                <TableHead>Subject</TableHead>
-                                                <TableHead>Chapter</TableHead>
-                                                <TableHead>Difficulty</TableHead>
-                                                <TableHead>Correct</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {questions.length > 0 ? (
-                                                questions.map((q, idx) => (
-                                                    <TableRow key={q.id ?? q._id ?? `${q.questionNumber ?? 'q'}-${idx}`} className="border-border hover:bg-background-light/50">
-                                                        <TableCell className="font-mono text-xs">{q.questionNumber}</TableCell>
-                                                        <TableCell className="max-w-md">
-                                                            <div className="font-medium text-text-dark line-clamp-2">{q.question}</div>
-                                                            {q.imageUrl ? (
-                                                                <div className="mt-2">
-                                                                    <img
-                                                                        src={q.imageUrl}
-                                                                        alt="Question diagram"
-                                                                        className="h-16 w-auto rounded border border-border bg-white object-contain"
-                                                                        loading="lazy"
-                                                                    />
-                                                                </div>
-                                                            ) : null}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Badge variant="outline" className="bg-primary-green/5 text-primary-green border-primary-green/20">
-                                                                {q.subject}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="text-text-light text-xs">
-                                                            {q.chapter || '--'}
-                                                        </TableCell>
-                                                        <TableCell>
+                                    <div className="space-y-3 md:hidden">
+                                        {questions.length > 0 ? (
+                                            questions.map((q, idx) => (
+                                                <div
+                                                    key={`mobile-${q.id ?? q._id ?? `${q.questionNumber ?? 'q'}-${idx}`}`}
+                                                    className="rounded-xl border border-border bg-white p-4"
+                                                >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <p className="text-xs font-semibold text-text-light">#{q.questionNumber}</p>
+                                                        <Badge variant="outline" className="bg-primary-green/5 text-primary-green border-primary-green/20">
+                                                            {q.subject}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="mt-2 text-sm font-medium text-text-dark">{q.question}</p>
+                                                    {q.imageUrl ? (
+                                                        <div className="mt-2">
+                                                            <img
+                                                                src={q.imageUrl}
+                                                                alt="Question diagram"
+                                                                className="h-20 w-auto rounded border border-border bg-white object-contain"
+                                                                loading="lazy"
+                                                            />
+                                                        </div>
+                                                    ) : null}
+                                                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-text-light">
+                                                        <p>Chapter: {q.chapter || '--'}</p>
+                                                        <p>Correct: {formatCorrectOption(q)}</p>
+                                                        <p className="col-span-2">
+                                                            <span className="mr-1">Difficulty:</span>
                                                             <Badge className={
                                                                 q.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
                                                                     q.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
@@ -682,65 +671,165 @@ export default function QuestionsManagementPage() {
                                                             }>
                                                                 {q.difficulty}
                                                             </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="font-mono text-xs">
-                                                            {formatCorrectOption(q)}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="text-primary-green hover:text-primary-green hover:bg-primary-green/10"
-                                                                onClick={() => openEdit(q)}
-                                                            >
-                                                                <Pencil size={16} />
-                                                            </Button>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
+                                                        </p>
+                                                    </div>
+                                                    <div className="mt-3 flex flex-col gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="justify-center gap-2"
+                                                            onClick={() => openEdit(q)}
+                                                        >
+                                                            <Pencil size={14} />
+                                                            Edit
+                                                        </Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="justify-center gap-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                    Delete
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent className="bg-white">
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle className="text-error-red">Delete Question?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        This will permanently delete this question. This action cannot be undone.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        onClick={() => handleDeleteQuestion(q.id ?? q._id)}
+                                                                        className="bg-red-600 hover:bg-red-700 text-white"
+                                                                    >
+                                                                        Delete
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="rounded-xl border border-border bg-white p-8 text-center text-text-light">
+                                                No questions found.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="hidden md:block">
+                                        <div className="admin-table-scroll overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow className="border-border sticky top-0 bg-white z-10">
+                                                        <TableHead className="w-[90px]">#</TableHead>
+                                                        <TableHead>Question</TableHead>
+                                                        <TableHead>Subject</TableHead>
+                                                        <TableHead>Chapter</TableHead>
+                                                        <TableHead>Difficulty</TableHead>
+                                                        <TableHead>Correct</TableHead>
+                                                        <TableHead className="text-right">Actions</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {questions.length > 0 ? (
+                                                        questions.map((q, idx) => (
+                                                            <TableRow key={q.id ?? q._id ?? `${q.questionNumber ?? 'q'}-${idx}`} className="border-border hover:bg-background-light/50">
+                                                                <TableCell className="font-mono text-xs">{q.questionNumber}</TableCell>
+                                                                <TableCell className="max-w-md">
+                                                                    <div className="font-medium text-text-dark line-clamp-2">{q.question}</div>
+                                                                    {q.imageUrl ? (
+                                                                        <div className="mt-2">
+                                                                            <img
+                                                                                src={q.imageUrl}
+                                                                                alt="Question diagram"
+                                                                                className="h-16 w-auto rounded border border-border bg-white object-contain"
+                                                                                loading="lazy"
+                                                                            />
+                                                                        </div>
+                                                                    ) : null}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Badge variant="outline" className="bg-primary-green/5 text-primary-green border-primary-green/20">
+                                                                        {q.subject}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="text-text-light text-xs">
+                                                                    {q.chapter || '--'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Badge className={
+                                                                        q.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
+                                                                            q.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                                                                'bg-rose-100 text-rose-700'
+                                                                    }>
+                                                                        {q.difficulty}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="font-mono text-xs">
+                                                                    {formatCorrectOption(q)}
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="sm"
-                                                                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-100"
+                                                                        className="text-primary-green hover:text-primary-green hover:bg-primary-green/10"
+                                                                        onClick={() => openEdit(q)}
                                                                     >
-                                                                        <Trash2 size={16} />
+                                                                        <Pencil size={16} />
                                                                     </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent className="bg-white">
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle className="text-error-red">Delete Question?</AlertDialogTitle>
-                                                                        <AlertDialogDescription>
-                                                                            This will permanently delete this question. This action cannot be undone.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction
-                                                                            onClick={() => handleDeleteQuestion(q.id ?? q._id)}
-                                                                            className="bg-red-600 hover:bg-red-700 text-white"
-                                                                        >
-                                                                            Delete
-                                                                        </AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={8} className="text-center p-12 text-text-light">
-                                                        No questions found.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="text-rose-600 hover:text-rose-700 hover:bg-rose-100"
+                                                                            >
+                                                                                <Trash2 size={16} />
+                                                                            </Button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent className="bg-white">
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle className="text-error-red">Delete Question?</AlertDialogTitle>
+                                                                                <AlertDialogDescription>
+                                                                                    This will permanently delete this question. This action cannot be undone.
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                                <AlertDialogAction
+                                                                                    onClick={() => handleDeleteQuestion(q.id ?? q._id)}
+                                                                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                                                                >
+                                                                                    Delete
+                                                                                </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    ) : (
+                                                        <TableRow>
+                                                            <TableCell colSpan={8} className="text-center p-12 text-text-light">
+                                                                No questions found.
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>
                         {!isLoading && totalPages > 1 && (
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 pb-6">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-4 pb-6 md:px-6">
                                 <div className="text-sm text-text-light">
                                     Page {page} of {totalPages}
                                 </div>
@@ -949,3 +1038,4 @@ export default function QuestionsManagementPage() {
         </main>
     )
 }
+

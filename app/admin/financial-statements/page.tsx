@@ -75,7 +75,7 @@ export default function AdminFinancialStatementsPage() {
   return (
     <div className="min-h-screen bg-background-light">
       <AdminHeader />
-      <main className="pt-[90px] pb-12 px-6">
+      <main className="pt-[76px] lg:pt-[90px] pb-12 px-4 md:px-6">
         <div className="max-w-6xl mx-auto space-y-6">
           <Card className="border-border bg-white">
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -109,3 +109,4 @@ export default function AdminFinancialStatementsPage() {
     </div>
   )
 }
+

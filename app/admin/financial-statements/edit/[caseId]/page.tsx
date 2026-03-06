@@ -82,7 +82,7 @@ export default function EditFinancialStatementCasePage() {
   return (
     <div className="min-h-screen bg-background-light">
       <AdminHeader />
-      <main className="pt-[90px] pb-12 px-6">
+      <main className="pt-[76px] lg:pt-[90px] pb-12 px-4 md:px-6">
         <div className="max-w-5xl mx-auto space-y-6">
           <div>
             <h1 className="font-heading text-2xl font-bold text-text-dark">Edit Financial Statement Case</h1>
@@ -106,3 +106,4 @@ export default function EditFinancialStatementCasePage() {
     </div>
   )
 }
+

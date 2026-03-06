@@ -7,8 +7,8 @@ import { usePathname } from 'next/navigation'
 import {
   BarChart2,
   Bell,
-  Building2,
   BookOpen,
+  Building2,
   ClipboardList,
   FileText,
   FlaskConical,
@@ -69,17 +69,8 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Users & Feedback',
     items: [
       { label: 'Users', href: '/admin/users', icon: Users, badgeKey: 'newUsersTodayCount' },
-      {
-        label: 'Ambassador Apps',
-        href: '/admin/join-us',
-        icon: UserRoundCheck,
-        badgeKey: 'pendingAmbassadorCount',
-      },
-      {
-        label: 'Mock Notify',
-        href: '/admin/mock-test-notify-requests',
-        icon: Bell,
-      },
+      { label: 'Ambassador Apps', href: '/admin/join-us', icon: UserRoundCheck, badgeKey: 'pendingAmbassadorCount' },
+      { label: 'Mock Notify', href: '/admin/mock-test-notify-requests', icon: Bell },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
       { label: 'Analytics & Reports', href: '/admin/analytics', icon: BarChart2 },
@@ -95,9 +86,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'Customization',
-    items: [
-      { label: 'Avatar Packs', href: '/admin/avatar-packs', icon: Palette },
-    ],
+    items: [{ label: 'Avatar Packs', href: '/admin/avatar-packs', icon: Palette }],
   },
   {
     label: 'Security',
@@ -108,6 +97,17 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Streak Audit', href: '/admin/streak-audit', icon: History },
     ],
   },
+]
+
+const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
+  { match: /^\/admin$/, title: 'Admin Dashboard' },
+  { match: /^\/admin\/blog\/new$/, title: 'Create Blog Post' },
+  { match: /^\/admin\/blog\/edit\/.+/, title: 'Edit Blog Post' },
+  { match: /^\/admin\/blog$/, title: 'Blog Posts' },
+  { match: /^\/admin\/blog\/analytics$/, title: 'Blog Analytics' },
+  { match: /^\/admin\/questions$/, title: 'Question Management' },
+  { match: /^\/admin\/analytics$/, title: 'Analytics & Reports' },
+  { match: /^\/admin\/users$/, title: 'User Management' },
 ]
 
 function isActiveRoute(pathname: string, href: string) {
@@ -123,53 +123,55 @@ function getBadgeColor(item: NavItem) {
   return 'bg-slate-600 text-white'
 }
 
+function toTitleFromPath(pathname: string) {
+  const matched = ADMIN_TITLE_OVERRIDES.find((entry) => entry.match.test(pathname))
+  if (matched) return matched.title
+
+  const raw = pathname
+    .split('/')
+    .filter(Boolean)
+    .slice(1)
+    .filter((segment) => !segment.startsWith('['))
+    .pop()
+
+  if (!raw) return 'Admin'
+  return raw
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
 function NavItemLink({
   item,
   pathname,
   badgeValue,
   onNavigate,
-  mobile,
 }: {
   item: NavItem
   pathname: string
   badgeValue: number
   onNavigate?: () => void
-  mobile?: boolean
 }) {
   const isActive = isActiveRoute(pathname, item.href)
-  const baseClass = isActive
-    ? 'bg-primary-green text-white'
-    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+  const baseClass = isActive ? 'bg-primary-green text-white' : 'text-slate-200 hover:bg-slate-800 hover:text-white'
 
   return (
     <Link
       href={item.href}
       onClick={onNavigate}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${baseClass} md:justify-center xl:justify-start`}
+      className={`relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${baseClass}`}
       title={item.label}
     >
-      <span className="relative inline-flex h-5 w-5 items-center justify-center">
+      <span className="inline-flex h-5 w-5 items-center justify-center">
         <item.icon size={18} />
-        {!mobile && badgeValue > 0 ? (
-          <span className="absolute -right-2 -top-2 inline-flex h-2.5 w-2.5 rounded-full bg-red-500 md:block xl:hidden" />
-        ) : null}
       </span>
-
-      <span className={`${mobile ? 'inline' : 'hidden xl:inline'}`}>{item.label}</span>
-
+      <span className="truncate">{item.label}</span>
       {badgeValue > 0 ? (
         <span
-          className={`ml-auto inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ${getBadgeColor(
+          className={`ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ${getBadgeColor(
             item
-          )} ${mobile ? '' : 'hidden xl:inline-flex'}`}
+          )}`}
         >
           {badgeValue > 99 ? '99+' : badgeValue}
-        </span>
-      ) : null}
-
-      {!mobile ? (
-        <span className="pointer-events-none absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 rounded-md bg-slate-800 px-2 py-1 text-xs text-white shadow md:group-hover:block xl:hidden">
-          {item.label}
         </span>
       ) : null}
     </Link>
@@ -187,6 +189,12 @@ export function AdminHeader() {
     pendingAmbassadorCount: 0,
     notificationCount: 0,
   })
+
+  const pageTitle = useMemo(() => toTitleFromPath(pathname), [pathname])
+
+  useEffect(() => {
+    setIsMobileSidebarOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     let isMounted = true
@@ -222,20 +230,15 @@ export function AdminHeader() {
     }
   }, [])
 
-  const flattenedItems = useMemo(() => NAV_GROUPS.flatMap((group) => group.items), [])
-
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-50 hidden border-r border-slate-800 bg-[#0f172a] text-slate-100 transition-all duration-300 md:flex md:w-16 xl:w-60">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-60 border-r border-slate-800 bg-[#0f172a] text-slate-100 lg:flex">
         <div className="flex h-full w-full flex-col">
-          <Link
-            href="/admin"
-            className="flex h-[72px] items-center gap-3 border-b border-slate-800 px-3 md:justify-center xl:justify-start xl:px-4"
-          >
+          <Link href="/admin" className="flex h-[72px] items-center gap-3 border-b border-slate-800 px-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-green text-sm font-bold text-white">
               P
             </div>
-            <div className="hidden xl:block">
+            <div>
               <p className="text-sm font-semibold text-white">Preptio</p>
               <p className="text-xs text-slate-400">Admin Panel</p>
             </div>
@@ -244,7 +247,7 @@ export function AdminHeader() {
           <nav className="flex-1 space-y-5 overflow-y-auto px-2 py-4">
             {NAV_GROUPS.map((group) => (
               <div key={group.label} className="space-y-1">
-                <p className="hidden px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500 xl:block">
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                   {group.label}
                 </p>
                 {group.items.map((item) => (
@@ -262,7 +265,7 @@ export function AdminHeader() {
           <div className="border-t border-slate-800 p-2">
             <Link
               href="/admin/users"
-              className="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-slate-200 transition-colors hover:bg-slate-800 md:justify-center xl:justify-start"
+              className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-slate-200 transition-colors hover:bg-slate-800"
               title={user?.name || 'Admin User'}
             >
               {user?.avatar ? (
@@ -274,62 +277,58 @@ export function AdminHeader() {
                   <UserIcon size={16} />
                 </div>
               )}
-              <div className="hidden xl:block">
+              <div>
                 <p className="text-sm font-medium text-white">{user?.name || 'Admin User'}</p>
-                <p className="text-xs text-slate-400">
-                  {user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}
-                </p>
+                <p className="text-xs text-slate-400">{user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}</p>
               </div>
-              <span className="pointer-events-none absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 rounded-md bg-slate-800 px-2 py-1 text-xs text-white shadow md:group-hover:block xl:hidden">
-                {user?.name || 'Admin User'}
-              </span>
             </Link>
 
             <Button
               variant="ghost"
               onClick={() => logout()}
-              className="group relative mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-red-300 hover:bg-red-500/10 hover:text-red-200 md:justify-center xl:justify-start"
+              className="mt-1 flex min-h-[44px] w-full items-center justify-start gap-3 rounded-lg px-3 py-2 text-red-300 hover:bg-red-500/10 hover:text-red-200"
               title="Logout"
             >
               <LogOut size={16} />
-              <span className="hidden xl:inline">Logout</span>
-              <span className="pointer-events-none absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 rounded-md bg-slate-800 px-2 py-1 text-xs text-white shadow md:group-hover:block xl:hidden">
-                Logout
-              </span>
+              <span>Logout</span>
             </Button>
           </div>
         </div>
       </aside>
 
-      <header className="fixed left-0 right-0 top-0 z-40 h-[60px] border-b border-slate-200 bg-white md:left-16 xl:left-60">
-        <div className="flex h-full items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMobileSidebarOpen(true)}
-            >
-              <Menu size={20} />
-              <span className="sr-only">Open navigation menu</span>
-            </Button>
-          </div>
+      <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-slate-200 bg-white lg:left-60 lg:h-[60px]">
+        <div className="relative flex h-full items-center gap-2 px-3 sm:px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-11 w-11 lg:hidden"
+            onClick={() => setIsMobileSidebarOpen(true)}
+          >
+            <Menu size={20} />
+            <span className="sr-only">Open navigation menu</span>
+          </Button>
 
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
+          <h1 className="pointer-events-none absolute left-1/2 max-w-[58vw] -translate-x-1/2 truncate text-center text-[15px] font-semibold text-slate-900 lg:hidden">
+            {pageTitle}
+          </h1>
+
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" className="relative hidden h-9 w-9 lg:inline-flex">
               <Bell size={18} />
               {badges.notificationCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
+                <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
                   {badges.notificationCount > 99 ? '99+' : badges.notificationCount}
                 </span>
               ) : null}
               <span className="sr-only">Notifications</span>
             </Button>
 
-            <Link
-              href="/admin/users"
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100"
-            >
+            <Button variant="ghost" size="icon" className="h-11 w-11 text-slate-600 lg:hidden" onClick={() => logout()}>
+              <LogOut size={18} />
+              <span className="sr-only">Logout</span>
+            </Button>
+
+            <Link href="/admin/users" className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-slate-100 lg:px-2">
               {user?.avatar ? (
                 <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-[#dcfce7]">
                   <Image src={user.avatar} alt={user.name} fill className="object-cover" />
@@ -339,91 +338,89 @@ export function AdminHeader() {
                   <UserIcon size={16} />
                 </div>
               )}
-              <div className="hidden text-left sm:block">
+              <div className="hidden text-left lg:block">
                 <p className="text-sm font-medium text-slate-900">{user?.name || 'Admin User'}</p>
-                <p className="text-xs text-slate-500">
-                  {user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}
-                </p>
+                <p className="text-xs text-slate-500">{user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}</p>
               </div>
             </Link>
           </div>
         </div>
       </header>
 
-      {isMobileSidebarOpen ? (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/60 transition-opacity duration-300"
-            onClick={() => setIsMobileSidebarOpen(false)}
-          />
-          <aside className="absolute left-0 top-0 h-full w-60 bg-[#0f172a] text-slate-100 shadow-xl transition-transform duration-300">
-            <div className="flex h-[60px] items-center justify-between border-b border-slate-800 px-4">
+      <div className={`fixed inset-0 z-50 lg:hidden ${isMobileSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${isMobileSidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+        <aside
+          className={`absolute left-0 top-0 flex h-full w-[280px] flex-col bg-[#0f172a] text-slate-100 shadow-xl transition-transform duration-300 ease-in-out ${
+            isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-[280px]'
+          }`}
+        >
+          <div className="flex h-14 items-center justify-between border-b border-slate-800 px-4">
+            <div>
+              <p className="text-sm font-semibold text-white">Preptio</p>
+              <p className="text-xs text-slate-400">Admin Panel</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-slate-300 hover:bg-slate-800 hover:text-white"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            >
+              <X size={18} />
+              <span className="sr-only">Close navigation menu</span>
+            </Button>
+          </div>
+
+          <nav className="flex-1 space-y-5 overflow-y-auto px-2 py-4 pb-24">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.label} className="space-y-1">
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  {group.label}
+                </p>
+                {group.items.map((item) => (
+                  <NavItemLink
+                    key={item.href}
+                    item={item}
+                    pathname={pathname}
+                    badgeValue={item.badgeKey ? badges[item.badgeKey] : 0}
+                    onNavigate={() => setIsMobileSidebarOpen(false)}
+                  />
+                ))}
+              </div>
+            ))}
+          </nav>
+
+          <div className="border-t border-slate-800 p-3">
+            <div className="mb-2 flex items-center gap-3 rounded-lg bg-slate-800/70 px-3 py-2">
+              {user?.avatar ? (
+                <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-[#dcfce7]">
+                  <Image src={user.avatar} alt={user.name} fill className="object-cover" />
+                </div>
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-green/20 text-primary-green">
+                  <UserIcon size={16} />
+                </div>
+              )}
               <div>
-                <p className="text-sm font-semibold text-white">Preptio</p>
-                <p className="text-xs text-slate-400">Admin Panel</p>
+                <p className="text-sm font-medium text-white">{user?.name || 'Admin User'}</p>
+                <p className="text-xs text-slate-400">{user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-slate-300 hover:bg-slate-800 hover:text-white"
-                onClick={() => setIsMobileSidebarOpen(false)}
-              >
-                <X size={18} />
-                <span className="sr-only">Close navigation menu</span>
-              </Button>
             </div>
-
-            <nav className="space-y-5 overflow-y-auto px-2 py-4">
-              {NAV_GROUPS.map((group) => (
-                <div key={group.label} className="space-y-1">
-                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                    {group.label}
-                  </p>
-                  {group.items.map((item) => (
-                    <NavItemLink
-                      key={item.href}
-                      item={item}
-                      pathname={pathname}
-                      badgeValue={item.badgeKey ? badges[item.badgeKey] : 0}
-                      onNavigate={() => setIsMobileSidebarOpen(false)}
-                      mobile
-                    />
-                  ))}
-                </div>
-              ))}
-            </nav>
-
-            <div className="absolute bottom-0 left-0 right-0 border-t border-slate-800 p-3">
-              <div className="mb-2 flex items-center gap-3 rounded-lg bg-slate-800/70 px-3 py-2">
-                {user?.avatar ? (
-                  <div className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-[#dcfce7]">
-                    <Image src={user.avatar} alt={user.name} fill className="object-cover" />
-                  </div>
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-green/20 text-primary-green">
-                    <UserIcon size={16} />
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-medium text-white">{user?.name || 'Admin User'}</p>
-                  <p className="text-xs text-slate-400">
-                    {user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={() => logout()}
-                className="w-full justify-start gap-2 text-red-300 hover:bg-red-500/10 hover:text-red-200"
-              >
-                <LogOut size={16} />
-                Logout
-              </Button>
-            </div>
-          </aside>
-        </div>
-      ) : null}
-
+            <Button
+              variant="ghost"
+              onClick={() => logout()}
+              className="min-h-[44px] w-full justify-start gap-2 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+            >
+              <LogOut size={16} />
+              Logout
+            </Button>
+          </div>
+        </aside>
+      </div>
     </>
   )
 }
