@@ -81,7 +81,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Some rows are missing required fields' }, { status: 400 })
     }
 
-    const inserted = await prisma.question.createMany({ data: payload })
+    let inserted: { count: number }
+    let warnings: string[] = []
+
+    try {
+      inserted = await prisma.question.createMany({ data: payload })
+    } catch (insertError: any) {
+      const errorMessage = String(insertError?.message || '')
+      const missingOptionImageColumn =
+        errorMessage.includes('optionImageUrls') &&
+        errorMessage.toLowerCase().includes('does not exist')
+
+      if (!missingOptionImageColumn) {
+        throw insertError
+      }
+
+      const legacyPayload = payload.map((row) => {
+        const { optionImageUrls: _optionImageUrls, ...legacyRow } = row
+        return legacyRow
+      })
+
+      inserted = await prisma.question.createMany({ data: legacyPayload })
+      warnings = [
+        'Question upload succeeded, but option image URLs were not saved because the database migration is pending.',
+      ]
+    }
 
     await prisma.upload.update({
       where: { id: uploadRecord.id },
@@ -91,7 +115,11 @@ export async function POST(request: Request) {
       },
     })
 
-    return NextResponse.json({ message: 'Questions uploaded successfully', count: inserted.count })
+    return NextResponse.json({
+      message: 'Questions uploaded successfully',
+      count: inserted.count,
+      warnings,
+    })
   } catch (error: any) {
     console.error('Manual upload error:', error)
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 })

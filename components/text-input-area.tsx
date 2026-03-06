@@ -177,9 +177,16 @@ export function TextInputArea() {
       const data = await response.json()
 
       if (response.ok) {
+        const warningMessage =
+          Array.isArray(data.warnings) && data.warnings.length > 0
+            ? String(data.warnings[0])
+            : ''
+
         toast({
           title: 'Success',
-          description: `Submitted ${data.count} questions successfully!`,
+          description: warningMessage
+            ? `Submitted ${data.count} questions. ${warningMessage}`
+            : `Submitted ${data.count} questions successfully!`,
         })
         setRows([createRow()])
       } else {
