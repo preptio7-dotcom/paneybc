@@ -109,6 +109,7 @@ export default function DashboardSettingsPage() {
 
   const [isResetting, setIsResetting] = useState(false)
   const [isResettingNotes, setIsResettingNotes] = useState(false)
+  const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'password' | 'otp' | 'confirm'>('password')
   const [deletePassword, setDeletePassword] = useState('')
@@ -544,6 +545,43 @@ export default function DashboardSettingsPage() {
       })
     } finally {
       setIsResettingNotes(false)
+    }
+  }
+
+  const handleSendPasswordReset = async () => {
+    const userEmail = String(user?.email || '').trim()
+    if (!userEmail) {
+      toast({
+        title: 'Email unavailable',
+        description: 'Could not find your account email for password reset.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setIsSendingPasswordReset(true)
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset link')
+      }
+      toast({
+        title: 'Reset link sent',
+        description: `If an account exists with ${userEmail}, a reset link has been sent.`,
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Unable to send reset link',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSendingPasswordReset(false)
     }
   }
 
@@ -1014,6 +1052,22 @@ export default function DashboardSettingsPage() {
                     )
                   })}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-slate-200 bg-white rounded-2xl">
+              <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-slate-900">Reset Password</h3>
+                  <p className="text-sm text-slate-500">Send a password reset link to your account email.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleSendPasswordReset}
+                  disabled={isSendingPasswordReset || !user?.email}
+                >
+                  {isSendingPasswordReset ? 'Sending...' : 'Send Reset Link'}
+                </Button>
               </CardContent>
             </Card>
 
