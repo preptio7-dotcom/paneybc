@@ -1,18 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Script from 'next/script'
 import { usePathname } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
-import { getAdEligibilityInfo, shouldLoadAdsForContext, shouldShowAdblockPrompt } from '@/lib/ad-access'
+import { getAdEligibilityInfo, shouldShowAdblockPrompt } from '@/lib/ad-access'
 
 const ADSENSE_SRC =
   'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378'
 const ADBLOCK_SESSION_KEY = 'preptio_adblock_passed'
-
-type ScriptStatus = 'idle' | 'loaded' | 'error'
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => {
@@ -89,7 +86,6 @@ export function AdExperienceGuard() {
   const [showOverlay, setShowOverlay] = useState(false)
   const [isRechecking, setIsRechecking] = useState(false)
   const [recheckMessage, setRecheckMessage] = useState('')
-  const [scriptStatus, setScriptStatus] = useState<ScriptStatus>('idle')
 
   const adEligibility = useMemo(() => {
     if (loading) return null
@@ -109,11 +105,6 @@ export function AdExperienceGuard() {
       setSessionReady(true)
     }
   }, [])
-
-  const shouldLoadScript = useMemo(() => {
-    if (loading) return false
-    return shouldLoadAdsForContext(pathname, user)
-  }, [loading, pathname, user])
 
   const shouldCheckAdblock = useMemo(() => {
     if (loading || !sessionReady || sessionPassed) return false
@@ -135,19 +126,14 @@ export function AdExperienceGuard() {
     const baitBlocked = await detectAdblocker()
     if (baitBlocked) return true
 
-    if (scriptStatus === 'error') return true
-    if (scriptStatus === 'loaded') return false
-
     await wait(1200)
-    if (scriptStatus === 'error') return true
-    if (scriptStatus === 'loaded') return false
 
     if (typeof window !== 'undefined' && Array.isArray((window as any).adsbygoogle)) {
       return false
     }
 
     return probeAdSenseScriptLoad()
-  }, [scriptStatus])
+  }, [])
 
   useEffect(() => {
     if (!shouldCheckAdblock) {
@@ -192,18 +178,6 @@ export function AdExperienceGuard() {
 
   return (
     <>
-      {shouldLoadScript ? (
-        <Script
-          id="google-adsense-script"
-          async
-          src={ADSENSE_SRC}
-          crossOrigin="anonymous"
-          strategy="lazyOnload"
-          onLoad={() => setScriptStatus('loaded')}
-          onError={() => setScriptStatus('error')}
-        />
-      ) : null}
-
       {showOverlay ? (
         <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4">
           <Card className="w-full max-w-xl border border-emerald-200 shadow-2xl">

@@ -4,9 +4,15 @@ import { isPrivateCrawlPath } from '@/lib/private-crawl-routes'
 const BASE_SCRIPT_SOURCES = [
   "'self'",
   "'unsafe-inline'",
+  "'unsafe-eval'",
   'https://pagead2.googlesyndication.com',
+  'https://adservice.google.com',
+  'https://www.googletagservices.com',
   'https://www.googletagmanager.com',
   'https://www.google-analytics.com',
+  'https://region1.google-analytics.com',
+  'https://*.googlesyndication.com',
+  'https://*.doubleclick.net',
   'https://googleads.g.doubleclick.net',
   'https://tpc.googlesyndication.com',
   'https://va.vercel-scripts.com',
@@ -23,18 +29,43 @@ const BASE_CONNECT_SOURCES = [
   'https://api.multiavatar.com',
   'https://models.readyplayer.me',
   'https://pagead2.googlesyndication.com',
+  'https://adservice.google.com',
   'https://googleads.g.doubleclick.net',
+  'https://ep1.adtrafficquality.google',
   'https://www.google-analytics.com',
   'https://region1.google-analytics.com',
+  'https://*.googlesyndication.com',
+  'https://*.doubleclick.net',
   'https://vitals.vercel-insights.com',
+]
+
+const BASE_FRAME_SOURCES = [
+  "'self'",
+  'https://googleads.g.doubleclick.net',
+  'https://tpc.googlesyndication.com',
+  'https://*.googlesyndication.com',
+  'https://*.doubleclick.net',
+]
+
+const BASE_IMG_SOURCES = [
+  "'self'",
+  'data:',
+  'blob:',
+  'https://pagead2.googlesyndication.com',
+  'https://*.googlesyndication.com',
+  'https://*.doubleclick.net',
+  'https://www.google-analytics.com',
+  // keep existing broad https image support for remote assets
+  'https:',
 ]
 
 function buildContentSecurityPolicy(isDevelopment: boolean) {
   const scriptSources = [...BASE_SCRIPT_SOURCES]
   const connectSources = [...BASE_CONNECT_SOURCES]
+  const frameSources = [...BASE_FRAME_SOURCES]
+  const imgSources = [...BASE_IMG_SOURCES]
 
   if (isDevelopment) {
-    scriptSources.push("'unsafe-eval'")
     connectSources.push('ws:', 'http://localhost:*', 'http://127.0.0.1:*')
   }
 
@@ -43,9 +74,9 @@ function buildContentSecurityPolicy(isDevelopment: boolean) {
     `script-src ${scriptSources.join(' ')}`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' data: https://fonts.gstatic.com`,
-    `img-src 'self' data: blob: https:`,
+    `img-src ${imgSources.join(' ')}`,
     `connect-src ${connectSources.join(' ')}`,
-    `frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com`,
+    `frame-src ${frameSources.join(' ')}`,
     `worker-src 'self' blob:`,
     `object-src 'none'`,
     `base-uri 'self'`,
