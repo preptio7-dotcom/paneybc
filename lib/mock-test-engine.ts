@@ -23,24 +23,105 @@ import {
   resolveChapterLabel,
 } from '@/lib/chapter-labels'
 
-export type MockSessionQuestionRef = {
+export type MockSessionMcqQuestionRef = {
+  questionType?: 'mcq'
   questionId: string
   subjectCode: string
   chapterCode: string | null
   volume?: BaeVolume
 }
 
-export type MockSessionAnswer = {
-  index: number
+export type MockSessionFinancialStatementQuestionRef = {
+  questionType: 'financial_statement'
   questionId: string
   subjectCode: string
   chapterCode: string | null
-  selectedAnswer: number[]
-  isCorrect: boolean
-  attempted: boolean
+  caseId: number
+  caseNumber: string
+  caseTitle: string
 }
 
+export type MockSessionQuestionRef =
+  | MockSessionMcqQuestionRef
+  | MockSessionFinancialStatementQuestionRef
+
+type FinancialStatementLineAnswer = {
+  line_item_id: number
+  selected_value: string
+}
+
+type FinancialStatementAnswerPayload = {
+  sociAnswers: FinancialStatementLineAnswer[]
+  sofpAnswers: FinancialStatementLineAnswer[]
+}
+
+type FinancialStatementAnswerResult = {
+  caseId: number
+  caseNumber: string
+  caseTitle: string
+  totalMarksObtained: number
+  totalMarks: number
+  percentage: number
+  attemptedLineItems: number
+  totalLineItems: number
+}
+
+export type MockSessionAnswer =
+  | {
+      index: number
+      questionId: string
+      subjectCode: string
+      chapterCode: string | null
+      questionType?: 'mcq'
+      selectedAnswer: number[]
+      isCorrect: boolean
+      attempted: boolean
+    }
+  | {
+      index: number
+      questionId: string
+      subjectCode: string
+      chapterCode: string | null
+      questionType: 'financial_statement'
+      selectedAnswer: number[]
+      isCorrect: boolean
+      attempted: boolean
+      financialStatementAnswers: FinancialStatementAnswerPayload
+      financialStatementResult: FinancialStatementAnswerResult | null
+    }
+
 type ParsedQuestionSet = MockSessionQuestionRef[]
+
+function normalizeFinancialStatementLineAnswers(value: unknown): FinancialStatementLineAnswer[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((row) => {
+      if (!row || typeof row !== 'object') return null
+      const entry = row as Record<string, unknown>
+      const lineItemId = Number(entry.line_item_id)
+      if (!Number.isInteger(lineItemId) || lineItemId <= 0) return null
+      return {
+        line_item_id: lineItemId,
+        selected_value: String(entry.selected_value ?? '').trim(),
+      }
+    })
+    .filter(Boolean) as FinancialStatementLineAnswer[]
+}
+
+function normalizeFinancialStatementPayload(value: unknown): FinancialStatementAnswerPayload {
+  const row = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+  return {
+    sociAnswers: normalizeFinancialStatementLineAnswers(row.sociAnswers),
+    sofpAnswers: normalizeFinancialStatementLineAnswers(row.sofpAnswers),
+  }
+}
+
+function countFinancialStatementAttemptedLineItems(payload: FinancialStatementAnswerPayload) {
+  return [...payload.sociAnswers, ...payload.sofpAnswers].reduce(
+    (sum, item) => (String(item.selected_value || '').trim() ? sum + 1 : sum),
+    0
+  )
+}
 
 export function parseMockQuestionSet(value: unknown): ParsedQuestionSet {
   if (!Array.isArray(value)) return []
@@ -48,6 +129,25 @@ export function parseMockQuestionSet(value: unknown): ParsedQuestionSet {
     .map((item) => {
       if (!item || typeof item !== 'object') return null
       const row = item as Record<string, unknown>
+      const questionType = String(row.questionType || '').trim().toLowerCase()
+      if (questionType === 'financial_statement' || Number.isInteger(Number(row.caseId))) {
+        const caseId = Number(row.caseId)
+        if (!Number.isInteger(caseId) || caseId <= 0) return null
+        const caseNumber = String(row.caseNumber || `Case ${caseId}`).trim() || `Case ${caseId}`
+        const caseTitle = String(row.caseTitle || 'Financial Statements').trim() || 'Financial Statements'
+        return {
+          questionType: 'financial_statement' as const,
+          questionId: String(row.questionId || `fs-case-${caseId}`).trim() || `fs-case-${caseId}`,
+          subjectCode: String(row.subjectCode || row.subject || 'FOA').trim().toUpperCase() || 'FOA',
+          chapterCode:
+            String(row.chapterCode || row.chapter || 'FINANCIAL_STATEMENTS').trim() ||
+            'FINANCIAL_STATEMENTS',
+          caseId,
+          caseNumber,
+          caseTitle,
+        }
+      }
+
       const questionId = String(row.questionId || '').trim()
       if (!questionId) return null
       const subjectCode = String(row.subjectCode || row.subject || '').trim().toUpperCase()
@@ -87,6 +187,80 @@ function isAnswerCorrect(
   return answerKey.every((entry, index) => selected[index] === entry)
 }
 
+function normalizeFinancialStatementValue(value: string) {
+  const trimmed = String(value ?? '').trim()
+  if (!trimmed) return { raw: '', num: null as number | null }
+  const raw = trimmed.toLowerCase().replace(/[\u2013\u2014\u2212]/g, '-')
+  let numericCandidate = raw
+    .replace(/rs\.?/g, '')
+    .replace(/pkr/g, '')
+    .replace(/[, ]+/g, '')
+    .replace(/^\+/, '')
+
+  let isParenNegative = false
+  if (/^\(.*\)$/.test(numericCandidate)) {
+    isParenNegative = true
+    numericCandidate = numericCandidate.slice(1, -1)
+  }
+
+  if (numericCandidate === '' || numericCandidate === '-' || numericCandidate === '.') {
+    return { raw: raw.replace(/\s+/g, ' '), num: null as number | null }
+  }
+
+  const numericPattern = /^-?\d*\.?\d+$/
+  let num: number | null = null
+  if (numericPattern.test(numericCandidate)) {
+    const normalizedNumber =
+      isParenNegative && !numericCandidate.startsWith('-')
+        ? `-${numericCandidate}`
+        : numericCandidate
+    const parsed = Number(normalizedNumber)
+    num = Number.isFinite(parsed) ? parsed : null
+  }
+
+  return { raw: raw.replace(/\s+/g, ' ').replace(/,+/g, ''), num }
+}
+
+function isFinancialStatementManualAnswerCorrect(selected: string, correct: string) {
+  const a = normalizeFinancialStatementValue(selected)
+  const b = normalizeFinancialStatementValue(correct)
+  if (a.num !== null && b.num !== null) {
+    return Math.abs(a.num - b.num) < 0.0001
+  }
+  return a.raw === b.raw
+}
+
+function buildFinancialStatementAnswerSet(
+  lineItems: Array<{
+    id: number
+    heading: string
+    inputType: string | null
+    correctValue: string
+    marks: unknown
+  }>,
+  answers: FinancialStatementLineAnswer[]
+) {
+  return lineItems.map((item) => {
+    const answer = answers.find((entry) => Number(entry.line_item_id) === Number(item.id))
+    const selectedValue = String(answer?.selected_value ?? '').trim()
+    const mode = String(item.inputType || 'dropdown').toLowerCase()
+    const isCorrect = selectedValue
+      ? mode === 'manual'
+        ? isFinancialStatementManualAnswerCorrect(selectedValue, item.correctValue)
+        : selectedValue === item.correctValue
+      : false
+    const marks = Number(item.marks) || 0
+    return {
+      line_item_id: item.id,
+      heading: item.heading,
+      selected_value: selectedValue,
+      correct_value: item.correctValue,
+      is_correct: Boolean(isCorrect),
+      marks_awarded: isCorrect ? marks : 0,
+    }
+  })
+}
+
 function pickChapterWeightedQuestionIds(
   questions: Array<{ id: string; chapter: string | null }>,
   requestedCount: number,
@@ -103,19 +277,25 @@ export async function getMockConfig(
   prisma: PrismaClient,
   definition: MockTestDefinition
 ) {
-  const counts = await Promise.all(
-    definition.questionSourceCodes.map(async (code) => ({
-      code,
-      count: await prisma.question.count({ where: { subject: code } }),
-    }))
-  )
+  const [counts, foaFinancialStatementsCases] = await Promise.all([
+    Promise.all(
+      definition.questionSourceCodes.map(async (code) => ({
+        code,
+        count: await prisma.question.count({ where: { subject: code } }),
+      }))
+    ),
+    definition.testType === 'foa_mock'
+      ? prisma.financialStatementCase.count({ where: { isActive: true } })
+      : Promise.resolve(0),
+  ])
   const byCode = new Map(counts.map((row) => [row.code, row.count]))
 
   const totalAvailable = counts.reduce((sum, row) => sum + row.count, 0)
   const canStart = definition.isCombined
     ? BAE_VOL1_CODES.some((code) => (byCode.get(code) || 0) > 0) &&
       (byCode.get(BAE_VOL2_CODE) || 0) > 0
-    : (byCode.get(definition.subjects[0].code) || 0) > 0
+    : (byCode.get(definition.subjects[0].code) || 0) > 0 &&
+      (definition.testType !== 'foa_mock' || foaFinancialStatementsCases > 0)
 
   const defaultQuestions = definition.defaultQuestions
   const timeAllowedMinutes = calculateMockTimeAllowedMinutes(
@@ -137,6 +317,8 @@ export async function getMockConfig(
         vol1Available <= 0
           ? `${definition.subjects[0].code} has no questions yet.`
           : `${definition.subjects[1].code} has no questions yet.`
+    } else if (definition.testType === 'foa_mock' && foaFinancialStatementsCases <= 0) {
+      errorMessage = 'No active Financial Statements case is available for FOA Mock right now.'
     } else {
       errorMessage = `${definition.subjects[0].code} has no questions yet.`
     }
@@ -159,6 +341,11 @@ export async function getMockConfig(
         ? {
             vol1: BAE_VOL1_CODES.reduce((sum, code) => sum + (byCode.get(code) || 0), 0),
             vol2: byCode.get(BAE_VOL2_CODE) || 0,
+          }
+        : {}),
+      ...(definition.testType === 'foa_mock'
+        ? {
+            financialStatementsCases: foaFinancialStatementsCases,
           }
         : {}),
     },
@@ -269,7 +456,8 @@ export async function startMockSession(
   }
 
   const subjectCode = definition.subjects[0].code
-  const [questions, subjectDoc] = await Promise.all([
+  const includesFinancialStatementCase = definition.testType === 'foa_mock'
+  const [questions, subjectDoc, financialStatementCases] = await Promise.all([
     prisma.question.findMany({
       where: { subject: subjectCode },
       select: { id: true, chapter: true, subject: true },
@@ -278,20 +466,40 @@ export async function startMockSession(
       where: { code: subjectCode },
       select: { chapters: true },
     }),
+    includesFinancialStatementCase
+      ? prisma.financialStatementCase.findMany({
+          where: { isActive: true },
+          select: {
+            id: true,
+            caseNumber: true,
+            title: true,
+          },
+        })
+      : Promise.resolve([]),
   ])
 
   if (questions.length <= 0) {
     throw new Error(`${subjectCode} has no questions yet.`)
   }
 
-  let finalTotal = totalRequested
-  let warning: string | null = null
-  if (questions.length < finalTotal) {
-    finalTotal = questions.length
-    warning = `Test contains ${finalTotal} questions (maximum available in ${subjectCode}).`
+  const selectedFinancialStatementCase =
+    includesFinancialStatementCase && financialStatementCases.length > 0
+      ? financialStatementCases[Math.floor(Math.random() * financialStatementCases.length)]
+      : null
+
+  if (includesFinancialStatementCase && !selectedFinancialStatementCase) {
+    throw new Error('No active Financial Statements case is available for FOA Mock right now.')
   }
 
-  const pickedIds = pickChapterWeightedQuestionIds(questions, finalTotal, [subjectDoc?.chapters])
+  let finalMcqCount = Math.max(0, totalRequested - (selectedFinancialStatementCase ? 1 : 0))
+  let warning: string | null = null
+  if (questions.length < finalMcqCount) {
+    finalMcqCount = questions.length
+    const finalTotalWithFs = finalMcqCount + (selectedFinancialStatementCase ? 1 : 0)
+    warning = `Test contains ${finalTotalWithFs} questions (maximum available in ${subjectCode}).`
+  }
+
+  const pickedIds = pickChapterWeightedQuestionIds(questions, finalMcqCount, [subjectDoc?.chapters])
   const questionMap = new Map(questions.map((row) => [row.id, row]))
   const questionSet = shuffleArray<MockSessionQuestionRef>(
     pickedIds.map((questionId) => {
@@ -304,6 +512,22 @@ export async function startMockSession(
     })
   )
 
+  if (selectedFinancialStatementCase) {
+    const fsQuestionRef: MockSessionFinancialStatementQuestionRef = {
+      questionType: 'financial_statement',
+      questionId: `fs-case-${selectedFinancialStatementCase.id}`,
+      subjectCode: 'FOA',
+      chapterCode: 'FINANCIAL_STATEMENTS',
+      caseId: selectedFinancialStatementCase.id,
+      caseNumber: selectedFinancialStatementCase.caseNumber,
+      caseTitle: selectedFinancialStatementCase.title,
+    }
+    const insertIndex = Math.floor(Math.random() * (questionSet.length + 1))
+    questionSet.splice(insertIndex, 0, fsQuestionRef)
+  }
+
+  const finalTotal = questionSet.length
+
   const timeAllowedMinutes = calculateMockTimeAllowedMinutes(
     finalTotal,
     definition.timerPerQuestionSeconds
@@ -313,7 +537,9 @@ export async function startMockSession(
     data: {
       userId,
       testType: definition.testType,
-      subjectIds: [subjectCode],
+      subjectIds: selectedFinancialStatementCase
+        ? [subjectCode, 'FINANCIAL_STATEMENTS']
+        : [subjectCode],
       totalQuestions: finalTotal,
       timeAllowed: timeAllowedMinutes,
       vol1Count: 0,
@@ -344,28 +570,83 @@ export async function getMockSessionPayload(
   }
 
   const questionSet = parseMockQuestionSet(session.questionSet)
-  const questionIds = questionSet.map((item) => item.questionId)
-  const dbQuestions = questionIds.length
-    ? await prisma.question.findMany({
-        where: { id: { in: questionIds } },
-        select: {
-          id: true,
-          subject: true,
-          chapter: true,
-          questionNumber: true,
-          question: true,
-          imageUrl: true,
-          options: true,
-          optionImageUrls: true,
-          explanation: true,
-          difficulty: true,
-          allowMultiple: true,
-          maxSelections: true,
-        },
-      })
-    : []
+  const mcqQuestionIds = questionSet
+    .filter(
+      (item): item is MockSessionMcqQuestionRef => item.questionType !== 'financial_statement'
+    )
+    .map((item) => item.questionId)
+  const financialStatementCaseIds = Array.from(
+    new Set(
+      questionSet
+        .filter(
+          (item): item is MockSessionFinancialStatementQuestionRef =>
+            item.questionType === 'financial_statement'
+        )
+        .map((item) => item.caseId)
+    )
+  )
+
+  const [dbQuestions, financialStatementCases] = await Promise.all([
+    mcqQuestionIds.length
+      ? prisma.question.findMany({
+          where: { id: { in: mcqQuestionIds } },
+          select: {
+            id: true,
+            subject: true,
+            chapter: true,
+            questionNumber: true,
+            question: true,
+            imageUrl: true,
+            options: true,
+            optionImageUrls: true,
+            explanation: true,
+            difficulty: true,
+            allowMultiple: true,
+            maxSelections: true,
+          },
+        })
+      : Promise.resolve([]),
+    financialStatementCaseIds.length
+      ? prisma.financialStatementCase.findMany({
+          where: { id: { in: financialStatementCaseIds } },
+          select: {
+            id: true,
+            caseNumber: true,
+            title: true,
+            trialBalancePdfUrl: true,
+            additionalInfo: true,
+            showThousandsNote: true,
+            totalMarks: true,
+            sociLineItems: {
+              orderBy: { displayOrder: 'asc' },
+              select: {
+                id: true,
+                heading: true,
+                inputType: true,
+                dropdownOptions: true,
+                marks: true,
+              },
+            },
+            sofpLineItems: {
+              orderBy: { displayOrder: 'asc' },
+              select: {
+                id: true,
+                heading: true,
+                inputType: true,
+                groupLabel: true,
+                dropdownOptions: true,
+                marks: true,
+              },
+            },
+          },
+        })
+      : Promise.resolve([]),
+  ])
 
   const questionMap = new Map(dbQuestions.map((question) => [question.id, question]))
+  const financialStatementCaseMap = new Map(
+    financialStatementCases.map((row) => [row.id, row])
+  )
   const subjectCodes = Array.from(
     new Set(
       dbQuestions
@@ -389,6 +670,58 @@ export async function getMockSessionPayload(
 
   const questions = questionSet
     .map((item, index) => {
+      if (item.questionType === 'financial_statement') {
+        const financialStatementCase = financialStatementCaseMap.get(item.caseId)
+        if (!financialStatementCase) return null
+        return {
+          index,
+          id: item.questionId,
+          questionType: 'financial_statement' as const,
+          subject: 'FOA',
+          chapter: item.chapterCode || 'FINANCIAL_STATEMENTS',
+          questionNumber: 0,
+          question: `${item.caseNumber} - ${item.caseTitle}`,
+          imageUrl: null,
+          options: [],
+          optionImageUrls: [],
+          explanation: '',
+          difficulty: 'medium',
+          allowMultiple: false,
+          maxSelections: 1,
+          volume: null,
+          volumeLabel: 'FOA',
+          chapterLabel: 'Financial Statements',
+          financialStatementCase: {
+            id: financialStatementCase.id,
+            caseNumber: financialStatementCase.caseNumber,
+            title: financialStatementCase.title,
+            trialBalancePdfUrl: financialStatementCase.trialBalancePdfUrl,
+            additionalInfo: financialStatementCase.additionalInfo || '',
+            showThousandsNote: Boolean(financialStatementCase.showThousandsNote),
+            totalMarks: Number(financialStatementCase.totalMarks || 20),
+            sociLineItems: financialStatementCase.sociLineItems.map((lineItem) => ({
+              id: lineItem.id,
+              heading: lineItem.heading,
+              inputType: lineItem.inputType || 'dropdown',
+              dropdownOptions: Array.isArray(lineItem.dropdownOptions)
+                ? lineItem.dropdownOptions.map((option) => String(option))
+                : [],
+              marks: Number(lineItem.marks) || 0,
+            })),
+            sofpLineItems: financialStatementCase.sofpLineItems.map((lineItem) => ({
+              id: lineItem.id,
+              heading: lineItem.heading,
+              inputType: lineItem.inputType || 'dropdown',
+              groupLabel: lineItem.groupLabel || '',
+              dropdownOptions: Array.isArray(lineItem.dropdownOptions)
+                ? lineItem.dropdownOptions.map((option) => String(option))
+                : [],
+              marks: Number(lineItem.marks) || 0,
+            })),
+          },
+        }
+      }
+
       const question = questionMap.get(item.questionId)
       if (!question) return null
       const subjectCode = String(item.subjectCode || question.subject || '').toUpperCase()
@@ -406,6 +739,7 @@ export async function getMockSessionPayload(
       return {
         index,
         id: question.id,
+        questionType: 'mcq' as const,
         subject: subjectCode,
         chapter: question.chapter,
         questionNumber: question.questionNumber,
@@ -425,17 +759,55 @@ export async function getMockSessionPayload(
     .filter(Boolean)
 
   const storedAnswers = Array.isArray(session.answers) ? (session.answers as any[]) : []
-  const answersByIndex = new Map<number, number[]>()
+  const answersByIndex = new Map<number, unknown>()
+  let financialStatementSummary: FinancialStatementAnswerResult | null = null
   for (const answer of storedAnswers) {
     const index = Number(answer?.index)
     if (!Number.isInteger(index)) continue
+    const questionType = String(answer?.questionType || '').toLowerCase()
+    if (questionType === 'financial_statement') {
+      const normalizedPayload = normalizeFinancialStatementPayload(
+        answer?.financialStatementAnswers
+      )
+      answersByIndex.set(index, normalizedPayload)
+      const fsResultRaw =
+        answer?.financialStatementResult &&
+        typeof answer.financialStatementResult === 'object' &&
+        !Array.isArray(answer.financialStatementResult)
+          ? (answer.financialStatementResult as Record<string, unknown>)
+          : null
+      if (fsResultRaw && !financialStatementSummary) {
+        const parsedSummary: FinancialStatementAnswerResult = {
+          caseId: Number(fsResultRaw.caseId) || 0,
+          caseNumber: String(fsResultRaw.caseNumber || ''),
+          caseTitle: String(fsResultRaw.caseTitle || ''),
+          totalMarksObtained: Number(fsResultRaw.totalMarksObtained) || 0,
+          totalMarks: Number(fsResultRaw.totalMarks) || 0,
+          percentage: Number(fsResultRaw.percentage) || 0,
+          attemptedLineItems: Number(fsResultRaw.attemptedLineItems) || 0,
+          totalLineItems: Number(fsResultRaw.totalLineItems) || 0,
+        }
+        if (parsedSummary.caseId > 0) {
+          financialStatementSummary = parsedSummary
+        }
+      }
+      continue
+    }
     answersByIndex.set(index, normalizeSelectedAnswer(answer?.selectedAnswer))
   }
 
   return {
     session,
     questions,
-    answers: questions.map((question) => answersByIndex.get((question as any).index) || []),
+    answers: questions.map((question) => {
+      const index = Number((question as any).index)
+      const stored = answersByIndex.get(index)
+      if (stored !== undefined) return stored
+      return (question as any).questionType === 'financial_statement'
+        ? { sociAnswers: [], sofpAnswers: [] }
+        : []
+    }),
+    financialStatementSummary,
     chapterLabels,
   }
 }
@@ -470,20 +842,69 @@ export async function submitMockSession(
   }
 
   const questionSet = parseMockQuestionSet(session.questionSet)
-  const questionIds = questionSet.map((item) => item.questionId)
-  const questionRecords = questionIds.length
-    ? await prisma.question.findMany({
-        where: { id: { in: questionIds } },
-        select: {
-          id: true,
-          subject: true,
-          chapter: true,
-          correctAnswer: true,
-          correctAnswers: true,
-        },
-      })
-    : []
+  const mcqQuestionIds = questionSet
+    .filter(
+      (item): item is MockSessionMcqQuestionRef => item.questionType !== 'financial_statement'
+    )
+    .map((item) => item.questionId)
+  const financialStatementCaseIds = Array.from(
+    new Set(
+      questionSet
+        .filter(
+          (item): item is MockSessionFinancialStatementQuestionRef =>
+            item.questionType === 'financial_statement'
+        )
+        .map((item) => item.caseId)
+    )
+  )
+
+  const [questionRecords, financialStatementCases] = await Promise.all([
+    mcqQuestionIds.length
+      ? prisma.question.findMany({
+          where: { id: { in: mcqQuestionIds } },
+          select: {
+            id: true,
+            subject: true,
+            chapter: true,
+            correctAnswer: true,
+            correctAnswers: true,
+          },
+        })
+      : Promise.resolve([]),
+    financialStatementCaseIds.length
+      ? prisma.financialStatementCase.findMany({
+          where: { id: { in: financialStatementCaseIds } },
+          select: {
+            id: true,
+            caseNumber: true,
+            title: true,
+            totalMarks: true,
+            sociLineItems: {
+              select: {
+                id: true,
+                heading: true,
+                inputType: true,
+                correctValue: true,
+                marks: true,
+              },
+            },
+            sofpLineItems: {
+              select: {
+                id: true,
+                heading: true,
+                inputType: true,
+                correctValue: true,
+                marks: true,
+              },
+            },
+          },
+        })
+      : Promise.resolve([]),
+  ])
   const questionMap = new Map(questionRecords.map((question) => [question.id, question]))
+  const financialStatementCaseMap = new Map(
+    financialStatementCases.map((financialStatementCase) => [financialStatementCase.id, financialStatementCase])
+  )
 
   let correctAnswers = 0
   let wrongAnswers = 0
@@ -494,6 +915,88 @@ export async function submitMockSession(
   const incomingAnswers = Array.isArray(payload.answers) ? payload.answers : []
 
   const storedAnswers: MockSessionAnswer[] = questionSet.map((item, index) => {
+    if (item.questionType === 'financial_statement') {
+      const userPayload = normalizeFinancialStatementPayload(incomingAnswers[index])
+      const attemptedLineItems = countFinancialStatementAttemptedLineItems(userPayload)
+      const attempted = attemptedLineItems > 0
+      const financialStatementCase = financialStatementCaseMap.get(item.caseId)
+
+      if (!financialStatementCase) {
+        if (!attempted) {
+          notAttempted += 1
+        } else {
+          wrongAnswers += 1
+        }
+        return {
+          index,
+          questionId: item.questionId,
+          subjectCode: 'FOA',
+          chapterCode: item.chapterCode || 'FINANCIAL_STATEMENTS',
+          questionType: 'financial_statement',
+          selectedAnswer: [],
+          isCorrect: false,
+          attempted,
+          financialStatementAnswers: userPayload,
+          financialStatementResult: null,
+        }
+      }
+
+      const sociResults = buildFinancialStatementAnswerSet(
+        financialStatementCase.sociLineItems,
+        userPayload.sociAnswers
+      )
+      const sofpResults = buildFinancialStatementAnswerSet(
+        financialStatementCase.sofpLineItems,
+        userPayload.sofpAnswers
+      )
+      const totalMarksObtained = Number(
+        [...sociResults, ...sofpResults]
+          .reduce((sum, row) => sum + (Number(row.marks_awarded) || 0), 0)
+          .toFixed(2)
+      )
+      const totalMarks =
+        Number(financialStatementCase.totalMarks) ||
+        Number(
+          [...financialStatementCase.sociLineItems, ...financialStatementCase.sofpLineItems]
+            .reduce((sum, row) => sum + (Number(row.marks) || 0), 0)
+            .toFixed(2)
+        ) ||
+        20
+      const percentage =
+        totalMarks > 0 ? Number(((totalMarksObtained / totalMarks) * 100).toFixed(2)) : 0
+      const fsConsideredCorrect = percentage >= 50
+
+      if (!attempted) {
+        notAttempted += 1
+      } else if (fsConsideredCorrect) {
+        correctAnswers += 1
+      } else {
+        wrongAnswers += 1
+      }
+
+      return {
+        index,
+        questionId: item.questionId,
+        subjectCode: 'FOA',
+        chapterCode: item.chapterCode || 'FINANCIAL_STATEMENTS',
+        questionType: 'financial_statement',
+        selectedAnswer: [],
+        isCorrect: attempted ? fsConsideredCorrect : false,
+        attempted,
+        financialStatementAnswers: userPayload,
+        financialStatementResult: {
+          caseId: financialStatementCase.id,
+          caseNumber: financialStatementCase.caseNumber,
+          caseTitle: financialStatementCase.title,
+          totalMarksObtained,
+          totalMarks,
+          percentage,
+          attemptedLineItems,
+          totalLineItems: sociResults.length + sofpResults.length,
+        },
+      }
+    }
+
     const selected = normalizeSelectedAnswer(incomingAnswers[index])
     const question = questionMap.get(item.questionId)
     const subjectCode = String(item.subjectCode || question?.subject || '').toUpperCase()

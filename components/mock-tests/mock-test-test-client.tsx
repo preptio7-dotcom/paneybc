@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/lib/auth-context'
+import { PdfViewer } from '@/components/financial-statements/PdfViewer'
+import { SociTable } from '@/components/financial-statements/SociTable'
+import { SofpTable } from '@/components/financial-statements/SofpTable'
 import {
   BAE_VOL1_CODES,
   BAE_VOL1_NAME,
@@ -32,6 +35,7 @@ type ApiDefinition = {
 type MockQuestion = {
   index: number
   id: string
+  questionType?: 'mcq' | 'financial_statement'
   subject: string
   chapter: string | null
   questionNumber: number
@@ -45,7 +49,43 @@ type MockQuestion = {
   maxSelections: number
   volume: 'VOL1' | 'VOL2' | null
   volumeLabel: string
+  financialStatementCase?: {
+    id: number
+    caseNumber: string
+    title: string
+    trialBalancePdfUrl: string
+    additionalInfo?: string
+    showThousandsNote?: boolean
+    totalMarks?: number
+    sociLineItems: Array<{
+      id: number
+      heading: string
+      inputType?: 'dropdown' | 'manual'
+      dropdownOptions: string[]
+      marks: number
+    }>
+    sofpLineItems: Array<{
+      id: number
+      heading: string
+      inputType?: 'dropdown' | 'manual'
+      groupLabel?: string
+      dropdownOptions: string[]
+      marks: number
+    }>
+  } | null
 }
+
+type FinancialStatementLineAnswer = {
+  line_item_id: number
+  selected_value: string
+}
+
+type FinancialStatementAnswerPayload = {
+  sociAnswers: FinancialStatementLineAnswer[]
+  sofpAnswers: FinancialStatementLineAnswer[]
+}
+
+type MockAnswerEntry = number[] | FinancialStatementAnswerPayload
 
 type SessionData = {
   id: string
@@ -70,6 +110,46 @@ function normalizeAnswerEntry(entry: unknown) {
   return entry
     .map((value) => Number(value))
     .filter((value) => Number.isInteger(value) && value >= 0)
+}
+
+function normalizeFinancialStatementLineAnswers(value: unknown): FinancialStatementLineAnswer[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((row) => {
+      if (!row || typeof row !== 'object') return null
+      const item = row as Record<string, unknown>
+      const lineItemId = Number(item.line_item_id)
+      if (!Number.isInteger(lineItemId) || lineItemId <= 0) return null
+      return {
+        line_item_id: lineItemId,
+        selected_value: String(item.selected_value ?? '').trim(),
+      }
+    })
+    .filter(Boolean) as FinancialStatementLineAnswer[]
+}
+
+function normalizeFinancialStatementAnswerPayload(entry: unknown): FinancialStatementAnswerPayload {
+  const row = entry && typeof entry === 'object' ? (entry as Record<string, unknown>) : {}
+  return {
+    sociAnswers: normalizeFinancialStatementLineAnswers(row.sociAnswers),
+    sofpAnswers: normalizeFinancialStatementLineAnswers(row.sofpAnswers),
+  }
+}
+
+function isFinancialStatementAnswerPayload(value: MockAnswerEntry | undefined): value is FinancialStatementAnswerPayload {
+  return Boolean(
+    value &&
+      !Array.isArray(value) &&
+      typeof value === 'object' &&
+      'sociAnswers' in value &&
+      'sofpAnswers' in value
+  )
+}
+
+function isAnswerEntryAttempted(entry: MockAnswerEntry | undefined) {
+  if (!entry) return false
+  if (Array.isArray(entry)) return entry.length > 0
+  return [...entry.sociAnswers, ...entry.sofpAnswers].some((row) => String(row.selected_value || '').trim())
 }
 
 function resolveSubjectTheme(
@@ -116,7 +196,7 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
   const [definition, setDefinition] = useState<ApiDefinition | null>(null)
   const [session, setSession] = useState<SessionData | null>(null)
   const [questions, setQuestions] = useState<MockQuestion[]>([])
-  const [answers, setAnswers] = useState<number[][]>([])
+  const [answers, setAnswers] = useState<MockAnswerEntry[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [timeLeft, setTimeLeft] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -218,8 +298,14 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
 
         const loadedSession: SessionData = data.session
         const loadedQuestions: MockQuestion[] = Array.isArray(data.questions) ? data.questions : []
-        const loadedAnswers: number[][] = Array.isArray(data.answers)
-          ? data.answers.map(normalizeAnswerEntry)
+        const loadedAnswers: MockAnswerEntry[] = Array.isArray(data.answers)
+          ? data.answers.map((entry: unknown, index: number) => {
+              const question = loadedQuestions[index]
+              if (question?.questionType === 'financial_statement') {
+                return normalizeFinancialStatementAnswerPayload(entry)
+              }
+              return normalizeAnswerEntry(entry)
+            })
           : []
 
         if (loadedSession.completed) {
@@ -231,9 +317,15 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
         setSession(loadedSession)
         setQuestions(loadedQuestions)
         setAnswers(
-          loadedQuestions.map((_, index) =>
-            Array.isArray(loadedAnswers[index]) ? loadedAnswers[index] : []
-          )
+          loadedQuestions.map((question, index) => {
+            const saved = loadedAnswers[index]
+            if (question.questionType === 'financial_statement') {
+              return isFinancialStatementAnswerPayload(saved)
+                ? saved
+                : { sociAnswers: [], sofpAnswers: [] }
+            }
+            return Array.isArray(saved) ? saved : []
+          })
         )
         setTimeLeft(Math.max(0, loadedSession.timeAllowed * 60))
         setStartTimestamp(Date.now())
@@ -278,11 +370,18 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
 
   const handleOptionClick = (optionIndex: number) => {
     const question = questions[currentIndex]
-    if (!question || isSubmitting) return
+    if (!question || isSubmitting || question.questionType === 'financial_statement') return
 
     setAnswers((previous) => {
-      const next = previous.map((entry) => entry.slice())
-      const selected = next[currentIndex] || []
+      const next = previous.map((entry) =>
+        Array.isArray(entry)
+          ? entry.slice()
+          : {
+              sociAnswers: entry.sociAnswers.map((row) => ({ ...row })),
+              sofpAnswers: entry.sofpAnswers.map((row) => ({ ...row })),
+            }
+      )
+      const selected = Array.isArray(next[currentIndex]) ? (next[currentIndex] as number[]) : []
 
       if (question.allowMultiple) {
         if (selected.includes(optionIndex)) {
@@ -298,27 +397,66 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
     })
   }
 
+  const updateFinancialStatementAnswers = (
+    key: keyof FinancialStatementAnswerPayload,
+    nextRows: FinancialStatementLineAnswer[]
+  ) => {
+    setAnswers((previous) => {
+      const next = previous.map((entry) =>
+        Array.isArray(entry)
+          ? entry.slice()
+          : {
+              sociAnswers: entry.sociAnswers.map((row) => ({ ...row })),
+              sofpAnswers: entry.sofpAnswers.map((row) => ({ ...row })),
+            }
+      )
+      const existing = isFinancialStatementAnswerPayload(next[currentIndex])
+        ? (next[currentIndex] as FinancialStatementAnswerPayload)
+        : { sociAnswers: [], sofpAnswers: [] }
+      next[currentIndex] = {
+        ...existing,
+        [key]: nextRows,
+      }
+      return next
+    })
+  }
+
   const currentQuestion = questions[currentIndex]
+  const isFinancialStatementQuestion = currentQuestion?.questionType === 'financial_statement'
+  const financialStatementCase = isFinancialStatementQuestion
+    ? currentQuestion?.financialStatementCase || null
+    : null
+  const currentMcqSelection = Array.isArray(answers[currentIndex])
+    ? (answers[currentIndex] as number[])
+    : []
+  const currentFinancialStatementAnswer = isFinancialStatementQuestion &&
+    isFinancialStatementAnswerPayload(answers[currentIndex])
+      ? (answers[currentIndex] as FinancialStatementAnswerPayload)
+      : { sociAnswers: [], sofpAnswers: [] }
   const optionItems = currentQuestion
-    ? buildQuestionOptionItems(currentQuestion.options, currentQuestion.optionImageUrls)
+    ? isFinancialStatementQuestion
+      ? []
+      : buildQuestionOptionItems(currentQuestion.options, currentQuestion.optionImageUrls)
     : []
   const progressPercent = questions.length ? ((currentIndex + 1) / questions.length) * 100 : 0
 
   const answeredCount = useMemo(
-    () => answers.filter((entry) => Array.isArray(entry) && entry.length > 0).length,
+    () => answers.filter((entry) => isAnswerEntryAttempted(entry)).length,
     [answers]
   )
   const answeredVol1 = useMemo(
     () =>
       questions.filter(
-        (question, index) => question.volume === 'VOL1' && (answers[index] || []).length > 0
+        (question, index) =>
+          question.volume === 'VOL1' && isAnswerEntryAttempted(answers[index])
       ).length,
     [answers, questions]
   )
   const answeredVol2 = useMemo(
     () =>
       questions.filter(
-        (question, index) => question.volume === 'VOL2' && (answers[index] || []).length > 0
+        (question, index) =>
+          question.volume === 'VOL2' && isAnswerEntryAttempted(answers[index])
       ).length,
     [answers, questions]
   )
@@ -446,7 +584,7 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
                         className={`h-8 w-8 rounded-md text-[10px] font-bold transition-all ${
                           currentIndex === index ? 'ring-2 ring-primary-green ring-offset-2' : ''
                         } ${
-                          (answers[index] || []).length > 0
+                          isAnswerEntryAttempted(answers[index])
                             ? 'bg-primary-green text-white'
                             : 'bg-slate-100 text-slate-500'
                         }`}
@@ -491,61 +629,127 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
                 </CardHeader>
 
                 <CardContent className="p-6 flex-1 flex flex-col gap-3">
-                  {currentQuestion.imageUrl ? (
-                    <img
-                      src={currentQuestion.imageUrl}
-                      alt="Question visual"
-                      className="w-full max-h-64 object-contain rounded-lg border border-slate-200 bg-white"
-                      loading="lazy"
-                    />
-                  ) : null}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-auto">
-                    {optionItems.map((option) => {
-                      const optionIndex = option.originalIndex
-                      const selected = answers[currentIndex] || []
-                      const isSelected = selected.includes(optionIndex)
-                      return (
-                        <button
-                          key={`${currentQuestion.id}-${optionIndex}`}
-                          onClick={() => handleOptionClick(optionIndex)}
-                          className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
-                            isSelected
-                              ? 'border-primary-green bg-primary-green/5'
-                              : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div
-                            className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-black ${
-                              isSelected ? 'bg-primary-green text-white' : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {optionLetter(optionIndex)}
-                          </div>
-                          <div className="flex-1 space-y-2">
-                            <span className="block text-sm font-medium text-slate-700">
-                              {option.text || `Option ${optionLetter(optionIndex)}`}
-                            </span>
-                            {option.imageUrl ? (
-                              <img
-                                src={option.imageUrl}
-                                alt={`Option ${optionLetter(optionIndex)} visual`}
-                                className="max-h-40 w-full rounded-md border border-border bg-white object-contain"
-                                loading="lazy"
-                              />
+                  {isFinancialStatementQuestion ? (
+                    financialStatementCase ? (
+                      <div className="space-y-4">
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                          <span className="font-semibold">{financialStatementCase.caseNumber}:</span>{' '}
+                          {financialStatementCase.title}
+                        </div>
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-slate-800">Trial Balance</h3>
+                            <PdfViewer url={financialStatementCase.trialBalancePdfUrl} />
+                            {financialStatementCase.additionalInfo ? (
+                              <Card className="border border-slate-200 bg-white">
+                                <CardContent className="p-3 text-sm text-slate-600">
+                                  <p className="font-semibold text-slate-800 mb-1">Additional Information</p>
+                                  {financialStatementCase.additionalInfo}
+                                </CardContent>
+                              </Card>
                             ) : null}
                           </div>
-                        </button>
-                      )
-                    })}
-                  </div>
+                          <div className="space-y-4">
+                            {financialStatementCase.showThousandsNote ? (
+                              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                <span className="font-semibold">Rs. 000:</span> Enter values in thousands.
+                              </div>
+                            ) : null}
+                            <div className="space-y-2">
+                              <h3 className="text-sm font-semibold text-slate-800">
+                                Statement of Comprehensive Income (SOCI)
+                              </h3>
+                              <SociTable
+                                lineItems={financialStatementCase.sociLineItems}
+                                answers={currentFinancialStatementAnswer.sociAnswers}
+                                onAnswerChange={(rows) =>
+                                  updateFinancialStatementAnswers('sociAnswers', rows)
+                                }
+                                caseId={financialStatementCase.id}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <h3 className="text-sm font-semibold text-slate-800">
+                                Statement of Financial Position (SOFP)
+                              </h3>
+                              <SofpTable
+                                lineItems={financialStatementCase.sofpLineItems}
+                                answers={currentFinancialStatementAnswer.sofpAnswers}
+                                onAnswerChange={(rows) =>
+                                  updateFinancialStatementAnswers('sofpAnswers', rows)
+                                }
+                                caseId={financialStatementCase.id}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        This Financial Statements case could not be loaded.
+                      </div>
+                    )
+                  ) : (
+                    <>
+                      {currentQuestion.imageUrl ? (
+                        <img
+                          src={currentQuestion.imageUrl}
+                          alt="Question visual"
+                          className="w-full max-h-64 object-contain rounded-lg border border-slate-200 bg-white"
+                          loading="lazy"
+                        />
+                      ) : null}
 
-                  {currentQuestion.allowMultiple ? (
-                    <p className="text-xs font-medium text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                      Select up to {Math.max(1, currentQuestion.maxSelections || 2)} options for this
-                      question.
-                    </p>
-                  ) : null}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-auto">
+                        {optionItems.map((option) => {
+                          const optionIndex = option.originalIndex
+                          const selected = currentMcqSelection
+                          const isSelected = selected.includes(optionIndex)
+                          return (
+                            <button
+                              key={`${currentQuestion.id}-${optionIndex}`}
+                              onClick={() => handleOptionClick(optionIndex)}
+                              className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                                isSelected
+                                  ? 'border-primary-green bg-primary-green/5'
+                                  : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div
+                                className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-black ${
+                                  isSelected
+                                    ? 'bg-primary-green text-white'
+                                    : 'bg-slate-100 text-slate-500'
+                                }`}
+                              >
+                                {optionLetter(optionIndex)}
+                              </div>
+                              <div className="flex-1 space-y-2">
+                                <span className="block text-sm font-medium text-slate-700">
+                                  {option.text || `Option ${optionLetter(optionIndex)}`}
+                                </span>
+                                {option.imageUrl ? (
+                                  <img
+                                    src={option.imageUrl}
+                                    alt={`Option ${optionLetter(optionIndex)} visual`}
+                                    className="max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                                    loading="lazy"
+                                  />
+                                ) : null}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {currentQuestion.allowMultiple ? (
+                        <p className="text-xs font-medium text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                          Select up to {Math.max(1, currentQuestion.maxSelections || 2)} options for
+                          this question.
+                        </p>
+                      ) : null}
+                    </>
+                  )}
 
                   <div className="mt-6 flex items-center justify-between">
                     <Button

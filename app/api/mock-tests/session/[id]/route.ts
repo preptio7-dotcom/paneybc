@@ -60,6 +60,7 @@ export async function GET(
       },
       questions: payload.questions,
       answers: payload.answers,
+      financialStatementSummary: payload.financialStatementSummary || null,
       chapterLabels: payload.chapterLabels || {},
     })
   } catch (error: any) {

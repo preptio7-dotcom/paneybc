@@ -50,6 +50,17 @@ type MockQuestion = {
   chapter: string | null
 }
 
+type FinancialStatementSummary = {
+  caseId: number
+  caseNumber: string
+  caseTitle: string
+  totalMarksObtained: number
+  totalMarks: number
+  percentage: number
+  attemptedLineItems: number
+  totalLineItems: number
+}
+
 type BaeWeakAreaPayload = {
   success: boolean
   attemptCount: number
@@ -155,6 +166,7 @@ export function MockTestResultsPage({ mockKey }: { mockKey: MockTestRouteKey }) 
   const [session, setSession] = useState<SessionSummary | null>(null)
   const [questions, setQuestions] = useState<MockQuestion[]>([])
   const [chapterLabels, setChapterLabels] = useState<Record<string, string>>({})
+  const [financialStatementSummary, setFinancialStatementSummary] = useState<FinancialStatementSummary | null>(null)
   const [weakArea, setWeakArea] = useState<BaeWeakAreaPayload | SingleWeakAreaPayload | null>(null)
 
   useEffect(() => {
@@ -199,6 +211,12 @@ export function MockTestResultsPage({ mockKey }: { mockKey: MockTestRouteKey }) 
           sessionData.chapterLabels && typeof sessionData.chapterLabels === 'object'
             ? (sessionData.chapterLabels as Record<string, string>)
             : {}
+        )
+        setFinancialStatementSummary(
+          sessionData.financialStatementSummary &&
+            typeof sessionData.financialStatementSummary === 'object'
+            ? (sessionData.financialStatementSummary as FinancialStatementSummary)
+            : null
         )
 
         if (weakRes.ok) {
@@ -534,6 +552,39 @@ export function MockTestResultsPage({ mockKey }: { mockKey: MockTestRouteKey }) 
               </CardContent>
             </Card>
           )}
+
+          {financialStatementSummary ? (
+            <Card className="rounded-3xl border border-slate-200">
+              <CardContent className="p-6 space-y-3">
+                <h2 className="text-lg font-bold text-slate-900">Financial Statements Score</h2>
+                <p className="text-sm text-slate-600">
+                  {financialStatementSummary.caseNumber}: {financialStatementSummary.caseTitle}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rounded-xl border border-slate-200 p-3 text-center">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Marks</p>
+                    <p className="mt-1 text-xl font-black text-slate-900">
+                      {financialStatementSummary.totalMarksObtained.toFixed(2)}/
+                      {financialStatementSummary.totalMarks.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 p-3 text-center">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Percentage</p>
+                    <p className="mt-1 text-xl font-black text-slate-900">
+                      {financialStatementSummary.percentage.toFixed(2)}%
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 p-3 text-center">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Attempted Items</p>
+                    <p className="mt-1 text-xl font-black text-slate-900">
+                      {financialStatementSummary.attemptedLineItems}/
+                      {financialStatementSummary.totalLineItems}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card className="rounded-3xl border border-slate-200">
             <CardContent className="p-6 space-y-4">
