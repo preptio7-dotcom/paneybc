@@ -9,6 +9,7 @@ import { PerformanceSummary } from '@/components/performance-summary'
 import { Loader2, Timer, ChevronLeft, ChevronRight, Send } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Navigation } from '@/components/navigation'
+import { buildQuestionOptionItems, optionLetter } from '@/lib/question-options'
 
 interface Question {
   id?: string
@@ -18,6 +19,7 @@ interface Question {
   question: string
   imageUrl?: string
   options: string[]
+  optionImageUrls?: string[]
   correctAnswer?: number
   correctAnswers?: number[]
   allowMultiple?: boolean
@@ -291,12 +293,7 @@ export default function DemoTestClient() {
 
   const currentIndex = currentQuestion - 1
   const current = questions[currentIndex]
-  const optionItems = current.options
-    .map((option, index) => ({
-      text: option?.trim() || '',
-      originalIndex: index,
-    }))
-    .filter((option) => option.text.length > 0)
+  const optionItems = buildQuestionOptionItems(current.options, current.optionImageUrls)
 
   const allowMultiple = Boolean(current.allowMultiple || (current.correctAnswers && current.correctAnswers.length > 1))
   const maxSelections = current.maxSelections || 2
@@ -413,12 +410,12 @@ export default function DemoTestClient() {
                     </div>
                   ) : null}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-auto">
-                    {optionItems.map((option, index) => (
+                    {optionItems.map((option) => (
                       <button
                         key={option.originalIndex}
                         onClick={() => allowMultiple ? handleMultiSelect(option.originalIndex, maxSelections) : handleAnswerSelect(option.originalIndex)}
                         className={`
-                          group flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200
+                          group flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200
                           ${selectedAnswers.includes(option.originalIndex)
                             ? 'border-primary-green bg-primary-green/5 shadow-inner'
                             : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50'}
@@ -428,11 +425,21 @@ export default function DemoTestClient() {
                           w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 transition-colors
                           ${selectedAnswers.includes(option.originalIndex) ? 'bg-primary-green text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}
                         `}>
-                          {String.fromCharCode(65 + index)}
+                          {optionLetter(option.originalIndex)}
                         </div>
-                        <span className={`flex-1 text-base font-medium ${selectedAnswers.includes(option.originalIndex) ? 'text-slate-800' : 'text-slate-600'}`}>
-                          {option.text}
-                        </span>
+                        <div className="flex-1 space-y-2">
+                          <span className={`block text-base font-medium ${selectedAnswers.includes(option.originalIndex) ? 'text-slate-800' : 'text-slate-600'}`}>
+                            {option.text || `Option ${optionLetter(option.originalIndex)}`}
+                          </span>
+                          {option.imageUrl ? (
+                            <img
+                              src={option.imageUrl}
+                              alt={`Option ${optionLetter(option.originalIndex)} visual`}
+                              className="max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                              loading="lazy"
+                            />
+                          ) : null}
+                        </div>
                       </button>
                     ))}
                     {allowMultiple && (

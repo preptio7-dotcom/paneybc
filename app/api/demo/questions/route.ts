@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
         question: true,
         imageUrl: true,
         options: true,
+        optionImageUrls: true,
         correctAnswer: true,
         correctAnswers: true,
         allowMultiple: true,

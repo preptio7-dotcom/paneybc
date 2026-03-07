@@ -10,6 +10,7 @@ interface Option {
   id: string
   letter: string
   text: string
+  imageUrl?: string
 }
 
 interface QuestionCardProps {
@@ -110,7 +111,15 @@ export function QuestionCard({
                     <span className="font-bold mr-3 text-primary-green">
                       {option.letter})
                     </span>
-                    {option.text}
+                    <span>{option.text || `Option ${option.letter}`}</span>
+                    {option.imageUrl ? (
+                      <img
+                        src={option.imageUrl}
+                        alt={`Option ${option.letter} visual`}
+                        className="mt-2 max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                        loading="lazy"
+                      />
+                    ) : null}
                   </Label>
                 </div>
               ))}
@@ -140,7 +149,15 @@ export function QuestionCard({
                     <span className="font-bold mr-3 text-primary-green">
                       {option.letter})
                     </span>
-                    {option.text}
+                    <span>{option.text || `Option ${option.letter}`}</span>
+                    {option.imageUrl ? (
+                      <img
+                        src={option.imageUrl}
+                        alt={`Option ${option.letter} visual`}
+                        className="mt-2 max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                        loading="lazy"
+                      />
+                    ) : null}
                   </span>
                 </button>
               )

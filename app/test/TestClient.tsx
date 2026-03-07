@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/lib/auth-context'
+import { buildQuestionOptionItems } from '@/lib/question-options'
 
 interface Subject {
   id?: string
@@ -28,6 +29,7 @@ interface Question {
   question: string
   imageUrl?: string
   options: string[]
+  optionImageUrls?: string[]
   correctAnswer: number
   correctAnswers?: number[]
   allowMultiple?: boolean
@@ -312,13 +314,12 @@ export default function TestPage() {
   }
 
   const current = questions[currentQuestion - 1]
-  const questionOptions = current.options
-    .map((option, index) => ({
-      id: String(index),
-      letter: String.fromCharCode(65 + index),
-      text: option?.trim() || '',
-    }))
-    .filter(option => option.text.length > 0)
+  const questionOptions = buildQuestionOptionItems(current.options, current.optionImageUrls).map((option) => ({
+    id: String(option.originalIndex),
+    letter: String.fromCharCode(65 + option.originalIndex),
+    text: option.text,
+    imageUrl: option.imageUrl,
+  }))
 
   const allowMultiple = Boolean(current.allowMultiple || (current.correctAnswers && current.correctAnswers.length > 1))
   const selectedAnswers = answers[currentQuestion - 1] || []

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/lib/auth-context'
 import { CheckCircle2, XCircle, Info, RefreshCw } from 'lucide-react'
 import { ReportQuestionButton } from '@/components/report-question-button'
+import { buildQuestionOptionItems, optionLetter } from '@/lib/question-options'
 
 interface Question {
   id?: string
@@ -19,6 +20,7 @@ interface Question {
   question: string
   imageUrl?: string
   options: string[]
+  optionImageUrls?: string[]
   correctAnswer?: number
   correctAnswers?: number[]
   allowMultiple?: boolean
@@ -92,13 +94,8 @@ export default function ReviewPage() {
   }, [currentIndex, questions.length])
 
   const currentQuestion = questions[currentIndex]
-  const optionItems = currentQuestion?.options
-    ? currentQuestion.options
-        .map((option, index) => ({
-          text: option?.trim() || '',
-          originalIndex: index,
-        }))
-        .filter(option => option.text.length > 0)
+  const optionItems = currentQuestion
+    ? buildQuestionOptionItems(currentQuestion.options, currentQuestion.optionImageUrls)
     : []
 
   const currentCorrectAnswers = currentQuestion?.correctAnswers && currentQuestion.correctAnswers.length > 0
@@ -274,7 +271,7 @@ export default function ReviewPage() {
                 </div>
               ) : null}
               <div className="grid grid-cols-1 gap-3">
-                {optionItems.map((option, index) => {
+                {optionItems.map((option) => {
                   const isCorrect = isAnswered && currentCorrectAnswers.includes(option.originalIndex)
                   const isWrong = isAnswered && selectedOptions.includes(option.originalIndex) && !currentCorrectAnswers.includes(option.originalIndex)
                   const isSelected = selectedOptions.includes(option.originalIndex)
@@ -285,7 +282,7 @@ export default function ReviewPage() {
                       onClick={() => handleOptionSelect(option.originalIndex)}
                       disabled={isAnswered}
                       className={`
-                        flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200
+                        flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200
                         ${isSelected && !isAnswered ? 'border-primary-green bg-primary-green/5 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'}
                         ${isCorrect ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : ''}
                         ${isWrong ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500' : ''}
@@ -298,11 +295,21 @@ export default function ReviewPage() {
                         ${isCorrect ? 'bg-emerald-500 text-white' : ''}
                         ${isWrong ? 'bg-rose-500 text-white' : ''}
                       `}>
-                        {String.fromCharCode(65 + index)}
+                        {optionLetter(option.originalIndex)}
                       </div>
-                      <span className={`flex-1 font-medium ${isAnswered ? 'text-slate-700' : 'text-slate-600'}`}>
-                        {option.text}
-                      </span>
+                      <div className="flex-1 space-y-2">
+                        <span className={`block font-medium ${isAnswered ? 'text-slate-700' : 'text-slate-600'}`}>
+                          {option.text || `Option ${optionLetter(option.originalIndex)}`}
+                        </span>
+                        {option.imageUrl ? (
+                          <img
+                            src={option.imageUrl}
+                            alt={`Option ${optionLetter(option.originalIndex)} visual`}
+                            className="max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                            loading="lazy"
+                          />
+                        ) : null}
+                      </div>
                       {isCorrect && <CheckCircle2 className="text-emerald-500" size={20} />}
                       {isWrong && <XCircle className="text-rose-500" size={20} />}
                     </button>

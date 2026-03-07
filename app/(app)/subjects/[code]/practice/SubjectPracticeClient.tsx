@@ -11,6 +11,7 @@ import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { LogOut } from 'lucide-react'
 import { ReportQuestionButton } from '@/components/report-question-button'
+import { buildQuestionOptionItems, optionLetter } from '@/lib/question-options'
 
 interface Question {
     id?: string
@@ -20,6 +21,7 @@ interface Question {
     question: string
     imageUrl?: string
     options: string[]
+    optionImageUrls?: string[]
     correctAnswer: number
     correctAnswers?: number[]
     allowMultiple?: boolean
@@ -45,6 +47,7 @@ export default function PracticePage() {
     const [isLoading, setIsLoading] = useState(true)
     const [score, setScore] = useState(0)
     const [sessionAnswers, setSessionAnswers] = useState<any[]>([])
+    const [attemptedQuestions, setAttemptedQuestions] = useState<boolean[]>([])
     const { user, loading: authLoading } = useAuth()
     const [isFinishing, setIsFinishing] = useState(false)
     const [authToastShown, setAuthToastShown] = useState(false)
@@ -152,6 +155,7 @@ export default function PracticePage() {
                 setQuestions(mixed)
                 setCurrentIndex(0)
                 setSessionAnswers([])
+                setAttemptedQuestions(new Array(mixed.length).fill(false))
                 setScore(0)
                 const startNow = Date.now()
                 sessionStartRef.current = startNow
@@ -162,9 +166,11 @@ export default function PracticePage() {
             const response = await fetch(`/api/questions?subject=${encodeURIComponent(String(code || ''))}${chapterQuery}${difficultyQuery}${limitParam}&shuffle=1`)
             if (!response.ok) throw new Error('Failed to fetch questions')
             const data = await response.json()
-            setQuestions(data.questions)
+            const list: Question[] = data.questions || []
+            setQuestions(list)
             setCurrentIndex(0)
             setSessionAnswers([])
+            setAttemptedQuestions(new Array(list.length).fill(false))
             setScore(0)
             const startNow = Date.now()
             sessionStartRef.current = startNow
@@ -202,6 +208,11 @@ export default function PracticePage() {
 
         setIsAnswered(true)
         setIsChecked(true)
+        setAttemptedQuestions((prev) => {
+            const next = [...prev]
+            next[currentIndex] = true
+            return next
+        })
         const current = questions[currentIndex]
         const isCorrect = current.correctAnswers && current.correctAnswers.length > 0
             ? [...selectedOptions].sort().join(',') === [...current.correctAnswers].sort().join(',')
@@ -275,16 +286,27 @@ export default function PracticePage() {
         }
     }
 
+    const resetQuestionState = () => {
+        setSelectedOptions([])
+        setIsAnswered(false)
+        setIsChecked(false)
+        setIsCorrect(null)
+        setShowAnswer(false)
+        setShowExplanation(false)
+    }
+
+    const goToQuestion = (nextIndex: number) => {
+        if (nextIndex < 0 || nextIndex >= questions.length || nextIndex === currentIndex) return
+        setCurrentIndex(nextIndex)
+        questionStartRef.current = Date.now()
+        resetQuestionState()
+    }
+
     const handleNext = () => {
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1)
             questionStartRef.current = Date.now()
-            setSelectedOptions([])
-            setIsAnswered(false)
-            setIsChecked(false)
-            setIsCorrect(null)
-            setShowAnswer(false)
-            setShowExplanation(false)
+            resetQuestionState()
         }
     }
 
@@ -292,12 +314,7 @@ export default function PracticePage() {
         if (currentIndex > 0) {
             setCurrentIndex(prev => prev - 1)
             questionStartRef.current = Date.now()
-            setSelectedOptions([])
-            setIsAnswered(false)
-            setIsChecked(false)
-            setIsCorrect(null)
-            setShowAnswer(false)
-            setShowExplanation(false)
+            resetQuestionState()
         }
     }
 
@@ -356,13 +373,9 @@ export default function PracticePage() {
     }
 
     const currentQuestion = questions[currentIndex]
-    const optionItems = currentQuestion.options
-        .map((option, index) => ({
-            text: option?.trim() || '',
-            originalIndex: index
-        }))
-        .filter(option => option.text.length > 0)
+    const optionItems = buildQuestionOptionItems(currentQuestion.options, currentQuestion.optionImageUrls)
     const progress = ((currentIndex + 1) / questions.length) * 100
+    const attemptedCount = attemptedQuestions.filter(Boolean).length
     const allowMultiple = Boolean(currentQuestion?.allowMultiple || (currentQuestion?.correctAnswers && currentQuestion.correctAnswers.length > 1))
     const maxSelections = currentQuestion?.maxSelections || 2
     const correctAnswers = currentQuestion?.correctAnswers && currentQuestion.correctAnswers.length > 0
@@ -407,6 +420,34 @@ export default function PracticePage() {
                         </p>
                     </div>
 
+                    <Card className="border-0 shadow-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm">Question Navigation</CardTitle>
+                            <p className="text-xs text-slate-500">
+                                {attemptedCount} of {questions.length} answered
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-8 gap-2 sm:grid-cols-10 md:grid-cols-12">
+                                {questions.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => goToQuestion(idx)}
+                                        className={`h-8 w-8 rounded-md text-[10px] font-bold transition-all ${
+                                            currentIndex === idx ? 'ring-2 ring-primary-green ring-offset-2' : ''
+                                        } ${
+                                            attemptedQuestions[idx]
+                                                ? 'bg-primary-green text-white'
+                                                : 'bg-slate-100 text-slate-500'
+                                        }`}
+                                    >
+                                        {idx + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Question Card */}
                     <Card className="border-0 shadow-lg overflow-hidden">
                         <CardHeader className="bg-slate-800 text-white py-5">
@@ -438,8 +479,8 @@ export default function PracticePage() {
                                     />
                                 </div>
                             ) : null}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {optionItems.map((option, index) => {
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {optionItems.map((option) => {
                                     const isCorrectOption = (isChecked || showAnswer) && correctAnswers.includes(option.originalIndex)
                                     const isSelected = selectedOptions.includes(option.originalIndex)
                                     const isWrong = isChecked && isSelected && !correctAnswers.includes(option.originalIndex)
@@ -450,7 +491,7 @@ export default function PracticePage() {
                                             onClick={() => handleOptionSelect(option.originalIndex)}
                                             disabled={isAnswered}
                                             className={`
-                        flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200
+                        flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200
                         ${isSelected && !isAnswered ? 'border-primary-green bg-primary-green/5 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'}
                         ${isCorrectOption ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : ''}
                         ${isWrong ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500' : ''}
@@ -463,11 +504,21 @@ export default function PracticePage() {
                         ${isCorrectOption ? 'bg-emerald-500 text-white' : ''}
                         ${isWrong ? 'bg-rose-500 text-white' : ''}
                       `}>
-                                                {String.fromCharCode(65 + index)}
+                                                {optionLetter(option.originalIndex)}
                                             </div>
-                                            <span className={`flex-1 font-medium ${isAnswered ? 'text-slate-700' : 'text-slate-600'}`}>
-                                                {option.text}
-                                            </span>
+                                            <div className="flex-1 space-y-2">
+                                                <span className={`block font-medium ${isAnswered ? 'text-slate-700' : 'text-slate-600'}`}>
+                                                    {option.text || `Option ${optionLetter(option.originalIndex)}`}
+                                                </span>
+                                                {option.imageUrl ? (
+                                                    <img
+                                                        src={option.imageUrl}
+                                                        alt={`Option ${optionLetter(option.originalIndex)} visual`}
+                                                        className="max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                                                        loading="lazy"
+                                                    />
+                                                ) : null}
+                                            </div>
                                             {isCorrectOption && <CheckCircle2 className="text-emerald-500" size={20} />}
                                             {isWrong && <XCircle className="text-rose-500" size={20} />}
                                         </button>

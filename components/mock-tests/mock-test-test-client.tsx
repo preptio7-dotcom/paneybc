@@ -17,6 +17,7 @@ import {
   isVol1SubjectCode,
 } from '@/lib/bae-mock'
 import { MOCK_TEST_DEFINITIONS, type MockSubjectDefinition, type MockTestRouteKey } from '@/lib/mock-tests'
+import { buildQuestionOptionItems, optionLetter } from '@/lib/question-options'
 
 type ApiDefinition = {
   routeKey: string
@@ -37,6 +38,7 @@ type MockQuestion = {
   question: string
   imageUrl?: string | null
   options: string[]
+  optionImageUrls?: string[]
   explanation: string
   difficulty: string
   allowMultiple: boolean
@@ -297,6 +299,9 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
   }
 
   const currentQuestion = questions[currentIndex]
+  const optionItems = currentQuestion
+    ? buildQuestionOptionItems(currentQuestion.options, currentQuestion.optionImageUrls)
+    : []
   const progressPercent = questions.length ? ((currentIndex + 1) / questions.length) * 100 : 0
 
   const answeredCount = useMemo(
@@ -496,14 +501,15 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
                   ) : null}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-auto">
-                    {currentQuestion.options.map((option, optionIndex) => {
+                    {optionItems.map((option) => {
+                      const optionIndex = option.originalIndex
                       const selected = answers[currentIndex] || []
                       const isSelected = selected.includes(optionIndex)
                       return (
                         <button
                           key={`${currentQuestion.id}-${optionIndex}`}
                           onClick={() => handleOptionClick(optionIndex)}
-                          className={`group flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                          className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
                             isSelected
                               ? 'border-primary-green bg-primary-green/5'
                               : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50'
@@ -514,9 +520,21 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
                               isSelected ? 'bg-primary-green text-white' : 'bg-slate-100 text-slate-500'
                             }`}
                           >
-                            {String.fromCharCode(65 + optionIndex)}
+                            {optionLetter(optionIndex)}
                           </div>
-                          <span className="text-sm font-medium text-slate-700">{option}</span>
+                          <div className="flex-1 space-y-2">
+                            <span className="block text-sm font-medium text-slate-700">
+                              {option.text || `Option ${optionLetter(optionIndex)}`}
+                            </span>
+                            {option.imageUrl ? (
+                              <img
+                                src={option.imageUrl}
+                                alt={`Option ${optionLetter(optionIndex)} visual`}
+                                className="max-h-40 w-full rounded-md border border-border bg-white object-contain"
+                                loading="lazy"
+                              />
+                            ) : null}
+                          </div>
                         </button>
                       )
                     })}

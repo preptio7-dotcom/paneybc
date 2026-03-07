@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { type HomepageThemeVariant } from '@/lib/homepage-theme'
@@ -88,7 +88,34 @@ function FeedbackCard({
   const hasLongMessage = review.message.length > MAX_READ_MORE_LENGTH
   const levelTag = review.user.level || 'CA Student'
   const [imageFailed, setImageFailed] = useState(false)
+  const [hasCollapsedOverflow, setHasCollapsedOverflow] = useState(hasLongMessage)
+  const messageRef = useRef<HTMLParagraphElement | null>(null)
   const showAvatarImage = Boolean(review.user.avatar) && !imageFailed
+
+  useEffect(() => {
+    if (isExpanded) return
+    const node = messageRef.current
+    if (!node) {
+      setHasCollapsedOverflow(hasLongMessage)
+      return
+    }
+    const isOverflowing = node.scrollHeight > node.clientHeight + 1
+    setHasCollapsedOverflow(isOverflowing || hasLongMessage)
+  }, [hasLongMessage, isExpanded, review.message])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleResize = () => {
+      if (isExpanded) return
+      const node = messageRef.current
+      if (!node) return
+      const isOverflowing = node.scrollHeight > node.clientHeight + 1
+      setHasCollapsedOverflow(isOverflowing || hasLongMessage)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [hasLongMessage, isExpanded])
 
   return (
     <article
@@ -141,8 +168,8 @@ function FeedbackCard({
         </div>
 
         <div className="mt-3 flex-1 text-[14px] leading-[1.75] italic text-[#334155]">
-          <p className={isExpanded ? '' : 'line-clamp-4'}>{review.message}</p>
-          {hasLongMessage ? (
+          <p ref={messageRef} className={isExpanded ? '' : 'line-clamp-4'}>{review.message}</p>
+          {hasCollapsedOverflow ? (
             <button
               type="button"
               onClick={() => onToggleReadMore(review.id)}
