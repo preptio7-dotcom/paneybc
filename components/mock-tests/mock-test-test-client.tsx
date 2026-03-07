@@ -426,6 +426,7 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
   const financialStatementCase = isFinancialStatementQuestion
     ? currentQuestion?.financialStatementCase || null
     : null
+  const financialStatementPdfUrl = String(financialStatementCase?.trialBalancePdfUrl || '').trim()
   const currentMcqSelection = Array.isArray(answers[currentIndex])
     ? (answers[currentIndex] as number[])
     : []
@@ -607,7 +608,11 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
             </div>
 
             <div className="lg:col-span-3">
-              <Card className="border-0 shadow-xl overflow-hidden min-h-[430px] flex flex-col">
+              <Card
+                className={`border-0 shadow-xl min-h-[430px] flex flex-col ${
+                  isFinancialStatementQuestion ? 'overflow-visible' : 'overflow-hidden'
+                }`}
+              >
                 <CardHeader className="bg-slate-800 text-white p-6">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide">
@@ -631,7 +636,7 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
                 <CardContent className="p-6 flex-1 flex flex-col gap-3">
                   {isFinancialStatementQuestion ? (
                     financialStatementCase ? (
-                      <div className="space-y-4">
+                      <div className="space-y-4 max-h-[72vh] overflow-y-auto pr-1">
                         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                           <span className="font-semibold">{financialStatementCase.caseNumber}:</span>{' '}
                           {financialStatementCase.title}
@@ -639,7 +644,13 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                           <div className="space-y-3">
                             <h3 className="text-sm font-semibold text-slate-800">Trial Balance</h3>
-                            <PdfViewer url={financialStatementCase.trialBalancePdfUrl} />
+                            {financialStatementPdfUrl ? (
+                              <PdfViewer url={financialStatementPdfUrl} />
+                            ) : (
+                              <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                                Trial balance PDF is missing for this case.
+                              </div>
+                            )}
                             {financialStatementCase.additionalInfo ? (
                               <Card className="border border-slate-200 bg-white">
                                 <CardContent className="p-3 text-sm text-slate-600">
@@ -649,7 +660,7 @@ export function MockTestTestClient({ mockKey }: { mockKey: MockTestRouteKey }) {
                               </Card>
                             ) : null}
                           </div>
-                          <div className="space-y-4">
+                          <div className="space-y-4 max-h-[68vh] overflow-y-auto pr-1">
                             {financialStatementCase.showThousandsNote ? (
                               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                                 <span className="font-semibold">Rs. 000:</span> Enter values in thousands.
