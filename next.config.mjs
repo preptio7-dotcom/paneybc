@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
+import createBundleAnalyzer from '@next/bundle-analyzer'
+
+const withBundleAnalyzer = createBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 const remotePatterns = [
   {
     protocol: 'https',
@@ -39,6 +45,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    optimizeCss: true,
+  },
   images: {
     unoptimized: true,
     remotePatterns,
@@ -53,4 +62,4 @@ const nextConfig = {
  
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig)

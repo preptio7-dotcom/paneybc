@@ -1,8 +1,17 @@
 import { Navigation } from '@/components/navigation'
-import { LogoutToast } from '@/components/logout-toast'
-import { HomepageContent } from '@/components/homepage-content'
+import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
+
+const LogoutToast = dynamic(
+  () => import('@/components/logout-toast').then((module) => module.LogoutToast),
+  { loading: () => null }
+)
+
+const HomepageContent = dynamic(
+  () => import('@/components/homepage-content').then((module) => module.HomepageContent),
+  { loading: () => null }
+)
 
 export async function generateMetadata() {
   let questionCount = 4000
