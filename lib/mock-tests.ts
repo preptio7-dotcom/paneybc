@@ -101,8 +101,8 @@ export const MOCK_TEST_DEFINITIONS: Record<MockTestRouteKey, MockTestDefinition>
     gradientFrom: '#7c3aed',
     gradientTo: '#6d28d9',
     isCombined: false,
-    defaultQuestions: 40,
-    minQuestions: 40,
+    defaultQuestions: 50,
+    minQuestions: 41,
     maxQuestions: 100,
     questionStep: 5,
     timerPerQuestionSeconds: 144,
@@ -118,7 +118,7 @@ export const MOCK_TEST_DEFINITIONS: Record<MockTestRouteKey, MockTestDefinition>
     questionSourceCodes: ['FOA'],
     infoTitle: 'About This Mock Test',
     infoDescription:
-      'A fully timed mock test covering FOA chapters with randomized chapter-weighted selection plus one Financial Statements case.',
+      'Master FOA under real exam pressure: chapter-weighted MCQs plus one Financial Statements case in every attempt.',
     rules: [
       'Timer starts immediately and cannot be paused.',
       'Most questions are MCQ.',
@@ -127,7 +127,7 @@ export const MOCK_TEST_DEFINITIONS: Record<MockTestRouteKey, MockTestDefinition>
       'Results are shown right after submission.',
       '2.4 minutes per question.',
     ],
-    statsText: '40 Questions · 96 Minutes · FOA + FS',
+    statsText: '50 Questions · 120 Minutes · FOA + FS',
   },
   'qafb-mock': {
     routeKey: 'qafb-mock',
