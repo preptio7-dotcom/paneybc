@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Loader2 } from 'lucide-react'
 import { buildInlinePdfUrl } from '@/lib/utils'
+import { getProxyMediaUrl } from '@/lib/media-url'
 
 interface PdfViewerProps {
   url: string
@@ -26,6 +27,13 @@ export function PdfViewer({ url }: PdfViewerProps) {
   const [status, setStatus] = useState<PdfStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const mobileCanvasRef = useRef<HTMLDivElement | null>(null)
+  const sourceUrl = String(url || '').trim()
+  const inlineUrl = useMemo(() => buildInlinePdfUrl(sourceUrl), [sourceUrl])
+  const proxiedPdfUrl = useMemo(() => getProxyMediaUrl(inlineUrl), [inlineUrl])
+  const viewerUrl = useMemo(
+    () => (proxiedPdfUrl ? buildViewerUrl(proxiedPdfUrl) : ''),
+    [proxiedPdfUrl]
+  )
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 768px)')
@@ -35,20 +43,14 @@ export function PdfViewer({ url }: PdfViewerProps) {
     return () => query.removeEventListener('change', update)
   }, [])
 
-  if (!url) {
-    return (
-      <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-        Trial balance PDF is not available.
-      </div>
-    )
-  }
-
-  const inlineUrl = buildInlinePdfUrl(url)
-  const viewerUrl = buildViewerUrl(url)
-  const mobilePdfUrl = `/api/pdf-proxy?url=${encodeURIComponent(inlineUrl)}`
+  useEffect(() => {
+    if (isMobile || !viewerUrl) return
+    setStatus('loading')
+    setError(null)
+  }, [isMobile, viewerUrl])
 
   useEffect(() => {
-    if (!isMobile) return
+    if (!isMobile || !proxiedPdfUrl) return
     let cancelled = false
 
     const render = async () => {
@@ -62,7 +64,7 @@ export function PdfViewer({ url }: PdfViewerProps) {
           import.meta.url
         ).toString()
 
-        const loadingTask = pdfjsLib.getDocument({ url: mobilePdfUrl })
+        const loadingTask = pdfjsLib.getDocument({ url: proxiedPdfUrl })
         const pdf = await loadingTask.promise
         if (cancelled) return
 
@@ -109,7 +111,15 @@ export function PdfViewer({ url }: PdfViewerProps) {
     return () => {
       cancelled = true
     }
-  }, [inlineUrl, isMobile])
+  }, [isMobile, proxiedPdfUrl])
+
+  if (!sourceUrl) {
+    return (
+      <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+        Trial balance PDF is not available.
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -128,18 +138,33 @@ export function PdfViewer({ url }: PdfViewerProps) {
           <div ref={mobileCanvasRef} className="space-y-4" />
         </div>
       ) : (
-        <div className="w-full rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+        <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+          {status === 'loading' ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
+              <Loader2 className="animate-spin text-primary-green" size={32} />
+            </div>
+          ) : null}
           <iframe
             src={viewerUrl}
             className="w-full h-[460px] md:h-[620px] xl:h-[760px]"
             title="Trial Balance PDF"
+            onLoad={() => setStatus('ready')}
+            onError={() => {
+              setStatus('error')
+              setError('Unable to render PDF in preview.')
+            }}
           />
         </div>
       )}
+      {!isMobile && status === 'error' ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          {error || 'Unable to render PDF preview.'}
+        </div>
+      ) : null}
       <Button
         variant="outline"
         size="sm"
-        onClick={() => window.open(url, '_blank')}
+        onClick={() => window.open(proxiedPdfUrl || inlineUrl || sourceUrl, '_blank')}
         className="gap-2"
       >
         <ExternalLink size={14} />

@@ -28,6 +28,8 @@ const isAllowedHost = (host: string) => {
   if (normalized === 'res.cloudinary.com') return true
   if (normalized.endsWith('.r2.dev')) return true
   if (normalized.endsWith('.r2.cloudflarestorage.com')) return true
+  if (normalized === 'preptio.com' || normalized === 'www.preptio.com') return true
+  if (normalized.endsWith('.preptio.com')) return true
   if (ENV_ALLOWED_HOSTS.has(normalized)) return true
   return false
 }
@@ -51,7 +53,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Only https URLs are allowed' }, { status: 400 })
     }
 
-    if (!isAllowedHost(url.hostname)) {
+    const requestHost = new URL(request.url).hostname.toLowerCase()
+    if (url.hostname.toLowerCase() !== requestHost && !isAllowedHost(url.hostname)) {
       return NextResponse.json({ error: 'Host not allowed' }, { status: 403 })
     }
 
