@@ -225,7 +225,9 @@ export default function AdminBlogPage() {
   const runBulkAction = async (action: 'publish' | 'archive' | 'delete') => {
     if (!selectedIds.length) return
     if (action === 'delete') {
-      const confirmed = window.confirm('Are you sure you want to archive selected posts?')
+      const confirmed = window.confirm(
+        'Are you sure you want to permanently delete selected posts? This cannot be undone.'
+      )
       if (!confirmed) return
     }
 
@@ -241,10 +243,17 @@ export default function AdminBlogPage() {
         throw new Error(data?.error || 'Bulk action failed')
       }
 
-      toast({
-        title: 'Updated',
-        description: `${data.updatedCount || selectedIds.length} post(s) updated`,
-      })
+      if (action === 'delete') {
+        toast({
+          title: 'Deleted',
+          description: `${data.deletedCount || selectedIds.length} post(s) permanently deleted`,
+        })
+      } else {
+        toast({
+          title: 'Updated',
+          description: `${data.updatedCount || selectedIds.length} post(s) updated`,
+        })
+      }
       await refresh()
     } catch (error: any) {
       toast({
@@ -471,7 +480,7 @@ export default function AdminBlogPage() {
       },
       delete: async (post: AdminPostRow) => {
         const confirmed = window.confirm(
-          'Are you sure you want to archive this post? You can restore by editing status later.'
+          'Are you sure you want to permanently delete this post? This cannot be undone.'
         )
         if (!confirmed) return
         try {
@@ -480,13 +489,13 @@ export default function AdminBlogPage() {
             method: 'DELETE',
           })
           const data = await response.json()
-          if (!response.ok) throw new Error(data?.error || 'Failed to archive post')
-          toast({ title: 'Archived', description: 'Post archived successfully.' })
+          if (!response.ok) throw new Error(data?.error || 'Failed to delete post')
+          toast({ title: 'Deleted', description: 'Post permanently deleted.' })
           await refresh()
         } catch (error: any) {
           toast({
             title: 'Error',
-            description: error?.message || 'Failed to archive post',
+            description: error?.message || 'Failed to delete post',
             variant: 'destructive',
           })
         } finally {

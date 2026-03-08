@@ -261,25 +261,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Post not found' }, { status: 404 })
   }
 
-  const post = await prisma.blogPost.update({
+  await prisma.blogPost.delete({
     where: { id },
-    data: {
-      status: BlogPostStatus.archived,
-      featured: false,
-    },
   })
 
-  await createBlogRevision({
-    postId: post.id,
-    title: post.title,
-    content: post.content,
-    excerpt: post.excerpt,
-    coverImageUrl: post.coverImageUrl,
-    savedBy: admin.userId,
-    saveType: BlogRevisionSaveType.status_change,
-  })
+  revalidateBlogPaths({ slug: existing.slug })
 
-  revalidateBlogPaths({ slug: post.slug })
-
-  return NextResponse.json({ post, success: true })
+  return NextResponse.json({ success: true, deletedId: existing.id })
 }

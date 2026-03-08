@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, updatedCount: result.count })
   }
 
-  if (action === 'archive' || action === 'delete') {
+  if (action === 'archive') {
     const result = await prisma.blogPost.updateMany({
       where: { id: { in: ids } },
       data: {
@@ -104,6 +104,18 @@ export async function POST(request: NextRequest) {
       })
     )
     return NextResponse.json({ success: true, updatedCount: result.count })
+  }
+
+  if (action === 'delete') {
+    const result = await prisma.blogPost.deleteMany({
+      where: { id: { in: ids } },
+    })
+
+    targetPosts.forEach((post) => {
+      revalidateBlogPaths({ slug: post.slug })
+    })
+
+    return NextResponse.json({ success: true, deletedCount: result.count })
   }
 
   return NextResponse.json({ error: 'Unsupported action' }, { status: 400 })
