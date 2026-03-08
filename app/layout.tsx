@@ -107,6 +107,7 @@ import { AdExperienceGuard } from "@/components/ad-experience-guard"
 import { TrustedTypesBootstrap } from "@/components/trusted-types-bootstrap"
 import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 import { DeferredGtag } from "@/components/deferred-gtag"
+import { ClarityInit } from "@/components/clarity-init"
 
 export default function RootLayout({
   children,
@@ -143,6 +144,7 @@ export default function RootLayout({
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <TrustedTypesBootstrap />
         <DeferredGtag />
+        <ClarityInit />
         <AuthProvider>
           <AdExperienceGuard />
           <PWARegistration />
