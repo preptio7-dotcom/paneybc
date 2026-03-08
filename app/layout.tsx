@@ -107,7 +107,6 @@ import { AdExperienceGuard } from "@/components/ad-experience-guard"
 import { TrustedTypesBootstrap } from "@/components/trusted-types-bootstrap"
 import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 import { DeferredGtag } from "@/components/deferred-gtag"
-import { ClarityInit } from "@/components/clarity-init"
 
 export default function RootLayout({
   children,
@@ -140,11 +139,17 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://api.dicebear.com" />
         <link rel="dns-prefetch" href="https://api.multiavatar.com" />
         <link rel="dns-prefetch" href="https://models.readyplayer.me" />
+        <script
+          type="text/javascript"
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "vrvnjfsfpv");',
+          }}
+        />
       </head>
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <TrustedTypesBootstrap />
         <DeferredGtag />
-        <ClarityInit />
         <AuthProvider>
           <AdExperienceGuard />
           <PWARegistration />
