@@ -19,11 +19,7 @@ const financialPracticePattern = /^\/financial-statements\/practice\/[^/]+(\/|$)
 const financialResultsPattern = /^\/financial-statements\/results\/[^/]+(\/|$)/i
 
 export function isAuthRoute(pathname: string) {
-  return (
-    pathname.startsWith('/auth') ||
-    pathname === '/login' ||
-    pathname === '/register'
-  )
+  return pathname.startsWith('/auth') || pathname === '/login' || pathname === '/register'
 }
 
 export function isAssessmentRoute(pathname: string) {
@@ -41,7 +37,7 @@ export function isResultRoute(pathname: string) {
   return pathname === '/results' || financialResultsPattern.test(pathname)
 }
 
-export function getRouteAdBlockReason(pathname: string): string | null {
+export function getRouteAdRestrictionReason(pathname: string): string | null {
   if (pathname.startsWith('/admin') || pathname.startsWith('/sKy9108-3~620_admin')) {
     return 'admin-area'
   }
@@ -58,14 +54,10 @@ export function getRouteAdBlockReason(pathname: string): string | null {
 }
 
 export function isRouteBlockedForAds(pathname: string) {
-  return getRouteAdBlockReason(pathname) !== null
+  return getRouteAdRestrictionReason(pathname) !== null
 }
 
-export function canUserSeeAds(user: AdAccessUser) {
-  return getUserAdBlockReason(user) === null
-}
-
-export function getUserAdBlockReason(user: AdAccessUser): string | null {
+export function getUserAdRestrictionReason(user: AdAccessUser): string | null {
   if (!user) return null
   if (user.role === 'admin' || user.role === 'super_admin') return 'admin-role'
   const studentRole = user.studentRole || 'unpaid'
@@ -75,9 +67,13 @@ export function getUserAdBlockReason(user: AdAccessUser): string | null {
   return `blocked-student-role:${studentRole}`
 }
 
+export function canUserSeeAds(user: AdAccessUser) {
+  return getUserAdRestrictionReason(user) === null
+}
+
 export function getAdEligibilityInfo(pathname: string, user: AdAccessUser): AdEligibilityInfo {
-  const blockedByUserReason = getUserAdBlockReason(user)
-  const blockedByRouteReason = getRouteAdBlockReason(pathname)
+  const blockedByUserReason = getUserAdRestrictionReason(user)
+  const blockedByRouteReason = getRouteAdRestrictionReason(pathname)
   const canShowByUser = blockedByUserReason === null
   const eligible = canShowByUser && blockedByRouteReason === null
 
@@ -99,9 +95,4 @@ export function getAdEligibilityInfo(pathname: string, user: AdAccessUser): AdEl
 
 export function shouldLoadAdsForContext(pathname: string, user: AdAccessUser) {
   return getAdEligibilityInfo(pathname, user).eligible
-}
-
-export function shouldShowAdblockPrompt(pathname: string, user: AdAccessUser) {
-  const info = getAdEligibilityInfo(pathname, user)
-  return info.canShowByUser && info.blockedByRouteReason === null
 }

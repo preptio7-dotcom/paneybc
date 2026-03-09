@@ -8,7 +8,6 @@ import {
   BAE_VOL2_NAME,
   isVol1SubjectCode,
   resolveBaeDistributionWithAvailability,
-  sampleWeightedQuestionsByChapter,
   shuffleArray,
   type BaeVolume,
 } from '@/lib/bae-mock'
@@ -22,6 +21,7 @@ import {
   buildChapterLabelMap,
   resolveChapterLabel,
 } from '@/lib/chapter-labels'
+import { selectMockTestQuestions } from '@/lib/mockTestQuestionSelector'
 
 export type MockSessionMcqQuestionRef = {
   questionType?: 'mcq'
@@ -261,12 +261,33 @@ function buildFinancialStatementAnswerSet(
   })
 }
 
-function pickChapterWeightedQuestionIds(
-  questions: Array<{ id: string; chapter: string | null }>,
-  requestedCount: number,
-  chapterSources: Array<unknown>
-) {
-  return sampleWeightedQuestionsByChapter(questions, requestedCount, chapterSources)
+function extractChapterWeightages(chapterSource: unknown) {
+  if (!Array.isArray(chapterSource)) return [] as Array<{ chapterId: string; weight: number }>
+  return chapterSource
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null
+      const row = entry as Record<string, unknown>
+      const chapterId = String(row.code || row.chapter || '').trim()
+      if (!chapterId) return null
+      const rawWeight = Number(row.weightage)
+      return {
+        chapterId,
+        weight: Number.isFinite(rawWeight) && rawWeight > 0 ? rawWeight : 1,
+      }
+    })
+    .filter(Boolean) as Array<{ chapterId: string; weight: number }>
+}
+
+function mergeChapterWeightages(sources: Array<unknown>) {
+  const merged = new Map<string, number>()
+  for (const source of sources) {
+    for (const row of extractChapterWeightages(source)) {
+      if (!merged.has(row.chapterId)) {
+        merged.set(row.chapterId, row.weight)
+      }
+    }
+  }
+  return Array.from(merged.entries()).map(([chapterId, weight]) => ({ chapterId, weight }))
 }
 
 function getVolumeForSubjectCode(subjectCode: string): BaeVolume {
@@ -395,14 +416,24 @@ export async function startMockSession(
       throw new Error('Not enough questions available to generate a meaningful BAE mock test.')
     }
 
-    const vol1Selected = pickChapterWeightedQuestionIds(
-      vol1Questions,
-      distribution.vol1Count,
+    const vol1ChapterWeightages = mergeChapterWeightages(
       vol1Subjects.map((subject) => subject.chapters)
     )
-    const vol2Selected = pickChapterWeightedQuestionIds(vol2Questions, distribution.vol2Count, [
-      vol2Subject?.chapters,
-    ])
+    const vol2ChapterWeightages = mergeChapterWeightages([vol2Subject?.chapters])
+
+    const vol1Selected = await selectMockTestQuestions(
+      userId,
+      [...BAE_VOL1_CODES],
+      distribution.vol1Count,
+      vol1ChapterWeightages
+    )
+    const vol2Selected = await selectMockTestQuestions(
+      userId,
+      BAE_VOL2_CODE,
+      distribution.vol2Count,
+      vol2ChapterWeightages,
+      { excludeQuestionIds: vol1Selected }
+    )
 
     const vol1Map = new Map(vol1Questions.map((row) => [row.id, row]))
     const vol2Map = new Map(vol2Questions.map((row) => [row.id, row]))
@@ -410,6 +441,7 @@ export async function startMockSession(
     const questionSet = shuffleArray<MockSessionQuestionRef>([
       ...vol1Selected.map((questionId) => {
         const question = vol1Map.get(questionId)
+        if (!question) return null
         return {
           questionId,
           subjectCode: String(question?.subject || definition.subjects[0].code).toUpperCase(),
@@ -419,6 +451,7 @@ export async function startMockSession(
       }),
       ...vol2Selected.map((questionId) => {
         const question = vol2Map.get(questionId)
+        if (!question) return null
         return {
           questionId,
           subjectCode: String(question?.subject || definition.subjects[1].code).toUpperCase(),
@@ -426,10 +459,21 @@ export async function startMockSession(
           volume: 'VOL2' as const,
         }
       }),
-    ])
+    ].filter(Boolean) as MockSessionQuestionRef[])
+
+    const resolvedVol1Count = questionSet.filter(
+      (entry) => (entry as MockSessionMcqQuestionRef).volume === 'VOL1'
+    ).length
+    const resolvedVol2Count = questionSet.filter(
+      (entry) => (entry as MockSessionMcqQuestionRef).volume === 'VOL2'
+    ).length
+    const resolvedTotalQuestions = questionSet.length
+    if (resolvedTotalQuestions < 2) {
+      throw new Error('Not enough questions available to generate a meaningful BAE mock test.')
+    }
 
     const timeAllowedMinutes = calculateMockTimeAllowedMinutes(
-      distribution.totalQuestions,
+      resolvedTotalQuestions,
       definition.timerPerQuestionSeconds
     )
 
@@ -438,10 +482,10 @@ export async function startMockSession(
         userId,
         testType: definition.testType,
         subjectIds: definition.subjects.map((subject) => subject.code),
-        totalQuestions: distribution.totalQuestions,
+        totalQuestions: resolvedTotalQuestions,
         timeAllowed: timeAllowedMinutes,
-        vol1Count: distribution.vol1Count,
-        vol2Count: distribution.vol2Count,
+        vol1Count: resolvedVol1Count,
+        vol2Count: resolvedVol2Count,
         questionSet,
       },
       select: { id: true },
@@ -449,9 +493,13 @@ export async function startMockSession(
 
     return {
       sessionId: session.id,
-      totalQuestions: distribution.totalQuestions,
+      totalQuestions: resolvedTotalQuestions,
       timeAllowedMinutes,
-      warning: distribution.warning || null,
+      warning:
+        distribution.warning ||
+        (resolvedTotalQuestions < totalRequested
+          ? `Test contains ${resolvedTotalQuestions} questions (maximum available).`
+          : null),
     }
   }
 
@@ -499,18 +547,31 @@ export async function startMockSession(
     warning = `Test contains ${finalTotalWithFs} questions (maximum available in ${subjectCode}).`
   }
 
-  const pickedIds = pickChapterWeightedQuestionIds(questions, finalMcqCount, [subjectDoc?.chapters])
+  const chapterWeightages = mergeChapterWeightages([subjectDoc?.chapters])
+  const pickedIds = await selectMockTestQuestions(
+    userId,
+    subjectCode,
+    finalMcqCount,
+    chapterWeightages
+  )
   const questionMap = new Map(questions.map((row) => [row.id, row]))
   const questionSet = shuffleArray<MockSessionQuestionRef>(
     pickedIds.map((questionId) => {
       const question = questionMap.get(questionId)
+      if (!question) return null
       return {
         questionId,
         subjectCode: String(question?.subject || subjectCode).toUpperCase(),
         chapterCode: question?.chapter || null,
       }
-    })
+    }).filter(Boolean) as MockSessionQuestionRef[]
   )
+
+  if (pickedIds.length < finalMcqCount) {
+    warning =
+      warning ||
+      `Test contains ${pickedIds.length + (selectedFinancialStatementCase ? 1 : 0)} questions (maximum available in ${subjectCode}).`
+  }
 
   if (selectedFinancialStatementCase) {
     const fsQuestionRef: MockSessionFinancialStatementQuestionRef = {
@@ -1079,6 +1140,27 @@ export async function submitMockSession(
       answers: storedAnswers,
     },
   })
+
+  try {
+    const historyRows = storedAnswers
+      .filter((answer) => answer.questionType !== 'financial_statement')
+      .map((answer) => ({
+        userId,
+        questionId: answer.questionId,
+        mockTestId: completedSession.id,
+        answeredCorrectly: Boolean(answer.isCorrect),
+        seenAt: new Date(),
+      }))
+
+    if (historyRows.length > 0) {
+      await prisma.mockTestQuestionHistory.createMany({
+        data: historyRows,
+        skipDuplicates: true,
+      })
+    }
+  } catch (historyError) {
+    console.error('Failed to save mock test question history:', historyError)
+  }
 
   if (completedSession.totalQuestions > 0) {
     void updateUserPracticeStreak(prisma, userId, new Date(), {

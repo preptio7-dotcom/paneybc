@@ -224,6 +224,7 @@ model User {
   feedback                 UserFeedback?
   streakAuditLogs          StreakAuditLog[]
   badges                   UserBadge[]
+  mockTestQuestionHistory  MockTestQuestionHistory[]
 }
 
 model Subject {
@@ -266,6 +267,8 @@ model Question {
   uploadId      String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
+
+  mockTestQuestionHistory MockTestQuestionHistory[]
 
   @@index([subject, chapter])
 }
@@ -320,6 +323,22 @@ model BaeMockSession {
 
   @@index([userId, completed, createdAt])
   @@index([testType, completed, createdAt])
+}
+
+model MockTestQuestionHistory {
+  id                Int      @id @default(autoincrement())
+  userId            String
+  questionId        String
+  mockTestId        String
+  answeredCorrectly Boolean
+  seenAt            DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, questionId])
+  @@index([userId, seenAt])
+  @@unique([userId, questionId, mockTestId])
 }
 
 model MockTestNotifyRequest {

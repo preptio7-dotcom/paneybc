@@ -103,7 +103,6 @@ import { PWARegistration } from "@/components/pwa-registration"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { AnalyticsTracker } from "@/components/analytics-tracker"
 import { ContactPopup } from "@/components/contact-popup"
-import { AdExperienceGuard } from "@/components/ad-experience-guard"
 import { TrustedTypesBootstrap } from "@/components/trusted-types-bootstrap"
 import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 import { DeferredGtag } from "@/components/deferred-gtag"
@@ -151,7 +150,6 @@ export default function RootLayout({
         <TrustedTypesBootstrap />
         <DeferredGtag />
         <AuthProvider>
-          <AdExperienceGuard />
           <PWARegistration />
           <PWAInstallPrompt />
           <Suspense fallback={null}>
