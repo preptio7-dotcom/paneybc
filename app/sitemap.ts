@@ -19,18 +19,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/subjects/QAFB',
     '/subjects/FOA',
     '/blog',
-    '/ambassador',
     '/demo',
-    '/feedback',
     '/contact',
-    '/login',
-    '/signup',
-    '/register',
-    '/auth/login',
-    '/auth/signup',
-    '/join-us',
-    '/privacy',
-    '/terms',
   ]
 
   const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
@@ -41,13 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? 'daily'
         : route === '/'
           ? 'weekly'
-          : route === '/login' ||
-              route === '/signup' ||
-              route === '/register' ||
-              route === '/auth/login' ||
-              route === '/auth/signup'
-            ? 'yearly'
-            : 'monthly',
+          : 'monthly',
     priority:
       route === '/'
         ? 1
