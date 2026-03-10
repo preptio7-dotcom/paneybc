@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import { BlogPostStatus, BlogPostVisibility } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
-const BASE_URL = 'https://www.preptio.com'
+const BASE_URL = 'https://preptio.com'
 export const revalidate = 300
 export const runtime = 'nodejs'
 
