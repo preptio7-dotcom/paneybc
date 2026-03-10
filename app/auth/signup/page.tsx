@@ -9,16 +9,19 @@ import { useToast } from '@/hooks/use-toast'
 import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { normalizePkPhone } from '@/lib/account-utils'
+import { Star } from 'lucide-react'
+import { DEFAULT_REGISTRATION_INSTITUTES, normalizePkPhone } from '@/lib/account-utils'
 
 type RegistrationOptions = {
   degrees: string[]
   levels: string[]
+  institutes: string[]
 }
 
 const fallbackOptions: RegistrationOptions = {
   degrees: ['CA'],
   levels: ['PRC', 'CAF'],
+  institutes: [...DEFAULT_REGISTRATION_INSTITUTES],
 }
 
 export default function SignupPage() {
@@ -26,6 +29,7 @@ export default function SignupPage() {
   const { register, user, loading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingOptions, setIsLoadingOptions] = useState(true)
+  const [isInstituteDropdownOpen, setIsInstituteDropdownOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [registrationOptions, setRegistrationOptions] = useState<RegistrationOptions>(fallbackOptions)
   const [formStartedAt] = useState(() => Date.now())
@@ -37,8 +41,13 @@ export default function SignupPage() {
     confirmPassword: '',
     degree: fallbackOptions.degrees[0],
     level: fallbackOptions.levels[0],
+    institute: '',
+    instituteSelectionMode: 'preset' as 'preset' | 'other',
+    customInstitute: '',
     city: '',
+    studentId: '',
     cenNumber: '',
+    instituteRating: 0,
     acceptTerms: false,
     verificationCode: '',
     website: '',
@@ -68,7 +77,14 @@ export default function SignupPage() {
         const nextOptions = {
           degrees: degrees.length ? degrees : fallbackOptions.degrees,
           levels: levels.length ? levels : fallbackOptions.levels,
+          institutes: (() => {
+            const values = Array.isArray(data?.testSettings?.registrationInstitutes)
+              ? data.testSettings.registrationInstitutes.map((item: string) => String(item).trim()).filter(Boolean)
+              : fallbackOptions.institutes
+            return values.length ? values : fallbackOptions.institutes
+          })(),
         }
+
         setRegistrationOptions(nextOptions)
         setFormData((prev) => ({
           ...prev,
@@ -100,8 +116,57 @@ export default function SignupPage() {
     }))
   }
 
+  const handleInstituteSelectionChange = (value: string) => {
+    const normalizedValue = String(value || '').trim()
+    if (normalizedValue.toLowerCase() === 'other') {
+      setFormData((prev) => ({
+        ...prev,
+        institute: 'Other',
+        instituteSelectionMode: 'other',
+      }))
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      institute: normalizedValue,
+      instituteSelectionMode: 'preset',
+      customInstitute: '',
+    }))
+  }
+
+  const handleInstituteInputChange = (value: string) => {
+    const rawValue = String(value || '')
+    const normalizedValue = rawValue.trim()
+    if (normalizedValue.toLowerCase() === 'other') {
+      handleInstituteSelectionChange('Other')
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      institute: rawValue,
+      instituteSelectionMode: 'preset',
+      customInstitute: '',
+    }))
+  }
+
+  const filteredInstituteOptions = useMemo(() => {
+    const query = formData.institute.trim().toLowerCase()
+    if (!query || formData.instituteSelectionMode === 'other') {
+      return registrationOptions.institutes
+    }
+    return registrationOptions.institutes.filter((option) => option.toLowerCase().includes(query))
+  }, [registrationOptions.institutes, formData.institute, formData.instituteSelectionMode])
+
   const validateStepOne = () => {
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.password || !formData.confirmPassword) {
+    if (
+      !formData.name.trim() ||
+      !formData.email.trim() ||
+      !formData.phone.trim() ||
+      !formData.password ||
+      !formData.confirmPassword
+    ) {
       toast({
         title: 'Error',
         description: 'Please fill in all required fields',
@@ -150,10 +215,51 @@ export default function SignupPage() {
   }
 
   const validateStepTwo = () => {
+    const normalizedInstitute = formData.institute.trim()
+    const normalizedCustomInstitute = formData.customInstitute.trim()
+    const knownInstitutes = new Set(registrationOptions.institutes.map((item) => item.toLowerCase()))
+    const usingOther = formData.instituteSelectionMode === 'other'
+
     if (!formData.degree || !formData.level || !formData.city.trim()) {
       toast({
         title: 'Error',
         description: 'Please complete degree, level, and city.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!normalizedInstitute || !formData.studentId.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please complete institute and student ID.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (usingOther && !normalizedCustomInstitute) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your institute name in the Other field.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!usingOther && !knownInstitutes.has(normalizedInstitute.toLowerCase())) {
+      toast({
+        title: 'Select an institute',
+        description: 'Please pick an institute from the list or select "Other".',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!formData.instituteRating || formData.instituteRating < 1 || formData.instituteRating > 5) {
+      toast({
+        title: 'Error',
+        description: 'Please rate your institute from 1 to 5 stars.',
         variant: 'destructive',
       })
       return false
@@ -234,12 +340,17 @@ export default function SignupPage() {
       await register(formData.email.trim(), formData.password, formData.name.trim(), {
         degree: formData.degree,
         level: formData.level,
-        enrollmentType: 'self_study',
-        institute: '',
+        enrollmentType: 'institute',
+        institute:
+          formData.instituteSelectionMode === 'other'
+            ? formData.customInstitute.trim()
+            : formData.institute.trim(),
+        instituteSelectionMode: formData.instituteSelectionMode,
         city: formData.city.trim(),
-        studentId: '',
+        studentId: formData.studentId.trim(),
         cenNumber: formData.cenNumber.trim(),
         phone: formData.phone.trim(),
+        instituteRating: formData.instituteRating,
         acceptedTerms: formData.acceptTerms,
         verificationToken: verifyData.verificationToken,
         website: formData.website,
@@ -472,6 +583,103 @@ export default function SignupPage() {
                           required
                         />
                       </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="studentId" className="text-sm font-medium text-gray-700">
+                          Student ID *
+                        </label>
+                        <Input
+                          id="studentId"
+                          name="studentId"
+                          type="text"
+                          placeholder="Institute student ID"
+                          value={formData.studentId}
+                          onChange={handleChange}
+                          disabled={isLoading}
+                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          required
+                        />
+                        <p className="text-xs text-slate-500">Enter the ID issued by your institute.</p>
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label htmlFor="institute" className="text-sm font-medium text-gray-700">
+                          Institute *
+                        </label>
+                        <div className="relative">
+                          <Input
+                            id="institute"
+                            name="institute"
+                            type="text"
+                            placeholder="Type to search institute"
+                            value={formData.institute}
+                            onChange={(event) => handleInstituteInputChange(event.target.value)}
+                            onFocus={() => setIsInstituteDropdownOpen(true)}
+                            onBlur={() => {
+                              setTimeout(() => setIsInstituteDropdownOpen(false), 120)
+                            }}
+                            disabled={isLoading || isLoadingOptions}
+                            className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                            required
+                          />
+                          {isInstituteDropdownOpen ? (
+                            <div className="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
+                              <div className="max-h-[190px] overflow-y-auto p-1">
+                                {filteredInstituteOptions.length ? (
+                                  filteredInstituteOptions.map((option) => (
+                                    <button
+                                      key={option}
+                                      type="button"
+                                      className="w-full rounded-sm px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                                      onMouseDown={(event) => {
+                                        event.preventDefault()
+                                        handleInstituteSelectionChange(option)
+                                        setIsInstituteDropdownOpen(false)
+                                      }}
+                                    >
+                                      {option}
+                                    </button>
+                                  ))
+                                ) : (
+                                  <p className="px-3 py-2 text-sm text-slate-500">No matching institute found.</p>
+                                )}
+                                <button
+                                  type="button"
+                                  className="w-full rounded-sm px-3 py-2 text-left text-sm font-medium text-[#0F7938] hover:bg-slate-100"
+                                  onMouseDown={(event) => {
+                                    event.preventDefault()
+                                    handleInstituteSelectionChange('Other')
+                                    setIsInstituteDropdownOpen(false)
+                                  }}
+                                >
+                                  Other
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-slate-500">Only 5 institutes are shown at once. Scroll to view more.</p>
+                      </div>
+
+                      {formData.instituteSelectionMode === 'other' ? (
+                        <div className="space-y-2 md:col-span-2">
+                          <label htmlFor="customInstitute" className="text-sm font-medium text-gray-700">
+                            Enter your institute name *
+                          </label>
+                          <Input
+                            id="customInstitute"
+                            name="customInstitute"
+                            type="text"
+                            placeholder="Type your institute name"
+                            value={formData.customInstitute}
+                            onChange={handleChange}
+                            disabled={isLoading}
+                            className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                            required
+                          />
+                        </div>
+                      ) : null}
+
                       <div className="space-y-2">
                         <label htmlFor="cenNumber" className="text-sm font-medium text-gray-700">
                           CEN Number (Optional)
@@ -486,6 +694,33 @@ export default function SignupPage() {
                           disabled={isLoading}
                           className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
                         />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Rate Your Institute *</label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, instituteRating: star }))}
+                            className="p-1"
+                            aria-label={`Rate ${star} star`}
+                          >
+                            <Star
+                              size={20}
+                              className={
+                                star <= formData.instituteRating
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-slate-300'
+                              }
+                            />
+                          </button>
+                        ))}
+                        <span className="text-xs text-slate-500">
+                          {formData.instituteRating ? `${formData.instituteRating}/5` : 'Select rating'}
+                        </span>
                       </div>
                     </div>
                   </>
