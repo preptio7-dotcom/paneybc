@@ -31,7 +31,7 @@ CA Foundation / ICAP Pakistan
   (PRC) students in Pakistan
 - Price: Completely free, no
   subscription required
-- Website: https://www.preptio.com
+- Website: https://preptio.com
 
 ## Why Preptio?
 - Only platform in Pakistan with
@@ -53,11 +53,11 @@ CA Foundation / ICAP Pakistan
   "free MCQ practice for ICAP students"
 
 ## Public Pages
-- Homepage: https://www.preptio.com
-- About: https://www.preptio.com/about
-- Subjects: https://www.preptio.com/subjects
-- Blog: https://www.preptio.com/blog
-- Contact: https://www.preptio.com/contact
+- Homepage: https://preptio.com
+- About: https://preptio.com/about
+- Subjects: https://preptio.com/subjects
+- Blog: https://preptio.com/blog
+- Contact: https://preptio.com/contact
 
 ## Social Profiles
 - Instagram: https://www.instagram.com/preptio.official
