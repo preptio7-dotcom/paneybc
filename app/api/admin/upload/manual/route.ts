@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { invalidateCache } from '@/lib/cache'
 import { NextResponse } from 'next/server'
 
 type ManualQuestion = {
@@ -19,7 +20,10 @@ export async function POST(request: Request) {
   try {
     const user = getCurrentUser(request as any)
     if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 })
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
@@ -30,7 +34,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Subject is required' }, { status: 400 })
     }
     if (!questions.length) {
-      return NextResponse.json({ error: 'At least one question is required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'At least one question is required' },
+        { status: 400 }
+      )
     }
 
     const uploadRecord = await prisma.upload.create({
@@ -57,8 +64,12 @@ export async function POST(request: Request) {
         options: (row.options || []).map((opt) => String(opt || '').trim()),
         optionImageUrls,
         correctAnswer: Math.max(0, Math.min(3, correctIndex - 1)),
-        explanation: String(row.explanation || 'No explanation provided').trim() || 'No explanation provided',
-        difficulty: ['easy', 'medium', 'hard'].includes(difficulty) ? difficulty : 'medium',
+        explanation:
+          String(row.explanation || 'No explanation provided').trim() ||
+          'No explanation provided',
+        difficulty: ['easy', 'medium', 'hard'].includes(difficulty)
+          ? difficulty
+          : 'medium',
         imageUrl: row.imageUrl ? String(row.imageUrl).trim() : null,
         uploadId: uploadRecord.id,
       }
@@ -73,12 +84,16 @@ export async function POST(request: Request) {
         Number.isNaN(q.questionNumber)
       )
     })
+
     if (invalid) {
       await prisma.upload.update({
         where: { id: uploadRecord.id },
         data: { status: 'failed', error: 'Invalid rows detected' },
       })
-      return NextResponse.json({ error: 'Some rows are missing required fields' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Some rows are missing required fields' },
+        { status: 400 }
+      )
     }
 
     let inserted: { count: number }
@@ -109,11 +124,16 @@ export async function POST(request: Request) {
 
     await prisma.upload.update({
       where: { id: uploadRecord.id },
-      data: {
-        status: 'completed',
-        count: inserted.count,
-      },
+      data: { status: 'completed', count: inserted.count },
     })
+
+    // ── Cache invalidation ──────────────────────────────────────────────────
+    // Bulk questions just added — could be hundreds of new questions
+    // across multiple chapters — clear everything question-related
+    invalidateCache('questions:pool:')           // chapter pools now stale
+    invalidateCache('questions:page:')           // paginated results now stale
+    invalidateCache('subjects:chapter-counts:')  // counts increased
+    invalidateCache('mock:config:')              // canStart may have flipped to true
 
     return NextResponse.json({
       message: 'Questions uploaded successfully',
@@ -122,6 +142,9 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('Manual upload error:', error)
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message || 'Server error' },
+      { status: 500 }
+    )
   }
 }

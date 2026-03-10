@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { invalidateCache } from '@/lib/cache'
 import {
   DEFAULT_DEGREES,
   DEFAULT_LEVELS,
@@ -23,7 +24,6 @@ import {
 function isAuthorized(request: NextRequest) {
   const hasSuperAdminSession = request.headers.get('cookie')?.includes('super_admin_session')
   if (hasSuperAdminSession) return true
-  // Fallback to token-based admin access
   try {
     const decoded = getCurrentUser(request)
     return Boolean(decoded && (decoded.role === 'admin' || decoded.role === 'super_admin'))
@@ -33,6 +33,7 @@ function isAuthorized(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Admin-only, low traffic — no caching needed, always serve live data
   try {
     if (!isAuthorized(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -109,25 +110,12 @@ export async function GET(request: NextRequest) {
       homepageThemes: extractHomepageThemeSettings(testSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(testSettings),
       streakResetTimezone: extractStreakResetTimezone(testSettings),
-      faq: {
-        ...normalizedFaq,
-        visibility: normalizedBetaFeatures.faq,
-      },
-      studentFeedback: {
-        visibility: normalizedBetaFeatures.studentFeedback,
-      },
-      blog: {
-        visibility: normalizedBetaFeatures.blog,
-      },
-      performanceAnalytics: {
-        visibility: normalizedBetaFeatures.performanceAnalytics,
-      },
-      aiRecommendations: {
-        visibility: normalizedBetaFeatures.aiRecommendations,
-      },
-      homepageFeatureShowcase: {
-        visibility: normalizedBetaFeatures.homepageFeatureShowcase,
-      },
+      faq: { ...normalizedFaq, visibility: normalizedBetaFeatures.faq },
+      studentFeedback: { visibility: normalizedBetaFeatures.studentFeedback },
+      blog: { visibility: normalizedBetaFeatures.blog },
+      performanceAnalytics: { visibility: normalizedBetaFeatures.performanceAnalytics },
+      aiRecommendations: { visibility: normalizedBetaFeatures.aiRecommendations },
+      homepageFeatureShowcase: { visibility: normalizedBetaFeatures.homepageFeatureShowcase },
     }
 
     return NextResponse.json({
@@ -197,6 +185,7 @@ export async function POST(request: NextRequest) {
       streakResetTimezone: extractStreakResetTimezone(savedTestSettings),
       ...savedTestSettings,
     }
+
     const beforeSnapshot = {
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
@@ -242,40 +231,33 @@ export async function POST(request: NextRequest) {
       homepageThemes: extractHomepageThemeSettings(mergedTestSettings),
       homepageHeroMotion: extractHomepageHeroMotionSettings(mergedTestSettings),
       streakResetTimezone: extractStreakResetTimezone(mergedTestSettings),
-      faq: {
-        ...extractFaqSettings(mergedTestSettings),
-        visibility: mergedBetaFeatures.faq,
-      },
-      studentFeedback: {
-        visibility: mergedBetaFeatures.studentFeedback,
-      },
-      blog: {
-        visibility: mergedBetaFeatures.blog,
-      },
-      performanceAnalytics: {
-        visibility: mergedBetaFeatures.performanceAnalytics,
-      },
-      aiRecommendations: {
-        visibility: mergedBetaFeatures.aiRecommendations,
-      },
-      homepageFeatureShowcase: {
-        visibility: mergedBetaFeatures.homepageFeatureShowcase,
-      },
+      faq: { ...extractFaqSettings(mergedTestSettings), visibility: mergedBetaFeatures.faq },
+      studentFeedback: { visibility: mergedBetaFeatures.studentFeedback },
+      blog: { visibility: mergedBetaFeatures.blog },
+      performanceAnalytics: { visibility: mergedBetaFeatures.performanceAnalytics },
+      aiRecommendations: { visibility: mergedBetaFeatures.aiRecommendations },
+      homepageFeatureShowcase: { visibility: mergedBetaFeatures.homepageFeatureShowcase },
     }
 
     settings = await prisma.systemSettings.update({
       where: { id: settings.id },
       data: {
         ...(typeof payload.adsEnabled === 'boolean' ? { adsEnabled: payload.adsEnabled } : {}),
-        ...(typeof payload.welcomeMessageTemplate === 'string' ? { welcomeMessageTemplate: payload.welcomeMessageTemplate } : {}),
+        ...(typeof payload.welcomeMessageTemplate === 'string'
+          ? { welcomeMessageTemplate: payload.welcomeMessageTemplate } : {}),
         ...(typeof payload.activeAvatarPackId === 'string' || payload.activeAvatarPackId === null
-          ? { activeAvatarPackId: payload.activeAvatarPackId || null }
-          : {}),
+          ? { activeAvatarPackId: payload.activeAvatarPackId || null } : {}),
         adContent: updatedAdContent,
         testSettings: updatedTestSettings,
       },
     })
+
     invalidateStreakSettingsCache()
+
+    // ── Cache invalidation ────────────────────────────────────────────────────
+    // Settings just changed — clear public settings cache immediately
+    // so all users get fresh settings on their next request
+    invalidateCache('public:settings:')
 
     if (admin && (admin.role === 'admin' || admin.role === 'super_admin')) {
       await createAdminAuditLog({
@@ -312,4 +294,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 })
   }
 }
-

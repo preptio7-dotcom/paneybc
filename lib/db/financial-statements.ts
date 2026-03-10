@@ -1,4 +1,15 @@
 import { prisma } from '@/lib/prisma'
+import { withCache, invalidateCache } from '@/lib/cache'
+
+// Cache TTLs
+const CASES_LIST_TTL = 600   // 10 minutes — public cases list
+const CASE_DETAIL_TTL = 600  // 10 minutes — individual case with line items
+
+// Cache key prefixes
+const KEY_CASES_LIST   = 'fs:cases:list'
+const KEY_CASE_DETAIL  = (id: number) => `fs:cases:detail:${id}`
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type LineItemInput = {
   heading: string
@@ -21,6 +32,8 @@ export type FinancialStatementCaseInput = {
   sociLineItems: LineItemInput[]
   sofpLineItems: LineItemInput[]
 }
+
+// ─── Validation helpers (unchanged) ──────────────────────────────────────────
 
 const validateLineItems = (items: LineItemInput[], label: string) => {
   if (!items.length) {
@@ -59,6 +72,8 @@ const validateLineItems = (items: LineItemInput[], label: string) => {
 const totalMarks = (items: LineItemInput[]) =>
   items.reduce((sum, item) => sum + (Number(item.marks) || 0), 0)
 
+// ─── Write operations (cache invalidation on every write) ────────────────────
+
 export async function createCase(data: FinancialStatementCaseInput) {
   validateLineItems(data.sociLineItems, 'SOCI')
   validateLineItems(data.sofpLineItems, 'SOFP')
@@ -90,19 +105,22 @@ export async function createCase(data: FinancialStatementCaseInput) {
           displayOrder: item.displayOrder,
         })),
       },
-        sofpLineItems: {
-          create: data.sofpLineItems.map((item) => ({
-            heading: item.heading,
-            inputType: item.inputType || 'dropdown',
-            groupLabel: item.groupLabel || '',
-            dropdownOptions: item.dropdownOptions,
-            correctValue: item.correctValue,
-            marks: item.marks,
-            displayOrder: item.displayOrder,
-          })),
+      sofpLineItems: {
+        create: data.sofpLineItems.map((item) => ({
+          heading: item.heading,
+          inputType: item.inputType || 'dropdown',
+          groupLabel: item.groupLabel || '',
+          dropdownOptions: item.dropdownOptions,
+          correctValue: item.correctValue,
+          marks: item.marks,
+          displayOrder: item.displayOrder,
+        })),
       },
     },
   })
+
+  // New case added — clear the list cache so it appears immediately
+  invalidateCache(KEY_CASES_LIST)
 
   return created.id
 }
@@ -134,18 +152,18 @@ export async function updateCase(caseId: number, data: FinancialStatementCaseInp
         totalMarks: 20,
         sociLineItems: {
           create: data.sociLineItems.map((item) => ({
-          heading: item.heading,
-          inputType: item.inputType || 'dropdown',
-          dropdownOptions: item.dropdownOptions,
-          correctValue: item.correctValue,
-          marks: item.marks,
-          displayOrder: item.displayOrder,
+            heading: item.heading,
+            inputType: item.inputType || 'dropdown',
+            dropdownOptions: item.dropdownOptions,
+            correctValue: item.correctValue,
+            marks: item.marks,
+            displayOrder: item.displayOrder,
           })),
         },
         sofpLineItems: {
           create: data.sofpLineItems.map((item) => ({
             heading: item.heading,
-            inputType: item.inputType || 'dropdown',
+            inputType: item.inputType || 'dropout',
             groupLabel: item.groupLabel || '',
             dropdownOptions: item.dropdownOptions,
             correctValue: item.correctValue,
@@ -156,40 +174,84 @@ export async function updateCase(caseId: number, data: FinancialStatementCaseInp
       },
     }),
   ])
+
+  // Case changed — clear both list cache and this specific case's detail cache
+  invalidateCache(KEY_CASES_LIST)
+  invalidateCache(KEY_CASE_DETAIL(caseId))
 }
 
 export async function deleteCase(caseId: number) {
   await prisma.financialStatementCase.delete({ where: { id: caseId } })
+
+  // Case deleted — clear both caches
+  invalidateCache(KEY_CASES_LIST)
+  invalidateCache(KEY_CASE_DETAIL(caseId))
 }
 
+// ─── Read operations (cached) ─────────────────────────────────────────────────
+
 export async function getAllCases(adminView = false) {
-  return prisma.financialStatementCase.findMany({
-    where: adminView ? {} : { isActive: true },
-    orderBy: adminView ? { createdAt: 'desc' } : { caseNumber: 'asc' },
-    include: {
-      _count: {
-        select: {
-          sociLineItems: true,
-          sofpLineItems: true,
+  // Admin view is not cached — admins need live data always
+  if (adminView) {
+    return prisma.financialStatementCase.findMany({
+      where: {},
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            sociLineItems: true,
+            sofpLineItems: true,
+          },
         },
       },
-    },
-  })
+    })
+  }
+
+  // Public view — same for all users, cache for 10 minutes
+  return withCache(
+    KEY_CASES_LIST,
+    CASES_LIST_TTL,
+    () => prisma.financialStatementCase.findMany({
+      where: { isActive: true },
+      orderBy: { caseNumber: 'asc' },
+      include: {
+        _count: {
+          select: {
+            sociLineItems: true,
+            sofpLineItems: true,
+          },
+        },
+      },
+    })
+  )
 }
 
 export async function getCaseById(caseId: number) {
-  const caseData = await prisma.financialStatementCase.findUnique({
-    where: { id: caseId },
-    include: {
-      sociLineItems: { orderBy: { displayOrder: 'asc' } },
-      sofpLineItems: { orderBy: { displayOrder: 'asc' } },
-    },
-  })
-  return caseData
+  // Same case data for all users — cache for 10 minutes
+  // This is the heaviest query (includes all line items)
+  return withCache(
+    KEY_CASE_DETAIL(caseId),
+    CASE_DETAIL_TTL,
+    () => prisma.financialStatementCase.findUnique({
+      where: { id: caseId },
+      include: {
+        sociLineItems: { orderBy: { displayOrder: 'asc' } },
+        sofpLineItems: { orderBy: { displayOrder: 'asc' } },
+      },
+    })
+  )
 }
 
-export async function startAttempt(userId: string, caseId: number, timeLimit: number) {
-  const caseData = await prisma.financialStatementCase.findUnique({ where: { id: caseId } })
+// ─── User-specific operations (no caching — different per user) ───────────────
+
+export async function startAttempt(
+  userId: string,
+  caseId: number,
+  timeLimit: number
+) {
+  const caseData = await prisma.financialStatementCase.findUnique({
+    where: { id: caseId },
+  })
   if (!caseData) throw new Error('Case not found')
 
   const attempt = await prisma.financialStatementAttempt.create({
@@ -213,16 +275,24 @@ export async function startAttempt(userId: string, caseId: number, timeLimit: nu
   return attempt.id
 }
 
-export async function submitAttempt(attemptId: number, sociAnswers: any[], sofpAnswers: any[], timeSpent: number) {
-  const totalMarks = [...sociAnswers, ...sofpAnswers].reduce((sum, item) => sum + (Number(item.marks_awarded) || 0), 0)
-  const percentage = Number(((totalMarks / 20) * 100).toFixed(2))
+export async function submitAttempt(
+  attemptId: number,
+  sociAnswers: any[],
+  sofpAnswers: any[],
+  timeSpent: number
+) {
+  const totalMarksObtained = [...sociAnswers, ...sofpAnswers].reduce(
+    (sum, item) => sum + (Number(item.marks_awarded) || 0),
+    0
+  )
+  const percentage = Number(((totalMarksObtained / 20) * 100).toFixed(2))
 
   await prisma.financialStatementAttempt.update({
     where: { id: attemptId },
     data: {
       sociAnswers,
       sofpAnswers,
-      totalMarksObtained: totalMarks,
+      totalMarksObtained,
       percentageScore: percentage,
       timeSpent,
       submittedAt: new Date(),
@@ -230,7 +300,7 @@ export async function submitAttempt(attemptId: number, sociAnswers: any[], sofpA
     },
   })
 
-  return { totalMarks, percentage }
+  return { totalMarks: totalMarksObtained, percentage }
 }
 
 export async function getUserAttempts(userId: string) {
@@ -241,5 +311,7 @@ export async function getUserAttempts(userId: string) {
 }
 
 export async function getAttemptById(attemptId: number) {
-  return prisma.financialStatementAttempt.findUnique({ where: { id: attemptId } })
+  return prisma.financialStatementAttempt.findUnique({
+    where: { id: attemptId },
+  })
 }

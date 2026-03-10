@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withCache } from '@/lib/cache'
 import {
   DEFAULT_DEGREES,
   DEFAULT_LEVELS,
@@ -17,31 +18,45 @@ import {
 import { DEFAULT_STREAK_RESET_TIMEZONE, extractStreakResetTimezone } from '@/lib/streak-settings'
 import { getInstituteKey } from '@/lib/institutes'
 
-async function sortInstitutesByUsage(institutes: string[]) {
+// ─── Cache TTLs ───────────────────────────────────────────────────────────────
+const TTL_SYSTEM_SETTINGS  = 300   // 5 min  — settings rarely change
+const TTL_INSTITUTE_USAGE  = 1800  // 30 min — institute usage ranking barely moves
+
+// ─── Cache keys ───────────────────────────────────────────────────────────────
+const KEY_SYSTEM_SETTINGS  = 'public:settings:system'
+const KEY_INSTITUTE_USAGE  = 'public:settings:institute-usage'
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// FIX: was running prisma.user.groupBy() on every single settings request
+// This is a heavy aggregation across the entire users table
+// Now cached 30 min — institute popularity barely changes minute to minute
+async function sortInstitutesByUsageCached(institutes: string[]) {
   if (!institutes.length) return institutes
 
-  const usageRows = await prisma.user.groupBy({
-    by: ['institute'],
-    where: {
-      institute: {
-        not: null,
-      },
-    },
-    _count: {
-      _all: true,
-    },
-  })
+  const usageMap = await withCache(
+    KEY_INSTITUTE_USAGE,
+    TTL_INSTITUTE_USAGE,
+    async () => {
+      const usageRows = await prisma.user.groupBy({
+        by: ['institute'],
+        where: { institute: { not: null } },
+        _count: { _all: true },
+      })
 
-  const usageMap = new Map<string, number>()
-  for (const row of usageRows) {
-    if (!row.institute) continue
-    const key = getInstituteKey(row.institute)
-    usageMap.set(key, (usageMap.get(key) || 0) + (row._count?._all || 0))
-  }
+      const map: Record<string, number> = {}
+      for (const row of usageRows) {
+        if (!row.institute) continue
+        const key = getInstituteKey(row.institute)
+        map[key] = (map[key] || 0) + (row._count?._all || 0)
+      }
+      return map
+    }
+  )
 
   return [...institutes].sort((a, b) => {
-    const usageA = usageMap.get(getInstituteKey(a)) || 0
-    const usageB = usageMap.get(getInstituteKey(b)) || 0
+    const usageA = usageMap[getInstituteKey(a)] || 0
+    const usageB = usageMap[getInstituteKey(b)] || 0
     if (usageB !== usageA) return usageB - usageA
     return a.localeCompare(b)
   })
@@ -52,34 +67,50 @@ export async function GET(request: NextRequest) {
     const currentUser = getCurrentUser(request)
     const isPersonalizedResponse = Boolean(currentUser)
 
-    let settings = await prisma.systemSettings.findFirst()
-    if (!settings) {
-      settings = await prisma.systemSettings.create({ data: { adsEnabled: false } })
-    }
+    // FIX: was calling prisma.systemSettings.findFirst() on every request
+    // Settings only change when admin updates them — cache for 5 minutes
+    let settings = await withCache(
+      KEY_SYSTEM_SETTINGS,
+      TTL_SYSTEM_SETTINGS,
+      async () => {
+        let s = await prisma.systemSettings.findFirst()
+        if (!s) {
+          s = await prisma.systemSettings.create({ data: { adsEnabled: false } })
+        }
+        return s
+      }
+    )
 
     const savedAdContent =
-      settings.adContent && typeof settings.adContent === 'object' && !Array.isArray(settings.adContent)
+      settings.adContent &&
+      typeof settings.adContent === 'object' &&
+      !Array.isArray(settings.adContent)
         ? (settings.adContent as Record<string, any>)
         : {}
+
     const savedTestSettings =
-      settings.testSettings && typeof settings.testSettings === 'object' && !Array.isArray(settings.testSettings)
+      settings.testSettings &&
+      typeof settings.testSettings === 'object' &&
+      !Array.isArray(settings.testSettings)
         ? (settings.testSettings as Record<string, any>)
         : {}
 
-    const adContent = Object.keys(savedAdContent).length ? savedAdContent : {
-      dashboard: {
-        headline: 'Level up your CA prep with expert-led notes',
-        body: 'Get concise, exam-focused summaries and practice packs tailored for CA students.',
-        cta: 'Explore resources',
-        href: '#',
-      },
-      results: {
-        headline: 'Boost your score with targeted mock reviews',
-        body: 'Short, focused revision plans built for CA students - improve accuracy before your next exam.',
-        cta: 'See plans',
-        href: '#',
-      },
-    }
+    const adContent = Object.keys(savedAdContent).length
+      ? savedAdContent
+      : {
+          dashboard: {
+            headline: 'Level up your CA prep with expert-led notes',
+            body: 'Get concise, exam-focused summaries and practice packs tailored for CA students.',
+            cta: 'Explore resources',
+            href: '#',
+          },
+          results: {
+            headline: 'Boost your score with targeted mock reviews',
+            body: 'Short, focused revision plans built for CA students - improve accuracy before your next exam.',
+            cta: 'See plans',
+            href: '#',
+          },
+        }
 
     const testSettings = {
       fullBookTimeMinutes: 120,
@@ -104,10 +135,12 @@ export async function GET(request: NextRequest) {
     const faqSettings = extractFaqSettings(testSettings)
     let faqItems = faqSettings.items
     let faqFeaturedIds = faqSettings.featuredIds
+
     if (!canAccessBetaFeature(betaFeatures.faq, null)) {
       faqItems = []
       faqFeaturedIds = []
       if (currentUser) {
+        // User-specific check — not cached (different per user role)
         const user = await prisma.user.findUnique({
           where: { id: currentUser.userId },
           select: { studentRole: true },
@@ -118,10 +151,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+
     const visibleIds = new Set(faqItems.map((item) => item.id))
     faqFeaturedIds = faqFeaturedIds.filter((id) => visibleIds.has(id))
 
-    const registrationInstitutesSorted = await sortInstitutesByUsage(
+    // FIX: sortInstitutesByUsage now uses cached groupBy result
+    const registrationInstitutesSorted = await sortInstitutesByUsageCached(
       (() => {
         const next = parseOptionList(
           testSettings.registrationInstitutes,
@@ -153,21 +188,11 @@ export async function GET(request: NextRequest) {
         items: faqItems,
         featuredIds: faqFeaturedIds,
       },
-      studentFeedback: {
-        visibility: betaFeatures.studentFeedback,
-      },
-      blog: {
-        visibility: betaFeatures.blog,
-      },
-      performanceAnalytics: {
-        visibility: betaFeatures.performanceAnalytics,
-      },
-      aiRecommendations: {
-        visibility: betaFeatures.aiRecommendations,
-      },
-      homepageFeatureShowcase: {
-        visibility: betaFeatures.homepageFeatureShowcase,
-      },
+      studentFeedback: { visibility: betaFeatures.studentFeedback },
+      blog: { visibility: betaFeatures.blog },
+      performanceAnalytics: { visibility: betaFeatures.performanceAnalytics },
+      aiRecommendations: { visibility: betaFeatures.aiRecommendations },
+      homepageFeatureShowcase: { visibility: betaFeatures.homepageFeatureShowcase },
     }
 
     return NextResponse.json(
@@ -214,21 +239,11 @@ export async function GET(request: NextRequest) {
             items: [],
             featuredIds: [],
           },
-          studentFeedback: {
-            visibility: fallbackBetaFeatures.studentFeedback,
-          },
-          blog: {
-            visibility: fallbackBetaFeatures.blog,
-          },
-          performanceAnalytics: {
-            visibility: fallbackBetaFeatures.performanceAnalytics,
-          },
-          aiRecommendations: {
-            visibility: fallbackBetaFeatures.aiRecommendations,
-          },
-          homepageFeatureShowcase: {
-            visibility: fallbackBetaFeatures.homepageFeatureShowcase,
-          },
+          studentFeedback: { visibility: fallbackBetaFeatures.studentFeedback },
+          blog: { visibility: fallbackBetaFeatures.blog },
+          performanceAnalytics: { visibility: fallbackBetaFeatures.performanceAnalytics },
+          aiRecommendations: { visibility: fallbackBetaFeatures.aiRecommendations },
+          homepageFeatureShowcase: { visibility: fallbackBetaFeatures.homepageFeatureShowcase },
         },
       },
       {
@@ -239,4 +254,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
