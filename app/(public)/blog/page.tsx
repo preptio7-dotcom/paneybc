@@ -15,7 +15,7 @@ import {
 import { canViewBlogFeature } from '@/lib/blog-visibility'
 import { resolveBlogFeatureVisibility, resolveServerBlogViewer } from '@/lib/blog-server-viewer'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = buildPublicMetadata({
   title: 'Blog | CA Exam Tips & Study Guides | Preptio',

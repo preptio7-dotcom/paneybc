@@ -19,7 +19,7 @@ import {
 import { canViewBlogFeature } from '@/lib/blog-visibility'
 import { resolveBlogFeatureVisibility, resolveServerBlogViewer } from '@/lib/blog-server-viewer'
 
-export const revalidate = 600
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({
   params,
