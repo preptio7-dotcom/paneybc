@@ -1,16 +1,24 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 
 export function AnalyticsTracker() {
     const pathname = usePathname()
     const searchParams = useSearchParams()
+    const lastTracked = useRef<{ path: string; time: number } | null>(null)
 
     useEffect(() => {
         const logVisit = async () => {
-            // Don't track admin pages or local dev if desired (uncomment if needed)
-            // if (pathname.startsWith('/sKy9108-3~620_admin')) return
+            // Skip admin and secret pages
+            if (pathname.startsWith('/admin') || pathname.startsWith('/secret')) return
+
+            // Deduplicate: don't re-track same path within 30 seconds
+            if (
+                lastTracked.current &&
+                lastTracked.current.path === pathname &&
+                Date.now() - lastTracked.current.time < 30_000
+            ) return
 
             try {
                 const body = {
@@ -30,6 +38,7 @@ export function AnalyticsTracker() {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`)
                 }
+                lastTracked.current = { path: pathname, time: Date.now() }
             } catch (error) {
                 // Silently fail to not interrupt user experience
                 console.error('Analytics logging failed:', error)

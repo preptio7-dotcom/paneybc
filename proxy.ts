@@ -27,7 +27,15 @@ async function fetchMaintenanceMode(request: NextRequest) {
   }
 }
 
+// ─── Per-IP in-process cache (15s TTL) ────────────────────────────────────────
+const ipCache = new Map<string, { result: { isBlocked: boolean; blockedReason?: string }; expiresAt: number }>()
+
 async function fetchIpAccessStatus(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || request.headers.get('cf-connecting-ip') || ''
+
+  const cached = ipCache.get(ip)
+  if (cached && Date.now() < cached.expiresAt) return cached.result
+
   try {
     const statusUrl = new URL('/api/public/ip-security/access', request.url)
     const response = await fetch(statusUrl, {
@@ -45,10 +53,15 @@ async function fetchIpAccessStatus(request: NextRequest) {
     if (!contentType.includes('application/json')) return { isBlocked: false }
 
     const payload = await response.json()
-    return {
+    const result = {
       isBlocked: Boolean(payload?.isBlocked),
       blockedReason: String(payload?.blockedReason || ''),
     }
+
+    // Cache successful results for 15 seconds only
+    ipCache.set(ip, { result, expiresAt: Date.now() + 15_000 })
+
+    return result
   } catch (error) {
     console.error('Blocked IP check failed', error)
     return { isBlocked: false }

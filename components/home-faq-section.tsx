@@ -37,7 +37,7 @@ export function HomeFaqSection({
   useEffect(() => {
     const loadFaqSettings = async () => {
       try {
-        const response = await fetch('/api/public/settings', { cache: 'no-store' })
+        const response = await fetch('/api/public/settings')
         if (!response.ok) return
         const data = await response.json()
         const testSettings = data?.testSettings || {}

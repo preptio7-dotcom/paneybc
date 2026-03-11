@@ -201,7 +201,7 @@ export function StatsSection({
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch('/api/stats', { cache: 'no-store' })
+        const response = await fetch('/api/public/stats')
         if (!response.ok) {
           setStats(FALLBACK_STATS)
           return

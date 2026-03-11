@@ -76,9 +76,7 @@ export function HomepageContent() {
 
     const loadThemes = async () => {
       try {
-        const response = await fetch(`/api/public/settings?t=${Date.now()}`, {
-          cache: 'no-store',
-        })
+        const response = await fetch(`/api/public/settings?t=${Date.now()}`)
         if (!response.ok) return
         const data = await response.json()
         if (!isMounted) return
@@ -114,7 +112,7 @@ export function HomepageContent() {
 
     const timer = window.setInterval(() => {
       void loadThemes()
-    }, 15_000)
+    }, 300_000)
 
     return () => {
       isMounted = false

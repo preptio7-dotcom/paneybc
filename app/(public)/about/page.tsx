@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
 import { Navigation } from '@/components/navigation'
@@ -75,7 +75,7 @@ export default function AboutPage() {
 
     const loadPublicStats = async () => {
       try {
-        const response = await fetch('/api/public/stats', { cache: 'no-store' })
+        const response = await fetch('/api/public/stats')
         if (!response.ok) return
         const data = await response.json()
         const totalSubjects = Number(data?.totalSubjects)

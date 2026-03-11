@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Navigation } from '@/components/navigation'
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'

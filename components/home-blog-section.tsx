@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -18,9 +18,7 @@ export function HomeBlogSection() {
 
     const loadPosts = async () => {
       try {
-        const response = await fetch('/api/public/blog?latest=3&pageSize=3', {
-          cache: 'no-store',
-        })
+        const response = await fetch('/api/public/blog?latest=3&pageSize=3')
         const data: BlogPreviewPayload = await response.json()
         if (!response.ok) return
         if (!mounted) return

@@ -152,7 +152,7 @@ export default function DashboardSettingsPage() {
         setIsProfileLoading(true)
         const [profileResponse, settingsResponse, avatarPackResponse] = await Promise.all([
           fetch('/api/user/profile', { cache: 'no-store' }),
-          fetch('/api/public/settings', { cache: 'no-store' }),
+          fetch('/api/public/settings'),
           fetch('/api/public/avatar-pack', { cache: 'no-store' }),
         ])
 
