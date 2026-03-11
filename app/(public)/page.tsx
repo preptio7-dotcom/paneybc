@@ -1,16 +1,16 @@
 export const dynamic = 'force-dynamic'
 
 import { Navigation } from '@/components/navigation'
-import dynamic from 'next/dynamic'
+import dynamicImport from 'next/dynamic'
 import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 
-const LogoutToast = dynamic(
+const LogoutToast = dynamicImport(
   () => import('@/components/logout-toast').then((module) => module.LogoutToast),
   { loading: () => null }
 )
 
-const HomepageContent = dynamic(
+const HomepageContent = dynamicImport(
   () => import('@/components/homepage-content').then((module) => module.HomepageContent),
   { loading: () => null }
 )
