@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { applySecurityHeaders } from '@/lib/security-headers'
+import { neon } from '@neondatabase/serverless'
 
 const BLOCKED_MESSAGE =
   'Access Denied. Your IP address has been blocked due to suspicious activity. If you believe this is an error, contact support@preptio.com'
@@ -30,37 +31,51 @@ async function fetchMaintenanceMode(request: NextRequest) {
 // ─── Per-IP in-process cache (15s TTL) ────────────────────────────────────────
 const ipCache = new Map<string, { result: { isBlocked: boolean; blockedReason?: string }; expiresAt: number }>()
 
+function normalizeIp(raw: string) {
+  return raw.split(',')[0].trim().replace(/^::ffff:/i, '')
+}
+
 async function fetchIpAccessStatus(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || request.headers.get('cf-connecting-ip') || ''
+  const rawIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || request.headers.get('cf-connecting-ip') || ''
+  const ip = normalizeIp(rawIp)
+  if (!ip) return { isBlocked: false }
 
   const cached = ipCache.get(ip)
   if (cached && Date.now() < cached.expiresAt) return cached.result
 
   try {
-    const statusUrl = new URL('/api/public/ip-security/access', request.url)
-    const response = await fetch(statusUrl, {
-      cache: 'no-store',
-      headers: {
-        'x-forwarded-for': request.headers.get('x-forwarded-for') || '',
-        'x-real-ip': request.headers.get('x-real-ip') || '',
-        'cf-connecting-ip': request.headers.get('cf-connecting-ip') || '',
-        'x-preptio-internal': '1',
-      },
-    })
+    const sql = neon(process.env.DATABASE_URL!)
 
-    if (!response.ok) return { isBlocked: false }
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) return { isBlocked: false }
-
-    const payload = await response.json()
-    const result = {
-      isBlocked: Boolean(payload?.isBlocked),
-      blockedReason: String(payload?.blockedReason || ''),
+    // Check whitelist first — whitelisted IPs are never blocked
+    const whitelist = await sql`SELECT 1 FROM whitelisted_ips WHERE ip_address = ${ip} LIMIT 1`
+    if (whitelist.length > 0) {
+      const result = { isBlocked: false }
+      ipCache.set(ip, { result, expiresAt: Date.now() + 15_000 })
+      return result
     }
 
-    // Cache successful results for 15 seconds only
-    ipCache.set(ip, { result, expiresAt: Date.now() + 15_000 })
+    // Check exact IP block
+    const blocked = await sql`SELECT reason FROM blocked_ips WHERE ip_address = ${ip} AND is_active = true LIMIT 1`
+    if (blocked.length > 0) {
+      const result = { isBlocked: true, blockedReason: String(blocked[0].reason || '') }
+      ipCache.set(ip, { result, expiresAt: Date.now() + 15_000 })
+      return result
+    }
 
+    // Check subnet blocks (/24) — extract first 3 octets and match
+    const parts = ip.split('.')
+    if (parts.length === 4) {
+      const subnetPrefix = `${parts[0]}.${parts[1]}.${parts[2]}.0/24`
+      const subnetBlocked = await sql`SELECT reason FROM blocked_ips WHERE ip_address = ${subnetPrefix} AND is_active = true AND is_subnet = true LIMIT 1`
+      if (subnetBlocked.length > 0) {
+        const result = { isBlocked: true, blockedReason: String(subnetBlocked[0].reason || '') }
+        ipCache.set(ip, { result, expiresAt: Date.now() + 15_000 })
+        return result
+      }
+    }
+
+    const result = { isBlocked: false }
+    ipCache.set(ip, { result, expiresAt: Date.now() + 15_000 })
     return result
   } catch (error) {
     console.error('Blocked IP check failed', error)

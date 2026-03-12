@@ -300,7 +300,7 @@ export default function AdminIpSecurityPage() {
       setLogsLoading(true)
       const query = buildQueryString({
         page: logPage,
-        pageSize: 20,
+        pageSize: 5,
         search: logSearch,
         activityType: logActivityType === 'all' ? '' : logActivityType,
         status: logStatus === 'all' ? '' : logStatus,
@@ -339,7 +339,7 @@ export default function AdminIpSecurityPage() {
       setBlockedLoading(true)
       const query = buildQueryString({
         page: blockedPage,
-        pageSize: 20,
+        pageSize: 5,
         search: blockedSearch,
         source: blockedSource === 'all' ? '' : blockedSource,
       })
@@ -362,7 +362,7 @@ export default function AdminIpSecurityPage() {
       setWhitelistLoading(true)
       const query = buildQueryString({
         page: whitelistPage,
-        pageSize: 20,
+        pageSize: 5,
         search: whitelistSearch,
       })
       const data = await fetchJson<WhitelistResponse>(`/api/admin/ip-security/whitelist?${query}`)
@@ -384,7 +384,7 @@ export default function AdminIpSecurityPage() {
       setAuditLoading(true)
       const query = buildQueryString({
         page: auditPage,
-        pageSize: 20,
+        pageSize: 5,
       })
       const data = await fetchJson<AuditResponse>(`/api/admin/ip-security/audit?${query}`)
       setAuditRows(data.rows)
