@@ -1,4 +1,4 @@
-﻿export const runtime = 'nodejs'
+export const runtime = 'nodejs'
 
 import { prisma } from '@/lib/prisma'
 import bcryptjs from 'bcryptjs'
@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
         activityType: 'xss_attempt',
         status: 'active_threat',
         targetEndpoint: `${REGISTER_ENDPOINT}#${suspiciousInput.field}`,
+        attemptedEmail: typeof email === 'string' ? email.toLowerCase().trim() : null,
       })
       return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
     }
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest) {
         activityType: 'xss_attempt',
         status: 'active_threat',
         targetEndpoint: `${REGISTER_ENDPOINT}#website`,
+        attemptedEmail: typeof email === 'string' ? email.toLowerCase().trim() : null,
       })
       return NextResponse.json({ error: 'Spam detected' }, { status: 400 })
     }

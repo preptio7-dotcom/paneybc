@@ -744,6 +744,7 @@ model IpActivityLog {
   activityType   SecurityActivityType @map("activity_type")
   targetUserId   String?            @map("target_user_id")
   targetEndpoint String?            @map("target_endpoint")
+  attemptedEmail String?            @map("attempted_email") @db.VarChar(255)
   attemptsCount  Int                @default(1) @map("attempts_count")
   firstSeen      DateTime           @default(now()) @map("first_seen")
   lastSeen       DateTime           @default(now()) @map("last_seen")

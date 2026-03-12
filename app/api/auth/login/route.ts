@@ -1,4 +1,4 @@
-﻿export const runtime = 'nodejs'
+export const runtime = 'nodejs'
 
 import { prisma } from '@/lib/prisma'
 import bcryptjs from 'bcryptjs'
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
         activityType: 'xss_attempt',
         status: 'active_threat',
         targetEndpoint: `${LOGIN_ENDPOINT}#${suspiciousInput.field}`,
+        attemptedEmail: typeof email === 'string' ? email.toLowerCase().trim() : null,
       })
       return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
     }
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
           activityType: 'failed_login',
           status: failed.ipLockTriggered ? 'active_threat' : 'suspicious',
           targetEndpoint: LOGIN_ENDPOINT,
+          attemptedEmail: normalizedEmail,
         })
 
         if (failed.ipLockTriggered) {
@@ -178,6 +180,7 @@ export async function POST(request: NextRequest) {
           status: failed.ipLockTriggered ? 'active_threat' : 'suspicious',
           targetEndpoint: LOGIN_ENDPOINT,
           targetUserId: user.id,
+          attemptedEmail: normalizedEmail,
         })
 
         if (failed.ipLockTriggered) {

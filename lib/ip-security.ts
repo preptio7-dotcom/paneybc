@@ -124,6 +124,7 @@ type LogSecurityEventInput = {
   status?: SecurityEventStatus
   targetUserId?: string | null
   targetEndpoint?: string | null
+  attemptedEmail?: string | null
   attemptsIncrement?: number
 }
 
@@ -156,6 +157,7 @@ export async function logSecurityEvent(input: LogSecurityEventInput) {
         status: maxStatus(existing.status, status),
         isReviewed: false,
         reviewedAt: null,
+        ...(input.attemptedEmail ? { attemptedEmail: input.attemptedEmail } : {}),
       },
     })
   }
@@ -167,6 +169,7 @@ export async function logSecurityEvent(input: LogSecurityEventInput) {
       status,
       targetUserId: input.targetUserId || null,
       targetEndpoint: input.targetEndpoint || null,
+      attemptedEmail: input.attemptedEmail || null,
       attemptsCount: attemptsIncrement,
       firstSeen: now,
       lastSeen: now,

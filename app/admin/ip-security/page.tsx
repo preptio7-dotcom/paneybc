@@ -58,6 +58,7 @@ type LogRow = {
   activityType: ActivityType
   targetUserId: string | null
   targetEndpoint: string | null
+  attemptedEmail: string | null
   attemptsCount: number
   firstSeen: string
   lastSeen: string
@@ -643,6 +644,7 @@ export default function AdminIpSecurityPage() {
         'IP Address',
         'Activity Type',
         'Target',
+        'Email Attempted',
         'Attempts Count',
         'First Seen',
         'Last Seen',
@@ -652,6 +654,7 @@ export default function AdminIpSecurityPage() {
         row.ipAddress,
         ACTIVITY_LABELS[row.activityType],
         row.targetEndpoint || row.targetUserId || '-',
+        row.attemptedEmail || '-',
         String(row.attemptsCount),
         formatDateTime(row.firstSeen),
         formatDateTime(row.lastSeen),
@@ -901,19 +904,20 @@ export default function AdminIpSecurityPage() {
                               Status {logSortBy === 'status' ? (logSortOrder === 'asc' ? '↑' : '↓') : ''}
                             </button>
                           </TableHead>
+                          <TableHead className="min-w-[200px]">Email Attempted</TableHead>
                           <TableHead className="min-w-[310px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {logsLoading ? (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8 text-text-light">
+                            <TableCell colSpan={9} className="text-center py-8 text-text-light">
                               Loading activity logs...
                             </TableCell>
                           </TableRow>
                         ) : logRows.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={8}>{emptyState}</TableCell>
+                            <TableCell colSpan={9}>{emptyState}</TableCell>
                           </TableRow>
                         ) : (
                           logRows.map((row) => (
@@ -925,6 +929,15 @@ export default function AdminIpSecurityPage() {
                               <TableCell>{formatDateTime(row.firstSeen)}</TableCell>
                               <TableCell>{formatDateTime(row.lastSeen)}</TableCell>
                               <TableCell>{toStatusBadge(row.status)}</TableCell>
+                              <TableCell>
+                                {row.attemptedEmail ? (
+                                  <span className="font-mono text-xs text-slate-600 truncate block max-w-[180px]" title={row.attemptedEmail}>
+                                    {row.attemptedEmail}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap gap-2">
                                   <Button
@@ -1501,6 +1514,7 @@ export default function AdminIpSecurityPage() {
                         <TableHead className="min-w-[180px]">Timestamp</TableHead>
                         <TableHead className="min-w-[220px]">Action</TableHead>
                         <TableHead className="min-w-[220px]">Target</TableHead>
+                        <TableHead className="min-w-[200px]">Email Attempted</TableHead>
                         <TableHead className="min-w-[120px]">Attempts</TableHead>
                         <TableHead className="min-w-[140px]">Status</TableHead>
                       </TableRow>
@@ -1508,7 +1522,7 @@ export default function AdminIpSecurityPage() {
                     <TableBody>
                       {detailData.timeline.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5}>{emptyState}</TableCell>
+                          <TableCell colSpan={6}>{emptyState}</TableCell>
                         </TableRow>
                       ) : (
                         detailData.timeline.map((event) => (
@@ -1516,6 +1530,15 @@ export default function AdminIpSecurityPage() {
                             <TableCell>{formatDateTime(event.lastSeen)}</TableCell>
                             <TableCell>{ACTIVITY_LABELS[event.activityType]}</TableCell>
                             <TableCell>{event.targetEndpoint || event.targetUserId || '-'}</TableCell>
+                            <TableCell>
+                              {event.attemptedEmail ? (
+                                <span className="font-mono text-xs text-slate-600 truncate block max-w-[180px]" title={event.attemptedEmail}>
+                                  {event.attemptedEmail}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </TableCell>
                             <TableCell>{event.attemptsCount}</TableCell>
                             <TableCell>{toStatusBadge(event.status)}</TableCell>
                           </TableRow>
