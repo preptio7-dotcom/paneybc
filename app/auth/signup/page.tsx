@@ -551,6 +551,7 @@ export default function SignupPage() {
                         </span>
                       </label>
                     </div>
+
                   </>
                 )}
 
@@ -779,10 +780,10 @@ export default function SignupPage() {
                         required
                       />
                     </div>
-                    
-                    <div className="space-y-2 pt-2 border-t border-slate-100">
+
+                    <div className="space-y-2">
                       <label htmlFor="referralCode" className="text-sm font-medium text-gray-700">
-                        Referral Code
+                        Referral Code <span className="text-slate-500 font-normal">(optional)</span>
                       </label>
                       <Input
                         id="referralCode"
@@ -791,18 +792,18 @@ export default function SignupPage() {
                         placeholder="e.g. ALI-2934"
                         value={referralCode}
                         onChange={(e) => {
-                          setReferralCode(e.target.value)
+                          setReferralCode(e.target.value.toUpperCase())
                           setReferralError(null)
                         }}
                         disabled={isLoading}
                         className={`border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938] ${referralError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                       />
-                      <p className="text-xs text-slate-500">Optional — have a code from an ambassador?</p>
-                      
-                      {referralCode.trim() && !/^[A-Z]+-\d{4}$/i.test(referralCode.trim()) && !referralError && (
-                        <p className="text-xs text-amber-600">Referral codes look like: ALI-2934</p>
+                      <p className="text-xs text-slate-500">
+                        Have a referral code from a Preptio ambassador? Enter it here.
+                      </p>
+                      {referralCode.trim() && !/^[A-Z]+-\d{4}$/.test(referralCode.trim()) && !referralError && (
+                        <p className="text-xs text-amber-600 font-medium">Referral codes look like: ALI-2934</p>
                       )}
-                      
                       {referralError && (
                         <p className="text-xs text-red-600 font-medium">{referralError}</p>
                       )}

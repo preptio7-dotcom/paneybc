@@ -11,7 +11,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { PartyPopper } from 'lucide-react'
+import { PartyPopper, Instagram, Linkedin, Facebook } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export function WelcomePopup() {
@@ -100,17 +100,21 @@ export function WelcomePopup() {
 
           <div className="text-center">
             <h4 className="text-sm font-bold text-slate-800 mb-3">📲 Follow our official handles</h4>
-            <div className="flex flex-wrap justify-center gap-2">
-              <a href="https://x.com/PreptioOfficial" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1.5 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                <span className="mr-1 font-serif">𝕏</span> @PreptioOfficial
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <a href="https://x.com/PreptioOfficial" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 
+                @PreptioOfficial
               </a>
-              <a href="https://www.instagram.com/preptio.official" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1.5 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              <a href="https://www.instagram.com/preptio.official" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                <Instagram size={16} />
                 @preptio.official
               </a>
-              <a href="https://www.linkedin.com/company/preptio" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1.5 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              <a href="https://www.linkedin.com/company/preptio" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                <Linkedin size={16} />
                 Preptio
               </a>
-              <a href="https://www.facebook.com/share/p/1DNc73qUH9/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1.5 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              <a href="https://www.facebook.com/share/p/1DNc73qUH9/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                <Facebook size={16} />
                 Preptio
               </a>
             </div>
