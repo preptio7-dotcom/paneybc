@@ -55,6 +55,7 @@ export default function SignupPage() {
 
   const [referralCode, setReferralCode] = useState('')
   const [referralError, setReferralError] = useState<string | null>(null)
+  const [isSelfStudy, setIsSelfStudy] = useState(false)
 
   useEffect(() => {
     if (loading) return
@@ -232,9 +233,6 @@ export default function SignupPage() {
   }
 
   const validateStepTwo = () => {
-    const normalizedInstitute = formData.institute.trim()
-    const normalizedCustomInstitute = formData.customInstitute.trim()
-    const knownInstitutes = new Set(registrationOptions.institutes.map((item) => item.toLowerCase()))
     const usingOther = formData.instituteSelectionMode === 'other'
 
     if (!formData.degree || !formData.level || !formData.city.trim()) {
@@ -246,31 +244,37 @@ export default function SignupPage() {
       return false
     }
 
-    if (!normalizedInstitute || !formData.studentId.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please complete institute and student ID.',
-        variant: 'destructive',
-      })
-      return false
-    }
+    if (!isSelfStudy) {
+      const normalizedInstitute = formData.institute.trim()
+      const normalizedCustomInstitute = formData.customInstitute.trim()
+      const knownInstitutes = new Set(registrationOptions.institutes.map((item) => item.toLowerCase()))
 
-    if (usingOther && !normalizedCustomInstitute) {
-      toast({
-        title: 'Error',
-        description: 'Please enter your institute name in the Other field.',
-        variant: 'destructive',
-      })
-      return false
-    }
+      if (!normalizedInstitute || !formData.studentId.trim()) {
+        toast({
+          title: 'Error',
+          description: 'Please complete institute and student ID.',
+          variant: 'destructive',
+        })
+        return false
+      }
 
-    if (!usingOther && !knownInstitutes.has(normalizedInstitute.toLowerCase())) {
-      toast({
-        title: 'Select an institute',
-        description: 'Please pick an institute from the list or select "Other".',
-        variant: 'destructive',
-      })
-      return false
+      if (usingOther && !normalizedCustomInstitute) {
+        toast({
+          title: 'Error',
+          description: 'Please enter your institute name in the Other field.',
+          variant: 'destructive',
+        })
+        return false
+      }
+
+      if (!usingOther && !knownInstitutes.has(normalizedInstitute.toLowerCase())) {
+        toast({
+          title: 'Select an institute',
+          description: 'Please pick an institute from the list or select "Other".',
+          variant: 'destructive',
+        })
+        return false
+      }
     }
 
     if (!formData.instituteRating || formData.instituteRating < 1 || formData.instituteRating > 5) {
@@ -360,13 +364,14 @@ export default function SignupPage() {
         degree: formData.degree,
         level: formData.level,
         enrollmentType: 'institute',
-        institute:
-          formData.instituteSelectionMode === 'other'
+        institute: isSelfStudy 
+          ? 'Self Study'
+          : formData.instituteSelectionMode === 'other'
             ? formData.customInstitute.trim()
             : formData.institute.trim(),
-        instituteSelectionMode: formData.instituteSelectionMode,
+        instituteSelectionMode: isSelfStudy ? 'other' : formData.instituteSelectionMode,
         city: formData.city.trim(),
-        studentId: formData.studentId.trim(),
+        studentId: isSelfStudy ? 'N/A' : formData.studentId.trim(),
         cenNumber: formData.cenNumber.trim(),
         phone: formData.phone.trim(),
         instituteRating: formData.instituteRating,
@@ -615,84 +620,67 @@ export default function SignupPage() {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <label htmlFor="studentId" className="text-sm font-medium text-gray-700">
-                          Student ID *
-                        </label>
-                        <Input
-                          id="studentId"
-                          name="studentId"
-                          type="text"
-                          placeholder="Institute student ID"
-                          value={formData.studentId}
-                          onChange={handleChange}
-                          disabled={isLoading}
-                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                          required
-                        />
-                        <p className="text-xs text-slate-500">Enter the ID issued by your institute.</p>
-                      </div>
-
-                      <div className="space-y-2 md:col-span-2">
-                        <label htmlFor="institute" className="text-sm font-medium text-gray-700">
-                          Institute *
-                        </label>
-                        <div className="relative">
-                          <Input
-                            id="institute"
-                            name="institute"
-                            type="text"
-                            placeholder="Type to search institute"
-                            value={formData.institute}
-                            onChange={(event) => handleInstituteInputChange(event.target.value)}
-                            onFocus={() => setIsInstituteDropdownOpen(true)}
-                            onBlur={() => {
-                              setTimeout(() => setIsInstituteDropdownOpen(false), 120)
-                            }}
-                            disabled={isLoading || isLoadingOptions}
-                            className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                            required
-                          />
-                          {isInstituteDropdownOpen ? (
-                            <div className="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
-                              <div className="max-h-[190px] overflow-y-auto p-1">
-                                {filteredInstituteOptions.length ? (
-                                  filteredInstituteOptions.map((option) => (
-                                    <button
-                                      key={option}
-                                      type="button"
-                                      className="w-full rounded-sm px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
-                                      onMouseDown={(event) => {
-                                        event.preventDefault()
-                                        handleInstituteSelectionChange(option)
-                                        setIsInstituteDropdownOpen(false)
-                                      }}
-                                    >
-                                      {option}
-                                    </button>
-                                  ))
-                                ) : (
-                                  <p className="px-3 py-2 text-sm text-slate-500">No matching institute found.</p>
-                                )}
-                                <button
-                                  type="button"
-                                  className="w-full rounded-sm px-3 py-2 text-left text-sm font-medium text-[#0F7938] hover:bg-slate-100"
-                                  onMouseDown={(event) => {
-                                    event.preventDefault()
-                                    handleInstituteSelectionChange('Other')
-                                    setIsInstituteDropdownOpen(false)
-                                  }}
-                                >
-                                  Other
-                                </button>
+                      {!isSelfStudy && (
+                        <div className="space-y-2 md:col-span-2">
+                          <label htmlFor="institute" className="text-sm font-medium text-gray-700">
+                            Institute *
+                          </label>
+                          <div className="relative">
+                            <Input
+                              id="institute"
+                              name="institute"
+                              type="text"
+                              placeholder="Type to search institute"
+                              value={formData.institute}
+                              onChange={(event) => handleInstituteInputChange(event.target.value)}
+                              onFocus={() => setIsInstituteDropdownOpen(true)}
+                              onBlur={() => {
+                                setTimeout(() => setIsInstituteDropdownOpen(false), 120)
+                              }}
+                              disabled={isLoading || isLoadingOptions}
+                              className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                            />
+                            {isInstituteDropdownOpen ? (
+                              <div className="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
+                                <div className="max-h-[190px] overflow-y-auto p-1">
+                                  {filteredInstituteOptions.length ? (
+                                    filteredInstituteOptions.map((option) => (
+                                      <button
+                                        key={option}
+                                        type="button"
+                                        className="w-full rounded-sm px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                                        onMouseDown={(event) => {
+                                          event.preventDefault()
+                                          handleInstituteSelectionChange(option)
+                                          setIsInstituteDropdownOpen(false)
+                                        }}
+                                      >
+                                        {option}
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <p className="px-3 py-2 text-sm text-slate-500">No matching institute found.</p>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="w-full rounded-sm px-3 py-2 text-left text-sm font-medium text-[#0F7938] hover:bg-slate-100"
+                                    onMouseDown={(event) => {
+                                      event.preventDefault()
+                                      handleInstituteSelectionChange('Other')
+                                      setIsInstituteDropdownOpen(false)
+                                    }}
+                                  >
+                                    Other
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ) : null}
+                            ) : null}
+                          </div>
+                          <p className="text-xs text-slate-500">Only 5 institutes are shown at once. Scroll to view more.</p>
                         </div>
-                        <p className="text-xs text-slate-500">Only 5 institutes are shown at once. Scroll to view more.</p>
-                      </div>
+                      )}
 
-                      {formData.instituteSelectionMode === 'other' ? (
+                      {!isSelfStudy && formData.instituteSelectionMode === 'other' ? (
                         <div className="space-y-2 md:col-span-2">
                           <label htmlFor="customInstitute" className="text-sm font-medium text-gray-700">
                             Enter your institute name *
@@ -706,10 +694,41 @@ export default function SignupPage() {
                             onChange={handleChange}
                             disabled={isLoading}
                             className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
-                            required
                           />
                         </div>
                       ) : null}
+
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isSelfStudy}
+                            onChange={(e) => setIsSelfStudy(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-[#0F7938] focus:ring-[#0F7938]"
+                            disabled={isLoading}
+                          />
+                          <span className="text-sm text-slate-500">I'm studying independently (no institute)</span>
+                        </label>
+                      </div>
+
+                      {!isSelfStudy && (
+                        <div className="space-y-2">
+                          <label htmlFor="studentId" className="text-sm font-medium text-gray-700">
+                            Student ID *
+                          </label>
+                          <Input
+                            id="studentId"
+                            name="studentId"
+                            type="text"
+                            placeholder="Institute student ID"
+                            value={formData.studentId}
+                            onChange={handleChange}
+                            disabled={isLoading}
+                            className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          />
+                          <p className="text-xs text-slate-500">Enter the ID issued by your institute.</p>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <label htmlFor="cenNumber" className="text-sm font-medium text-gray-700">
