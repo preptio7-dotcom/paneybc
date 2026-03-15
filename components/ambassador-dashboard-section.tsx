@@ -1,10 +1,30 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import React, { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Check, Copy, Sparkles } from 'lucide-react'
+import { Check, Copy, Sparkles, Users } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+
+interface ReferralSignup {
+  name: string
+  joinedAt: string
+}
+
+interface ReferralData {
+  total: number
+  signups: ReferralSignup[]
+}
+
+function timeAgo(dateString: string) {
+  const date = new Date(dateString)
+  const now = new Date()
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  if (seconds < 60) return 'Just now'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`
+  return `${Math.floor(seconds / 86400)} days ago`
+}
 
 export function AmbassadorDashboardSection() {
   const { user } = useAuth()
@@ -33,7 +53,28 @@ export function AmbassadorDashboardSection() {
     }
   }
 
+  const [referralsData, setReferralsData] = useState<ReferralData | null>(null)
+  const [loadingReferrals, setLoadingReferrals] = useState(true)
+
+  useEffect(() => {
+    async function fetchReferrals() {
+      try {
+        const res = await fetch('/api/ambassador/referral-signups')
+        if (res.ok) {
+          const data = await res.json()
+          setReferralsData(data)
+        }
+      } catch (error) {
+        console.error('Failed to load referrals', error)
+      } finally {
+        setLoadingReferrals(false)
+      }
+    }
+    fetchReferrals()
+  }, [])
+
   return (
+    <div className="space-y-6">
     <Card className="border-0 overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0d2137,#059669)] text-white shadow-xl relative mt-0 mb-6 group border-t border-[#34d399]/30">
       <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
       <div className="pointer-events-none absolute inset-0">
@@ -96,5 +137,65 @@ export function AmbassadorDashboardSection() {
         </div>
       </CardContent>
     </Card>
+
+    <Card className="rounded-[20px] border border-slate-200 shadow-sm mt-6">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <Users className="w-5 h-5 text-[#16a34a]" />
+          My Referrals
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loadingReferrals ? (
+          <div className="space-y-4">
+            <div className="h-6 w-48 bg-slate-100 rounded animate-pulse"></div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex justify-between items-center pb-3 border-b border-slate-100 last:border-0">
+                  <div className="h-5 w-32 bg-slate-100 rounded animate-pulse"></div>
+                  <div className="h-4 w-20 bg-slate-100 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : referralsData ? (
+          <div className="space-y-6">
+            <div className="text-lg font-medium text-slate-800">
+              <span className="text-2xl font-black text-[#16a34a] mr-2">
+                {referralsData.total}
+              </span>
+              student{referralsData.total !== 1 ? 's' : ''} joined via your link
+            </div>
+            
+            {referralsData.signups.length > 0 ? (
+              <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4">
+                {referralsData.signups.map((signup, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex justify-between items-center pb-3 border-b border-slate-100 last:border-0 last:pb-0"
+                  >
+                    <div className="font-semibold text-slate-900 text-sm">
+                      {signup.name}
+                    </div>
+                    <div className="text-xs font-medium text-slate-500">
+                      {timeAgo(signup.joinedAt)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <p className="text-slate-500 text-sm font-medium">
+                  No signups yet — share your link to get started!
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-sm text-red-500">Failed to load referrals.</div>
+        )}
+      </CardContent>
+    </Card>
+    </div>
   )
 }

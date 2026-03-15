@@ -421,6 +421,7 @@ export async function POST(request: NextRequest) {
         })
         invalidateCache('admin:referrals')
         invalidateCache('ambassador:stats:' + validatedReferrerId)
+        invalidateCache('ambassador:referral-signups:' + validatedReferrerId)
       } catch (error) {
         console.error('[Referral] Failed to record referral signup:', error)
       }
