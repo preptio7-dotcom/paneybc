@@ -22,6 +22,7 @@ import {
   Palette,
   PenSquare,
   Settings,
+  Share2,
   Shield,
   Upload,
   UserRoundCheck,
@@ -70,6 +71,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Users', href: '/admin/users', icon: Users, badgeKey: 'newUsersTodayCount' },
       { label: 'Ambassador Apps', href: '/admin/join-us', icon: UserRoundCheck, badgeKey: 'pendingAmbassadorCount' },
+      { label: 'Referrals', href: '/admin/referrals', icon: Share2 },
       { label: 'Mock Notify', href: '/admin/mock-test-notify-requests', icon: Bell },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
@@ -108,6 +110,7 @@ const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin\/questions$/, title: 'Question Management' },
   { match: /^\/admin\/analytics$/, title: 'Analytics & Reports' },
   { match: /^\/admin\/users$/, title: 'User Management' },
+  { match: /^\/admin\/referrals$/, title: 'Ambassador Referrals' },
 ]
 
 function isActiveRoute(pathname: string, href: string) {

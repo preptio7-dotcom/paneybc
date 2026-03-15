@@ -15,6 +15,7 @@ import { getActiveAvatarPack, resolveAvatarForUser } from '@/lib/avatar-pack-ser
 import { detectReferrerSource } from '@/lib/blog-analytics'
 import { sendInstituteSuggestionAdminEmail } from '@/lib/email'
 import { getInstituteKey } from '@/lib/institutes'
+import { invalidateCache } from '@/lib/cache'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
 const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
       website,
       startedAt,
       blogReferral,
+      referralCode,
     } = await request.json()
 
     const suspiciousInput = detectSuspiciousInput({
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
       cenNumber,
       phone,
       website,
+      referralCode,
     })
     if (suspiciousInput) {
       await logSecurityEvent({
@@ -243,6 +246,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User already exists' }, { status: 409 })
     }
 
+    let validatedReferrerId: string | null = null
+    if (referralCode && typeof referralCode === 'string') {
+      const code = referralCode.toUpperCase().trim()
+
+      if (!/^[A-Z]+-\d{4}$/.test(code)) {
+        return NextResponse.json(
+          { error: 'Invalid referral code format. Codes look like: ALI-2934' },
+          { status: 400 }
+        )
+      }
+
+      const referrer = await prisma.user.findUnique({
+        where: { referralCode: code },
+        select: { id: true }
+      })
+
+      if (!referrer) {
+        return NextResponse.json(
+          { error: 'Referral code not found. Please check the code and try again.' },
+          { status: 400 }
+        )
+      }
+
+      validatedReferrerId = referrer.id
+    }
+
     const hashedPassword = await bcryptjs.hash(password, 10)
 
     const activePack = await getActiveAvatarPack()
@@ -265,7 +294,7 @@ export async function POST(request: NextRequest) {
         instituteRating: isInstituteEnrollment ? parsedRating : null,
         termsAcceptedAt: new Date(),
       },
-      select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, studentRole: true },
+      select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, studentRole: true, popupDismissed: true },
     })
 
     const deterministicSeed = getDeterministicSeedFromPool(createdUser.id, activePack.seeds)
@@ -273,7 +302,7 @@ export async function POST(request: NextRequest) {
     const createdUserWithAvatar = await prisma.user.update({
       where: { id: createdUser.id },
       data: { avatarId },
-      select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, studentRole: true },
+      select: { id: true, email: true, name: true, avatar: true, avatarId: true, role: true, studentRole: true, popupDismissed: true },
     })
 
     const resolvedAvatar = await resolveAvatarForUser(createdUserWithAvatar)
@@ -378,6 +407,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (validatedReferrerId) {
+      try {
+        await prisma.referralSignup.create({
+          data: {
+            referralCode: String(referralCode).toUpperCase().trim(),
+            referrerId: validatedReferrerId,
+            newUserId: createdUserWithAvatar.id,
+            newUserName: createdUserWithAvatar.name || '',
+            newUserEmail: createdUserWithAvatar.email,
+            page: 'signup',
+          },
+        })
+        invalidateCache('admin:referrals')
+        invalidateCache('ambassador:stats:' + validatedReferrerId)
+      } catch (error) {
+        console.error('[Referral] Failed to record referral signup:', error)
+      }
+    }
+
     const response = NextResponse.json(
       {
         message: 'User registered successfully',
@@ -389,6 +437,7 @@ export async function POST(request: NextRequest) {
           avatar: resolvedAvatar.avatar,
           role: createdUserWithAvatar.role,
           studentRole: createdUserWithAvatar.studentRole,
+          popupDismissed: createdUserWithAvatar.popupDismissed,
         },
       },
       { status: 201 }

@@ -215,6 +215,9 @@ model User {
   practiceStreakLastDate DateTime?
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
+  referralCode         String?  @unique
+  referralLink         String?
+  popupDismissed       Boolean  @default(false)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -225,6 +228,8 @@ model User {
   streakAuditLogs          StreakAuditLog[]
   badges                   UserBadge[]
   mockTestQuestionHistory  MockTestQuestionHistory[]
+  referralsMade            ReferralSignup[] @relation("ReferrerSignups")
+  referredBy               ReferralSignup?  @relation("ReferredUser")
 }
 
 model Subject {
@@ -995,4 +1000,22 @@ model BlogAnalyticsEvent {
   @@index([sessionId])
   @@index([postId, createdAt])
   @@map("blog_analytics_events")
+}
+
+model ReferralSignup {
+  id              String   @id @default(cuid())
+  referralCode    String
+  referrerId      String
+  newUserId       String   @unique
+  newUserName     String
+  newUserEmail    String
+  signedUpAt      DateTime @default(now())
+  page            String?
+
+  referrer  User @relation("ReferrerSignups", fields: [referrerId], references: [id], onDelete: Cascade)
+  newUser   User @relation("ReferredUser", fields: [newUserId], references: [id], onDelete: Cascade)
+
+  @@index([referralCode])
+  @@index([referrerId])
+  @@index([signedUpAt])
 }

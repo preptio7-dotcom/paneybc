@@ -1,4 +1,5 @@
 'use client'
+import { AmbassadorDashboardSection } from '@/components/ambassador-dashboard-section'
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -1058,6 +1059,7 @@ export default function DashboardPage() {
             </aside>
 
             <section className="space-y-6 order-1 xl:order-2">
+              <AmbassadorDashboardSection />
               <Card className="border-0 overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f172a,#0d2137)] text-white shadow-xl">
                 <CardContent className="p-6 md:p-8 relative">
                   <div className="pointer-events-none absolute inset-0">

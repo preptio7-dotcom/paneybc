@@ -53,12 +53,29 @@ export default function SignupPage() {
     website: '',
   })
 
+  const [referralCode, setReferralCode] = useState('')
+  const [referralError, setReferralError] = useState<string | null>(null)
+
   useEffect(() => {
     if (loading) return
     if (!user) return
     const target = user.role === 'admin' ? '/admin' : '/dashboard'
     window.location.replace(target)
   }, [loading, user])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const urlParams = new URLSearchParams(window.location.search)
+        const ref = urlParams.get('ref')
+        if (ref) {
+          setReferralCode(ref.toUpperCase().trim())
+        }
+      } catch {
+        // Safe ignore
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const loadRegistrationOptions = async () => {
@@ -337,7 +354,9 @@ export default function SignupPage() {
         throw new Error(verifyData.error || 'Verification failed')
       }
 
-      await register(formData.email.trim(), formData.password, formData.name.trim(), {
+      setReferralError(null)
+
+      const registerData: any = {
         degree: formData.degree,
         level: formData.level,
         enrollmentType: 'institute',
@@ -355,7 +374,13 @@ export default function SignupPage() {
         verificationToken: verifyData.verificationToken,
         website: formData.website,
         startedAt: formStartedAt,
-      })
+      }
+
+      if (referralCode.trim()) {
+        registerData.referralCode = referralCode.trim().toUpperCase()
+      }
+
+      await register(formData.email.trim(), formData.password, formData.name.trim(), registerData)
 
       toast({
         title: 'Success',
@@ -364,11 +389,16 @@ export default function SignupPage() {
 
       window.location.assign('/dashboard')
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'An error occurred. Please try again.',
-        variant: 'destructive',
-      })
+      const msg = error.message || 'An error occurred. Please try again.'
+      if (msg.toLowerCase().includes('referral') || msg.toLowerCase().includes('referral code')) {
+        setReferralError(msg)
+      } else {
+        toast({
+          title: 'Error',
+          description: msg,
+          variant: 'destructive',
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -748,6 +778,34 @@ export default function SignupPage() {
                         className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
                         required
                       />
+                    </div>
+                    
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <label htmlFor="referralCode" className="text-sm font-medium text-gray-700">
+                        Referral Code
+                      </label>
+                      <Input
+                        id="referralCode"
+                        name="referralCode"
+                        type="text"
+                        placeholder="e.g. ALI-2934"
+                        value={referralCode}
+                        onChange={(e) => {
+                          setReferralCode(e.target.value)
+                          setReferralError(null)
+                        }}
+                        disabled={isLoading}
+                        className={`border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938] ${referralError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      />
+                      <p className="text-xs text-slate-500">Optional — have a code from an ambassador?</p>
+                      
+                      {referralCode.trim() && !/^[A-Z]+-\d{4}$/i.test(referralCode.trim()) && !referralError && (
+                        <p className="text-xs text-amber-600">Referral codes look like: ALI-2934</p>
+                      )}
+                      
+                      {referralError && (
+                        <p className="text-xs text-red-600 font-medium">{referralError}</p>
+                      )}
                     </div>
                   </>
                 )}

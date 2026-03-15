@@ -42,6 +42,9 @@ export async function GET(request: NextRequest) {
           avatar: resolvedAvatar.avatar,
           role: user.role,
           studentRole: user.studentRole,
+          popupDismissed: user.popupDismissed,
+          referralCode: user.referralCode,
+          referralLink: user.referralLink,
         },
       },
       { status: 200 }

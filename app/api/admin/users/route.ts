@@ -269,6 +269,23 @@ export async function PATCH(request: NextRequest) {
       },
     })
 
+    // Auto-assign referral code when a user is promoted to ambassador
+    if (updated.studentRole === 'ambassador') {
+      try {
+        const freshUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { referralCode: true, name: true, email: true },
+        })
+        if (freshUser && !freshUser.referralCode) {
+          const { assignReferralToAmbassador } = await import('@/lib/referral')
+          await assignReferralToAmbassador(userId, freshUser.name || freshUser.email)
+        }
+      } catch (referralError) {
+        console.error('[Referral] Failed to assign referral code:', referralError)
+        // Do not block the ambassador assignment — role is already saved
+      }
+    }
+
     return NextResponse.json({ user: updated })
   } catch (error: any) {
     console.error('Admin user update error:', error)

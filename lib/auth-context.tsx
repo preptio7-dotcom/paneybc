@@ -10,6 +10,9 @@ interface User {
   avatarId?: string
   role: 'student' | 'admin' | 'super_admin'
   studentRole?: 'user' | 'ambassador' | 'paid' | 'unpaid'
+  popupDismissed?: boolean
+  referralCode?: string | null
+  referralLink?: string | null
 }
 
 interface AuthContextType {
@@ -42,6 +45,7 @@ interface AuthContextType {
         visited_at?: number
         session_id?: string
       }
+      referralCode?: string
     }
   ) => Promise<void>
   logout: () => Promise<void>
@@ -120,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         visited_at?: number
         session_id?: string
       }
+      referralCode?: string
     }
   ) => {
     const resolvedBlogReferral = (() => {
@@ -135,6 +140,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })()
 
+    const resolvedReferralCode = (() => {
+      if (options?.referralCode) return options.referralCode
+      if (typeof window === 'undefined') return undefined
+      try {
+        const raw = sessionStorage.getItem('preptio_referral_code')
+        return raw ? raw.trim() : undefined
+      } catch {
+        return undefined
+      }
+    })()
+
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -144,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         ...options,
         blogReferral: resolvedBlogReferral || undefined,
+        referralCode: resolvedReferralCode || undefined,
       }),
       credentials: 'include',
     })
@@ -158,6 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('preptio_welcome_unread', '1')
       sessionStorage.removeItem('blog_referral')
+      sessionStorage.removeItem('preptio_referral_code')
     } catch (error) {
       // ignore storage errors
     }

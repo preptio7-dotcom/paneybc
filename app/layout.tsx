@@ -106,6 +106,7 @@ import { ContactPopup } from "@/components/contact-popup"
 import { TrustedTypesBootstrap } from "@/components/trusted-types-bootstrap"
 import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 import { DeferredGtag } from "@/components/deferred-gtag"
+import { WelcomePopup } from "@/components/welcome-popup"
 
 export default function RootLayout({
   children,
@@ -158,6 +159,7 @@ export default function RootLayout({
           <GlobalRuntimeMonitor />
           {children}
           <ContactPopup />
+          <WelcomePopup />
         </AuthProvider>
         <Toaster />
         <SonnerToaster position="top-center" richColors />
