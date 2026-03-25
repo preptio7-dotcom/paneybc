@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Ali Jan",
+    "email": "ali.mahesar04@gmail.com",
+    "password": "$2a$10$OZL90CMgPwT7moKBpAes8e54qpWQ.vcXjTjQnkP9pnB1nftU3c4Pq",
+    "role": "super_admin",
+    "createdAt": "2026-01-30T13:14:41.782Z"
+  },
+  {
+    "name": "Platform Admin",
+    "email": "admin@icap.com",
+    "password": "$2a$10$9FSgS7f8sNHjcAmqocxHXOEbM8EnU5ULWQhJ8QHq4aIAyr92aDBAe",
+    "role": "admin",
+    "createdAt": "2026-01-30T16:32:55.051Z"
+  },
+  {
+    "name": "Soap",
+    "email": "soap@example.com",
+    "password": "$2a$10$uorDumByb9oSJSTt4BeJZujq1JhH1A1OIx4X0Hp8647xO.7GYLirW",
+    "role": "student",
+    "createdAt": "2026-01-30T19:50:57.927Z"
+  },
+  {
+    "name": "Sameer",
+    "email": "sq80999@gmail.com",
+    "password": "$2a$10$LSNs/Z7qsiv4KXVN/DSIQOvAVvX.RT4289PwdPx3B4CMwFWaEFMk6",
+    "role": "student",
+    "createdAt": "2026-01-31T06:17:41.410Z"
+  },
+  {
+    "name": "Grand Overseer",
+    "email": "superadmin@icap.com",
+    "password": "$2a$10$qxRLN1WGbE52240ppnxMAuGtkx1VN2PrENHFAf4NqlFXAuYtU5PJG",
+    "role": "super_admin",
+    "createdAt": "2026-01-31T06:25:22.206Z"
+  },
+  {
+    "name": "Ali Jan",
+    "email": "ali@gmail.com",
+    "password": "$2a$10$Pcty2ea0REwNFxD4bygvIuMdbK9S8kSotFlKSKZ/Ocb3smDgqoUFi",
+    "role": "student",
+    "createdAt": "2026-01-31T06:26:10.593Z"
+  }
+]
