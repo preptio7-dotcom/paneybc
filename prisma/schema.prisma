@@ -230,6 +230,8 @@ model User {
   mockTestQuestionHistory  MockTestQuestionHistory[]
   referralsMade            ReferralSignup[] @relation("ReferrerSignups")
   referredBy               ReferralSignup?  @relation("ReferredUser")
+  studentNotes             StudentNote[]    @relation("StudentNotes")
+  studentTags              StudentTag[]     @relation("StudentTags")
 }
 
 model Subject {
@@ -346,16 +348,6 @@ model MockTestQuestionHistory {
   @@unique([userId, questionId, mockTestId])
 }
 
-model MockTestNotifyRequest {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  testType  String   @map("test_type")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@unique([userId, testType])
-  @@index([testType, createdAt])
-  @@map("mock_test_notify_requests")
-}
 
 model Analytics {
   id               String   @id @default(cuid())
@@ -1018,4 +1010,29 @@ model ReferralSignup {
   @@index([referralCode])
   @@index([referrerId])
   @@index([signedUpAt])
+}
+
+model StudentNote {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  adminId   String   @map("admin_id")
+  note      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student   User     @relation("StudentNotes", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+  @@map("student_notes")
+}
+
+model StudentTag {
+  id        String @id @default(cuid())
+  studentId String @map("student_id")
+  tag       String
+
+  student   User   @relation("StudentTags", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, tag])
+  @@index([studentId])
+  @@map("student_tags")
 }

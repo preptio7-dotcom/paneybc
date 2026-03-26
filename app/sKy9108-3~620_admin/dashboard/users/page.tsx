@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Search, UserMinus, UserX, ShieldAlert } from 'lucide-react'
+import { Loader2, Search, UserMinus, UserX, ShieldAlert, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 
 type UserRow = {
@@ -70,6 +70,32 @@ export default function SuperAdminUsersPage() {
       toast.success(nextState ? 'User banned' : 'User unbanned')
     } catch (error: any) {
       toast.error('Error', { description: error.message || 'Failed to update user' })
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  const handleEditName = async (userId: string, currentName: string) => {
+    if (busyUserId) return
+    const newName = window.prompt("Enter the new name for this user:", currentName)
+    if (newName === null || newName.trim() === "" || newName.trim() === currentName) return
+
+    try {
+      setBusyUserId(userId)
+      const response = await fetch('/api/super-admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, name: newName.trim() }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to update string')
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, name: newName.trim() } : u))
+      )
+      toast.success("Name updated successfully")
+    } catch (error: any) {
+      toast.error('Error', { description: error.message || 'Failed to update name' })
     } finally {
       setBusyUserId(null)
     }
@@ -181,6 +207,16 @@ export default function SuperAdminUsersPage() {
                       </td>
                       <td className="py-3 px-6 text-gray-400">{new Date(user.createdAt).toLocaleDateString()}</td>
                       <td className="py-3 px-6 text-right space-x-2">
+                        {/* <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditName(user.id, user.name)}
+                          disabled={busyUserId === user.id || user.role === 'super_admin'}
+                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 px-2"
+                          title="Edit Name"
+                        >
+                          <Pencil size={14} />
+                        </Button> */}
                         <Button
                           size="sm"
                           variant="outline"

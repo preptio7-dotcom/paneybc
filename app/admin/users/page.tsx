@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState<'all' | 'student'>('all')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'admin'>('all')
   const [studentRoleFilter, setStudentRoleFilter] = useState<'all' | 'user' | 'ambassador' | 'paid' | 'unpaid'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all')
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
@@ -263,13 +263,21 @@ export default function AdminUsersPage() {
 
   const handleSaveEdit = async () => {
     if (!editingUser) return
-    if (!editForm.name.trim() || !editForm.degree || !editForm.level || !editForm.institute.trim() || !editForm.city.trim() || !editForm.studentId.trim() || !editForm.phone.trim()) {
-      toast({
-        title: 'Missing fields',
-        description: 'All profile fields are required.',
-        variant: 'destructive',
-      })
-      return
+
+    if (editingUser.role === 'admin' || editingUser.role === 'super_admin') {
+      if (!editForm.name.trim()) {
+        toast({ title: 'Missing logic', description: 'Name is required.', variant: 'destructive' })
+        return
+      }
+    } else {
+      if (!editForm.name.trim() || !editForm.degree || !editForm.level || !editForm.institute.trim() || !editForm.city.trim() || !editForm.studentId.trim() || !editForm.phone.trim()) {
+        toast({
+          title: 'Missing fields',
+          description: 'All profile fields are required for students.',
+          variant: 'destructive',
+        })
+        return
+      }
     }
     if (editForm.instituteRating < 1 || editForm.instituteRating > 5) {
       toast({
@@ -348,13 +356,14 @@ export default function AdminUsersPage() {
                 <select
                   value={roleFilter}
                   onChange={(e) => {
-                    setRoleFilter(e.target.value as 'all' | 'student')
+                    setRoleFilter(e.target.value as 'all' | 'student' | 'admin')
                     setCurrentPage(1)
                   }}
                   className="border border-border rounded-md px-3 py-2 text-sm"
                 >
                   <option value="all">All users</option>
                   <option value="student">Students</option>
+                  {/* <option value="admin">Admins</option> */}
                 </select>
                 <select
                   value={studentRoleFilter}
@@ -393,11 +402,10 @@ export default function AdminUsersPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedColumn('all')}
-                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                        selectedColumn === 'all'
-                          ? 'border-[#0F7938] bg-[#0F7938] text-white'
-                          : 'border-border bg-white text-text-light hover:border-slate-400'
-                      }`}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${selectedColumn === 'all'
+                        ? 'border-[#0F7938] bg-[#0F7938] text-white'
+                        : 'border-border bg-white text-text-light hover:border-slate-400'
+                        }`}
                     >
                       All columns
                     </button>
@@ -406,11 +414,10 @@ export default function AdminUsersPage() {
                         key={column.key}
                         type="button"
                         onClick={() => setSelectedColumn(column.key)}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                          selectedColumn === column.key
-                            ? 'border-[#0F7938] bg-[#0F7938] text-white'
-                            : 'border-border bg-white text-text-light hover:border-slate-400'
-                        }`}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${selectedColumn === column.key
+                          ? 'border-[#0F7938] bg-[#0F7938] text-white'
+                          : 'border-border bg-white text-text-light hover:border-slate-400'
+                          }`}
                       >
                         {column.label}
                       </button>
@@ -522,9 +529,8 @@ export default function AdminUsersPage() {
                               {isColumnVisible('status') ? (
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <span
-                                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                      user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
-                                    }`}
+                                    className={`text-xs font-semibold px-2 py-1 rounded-full ${user.isBanned ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
+                                      }`}
                                   >
                                     {user.isBanned ? 'Banned' : 'Active'}
                                   </span>

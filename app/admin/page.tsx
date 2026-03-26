@@ -183,12 +183,7 @@ export default function AdminDashboardPage() {
             href: '/admin/join-us',
             icon: Users,
         },
-        {
-            title: 'Mock Notify Requests',
-            description: 'See users waiting for mock-test availability notifications.',
-            href: '/admin/mock-test-notify-requests',
-            icon: Users,
-        },
+
         {
             title: 'FAQ Settings',
             description: 'Manage FAQ questions and answers.',
@@ -622,13 +617,12 @@ export default function AdminDashboardPage() {
                                                     </p>
                                                 </div>
                                                 <span
-                                                    className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                                        item.status === 'new'
+                                                    className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${item.status === 'new'
                                                             ? 'bg-emerald-100 text-emerald-700'
                                                             : item.status === 'reviewed'
-                                                              ? 'bg-amber-100 text-amber-700'
-                                                              : 'bg-blue-100 text-blue-700'
-                                                    }`}
+                                                                ? 'bg-amber-100 text-amber-700'
+                                                                : 'bg-blue-100 text-blue-700'
+                                                        }`}
                                                 >
                                                     {item.status}
                                                 </span>

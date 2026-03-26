@@ -79,7 +79,6 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
     const userId = String(body.userId || '').trim()
-    const isBanned = Boolean(body.isBanned)
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
@@ -94,12 +93,24 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (target.role === 'super_admin') {
-      return NextResponse.json({ error: 'Cannot change super admin status' }, { status: 403 })
+      return NextResponse.json({ error: 'Cannot edit super admin' }, { status: 403 })
+    }
+
+    const updateData: any = {}
+    if (body.hasOwnProperty('isBanned')) {
+      updateData.isBanned = Boolean(body.isBanned)
+    }
+    if (body.hasOwnProperty('name')) {
+      const newName = String(body.name).trim()
+      if (!newName) {
+        return NextResponse.json({ error: 'Name cannot be empty' }, { status: 400 })
+      }
+      updateData.name = newName
     }
 
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { isBanned },
+      data: updateData,
       select: { id: true, name: true, email: true, role: true, isBanned: true },
     })
 

@@ -514,11 +514,10 @@ export default function AdminAnalyticsPage() {
                     key={option.key}
                     type="button"
                     onClick={() => setPreset(option.key)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                      preset === option.key
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${preset === option.key
                         ? 'border-[#16a34a] bg-[#16a34a] text-white'
                         : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-200 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -614,9 +613,8 @@ export default function AdminAnalyticsPage() {
                         key={mode}
                         type="button"
                         onClick={() => setActivityMode(mode)}
-                        className={`rounded-md px-3 py-1 font-semibold ${
-                          activityMode === mode ? 'bg-[#16a34a] text-white' : 'text-slate-600'
-                        }`}
+                        className={`rounded-md px-3 py-1 font-semibold ${activityMode === mode ? 'bg-[#16a34a] text-white' : 'text-slate-600'
+                          }`}
                       >
                         {mode.toUpperCase()}
                       </button>
@@ -810,10 +808,10 @@ export default function AdminAnalyticsPage() {
                         <div key={`head-${hour}`} className="text-center text-slate-400">
                           {hour % 3 === 0
                             ? new Intl.DateTimeFormat('en-US', {
-                                hour: 'numeric',
-                                hour12: true,
-                                timeZone: 'UTC',
-                              }).format(new Date(Date.UTC(2026, 0, 1, hour, 0, 0)))
+                              hour: 'numeric',
+                              hour12: true,
+                              timeZone: 'UTC',
+                            }).format(new Date(Date.UTC(2026, 0, 1, hour, 0, 0)))
                             : ''}
                         </div>
                       ))}
@@ -1074,19 +1072,22 @@ export default function AdminAnalyticsPage() {
                       </thead>
                       <tbody>
                         {leaderboardRows.map((row) => (
-                          <tr key={`${leaderboardMode}-${row.userId}`} className="border-t border-slate-100">
+                          <tr
+                            key={`${leaderboardMode}-${row.userId}`}
+                            className="border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                            onClick={() => window.location.href = `/admin/analytics/students/${row.userId}`}
+                          >
                             <td className="px-3 py-2">{medalIcon(row.rank)}</td>
                             <td className="px-3 py-2 font-medium text-slate-800">{row.displayName}</td>
                             <td
-                              className={`px-3 py-2 font-semibold ${
-                                row.streak >= 30
+                              className={`px-3 py-2 font-semibold ${row.streak >= 30
                                   ? 'text-orange-600'
                                   : row.streak >= 14
                                     ? 'text-amber-600'
                                     : row.streak >= 7
                                       ? 'text-emerald-600'
                                       : 'text-slate-500'
-                              }`}
+                                }`}
                             >
                               {row.streak}d {row.streak >= 30 ? '(Hot)' : ''}
                             </td>
@@ -1101,7 +1102,11 @@ export default function AdminAnalyticsPage() {
 
                 <div className="space-y-3 md:hidden">
                   {leaderboardRows.map((row) => (
-                    <div key={`card-${leaderboardMode}-${row.userId}`} className="rounded-xl border border-slate-200 bg-white p-3">
+                    <div
+                      key={`card-${leaderboardMode}-${row.userId}`}
+                      className="rounded-xl border border-slate-200 bg-white p-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                      onClick={() => window.location.href = `/admin/analytics/students/${row.userId}`}
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-slate-900">{row.displayName}</p>

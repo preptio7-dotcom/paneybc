@@ -70,15 +70,20 @@ export async function GET(request: NextRequest) {
         ? Math.min(Math.floor(pageSizeParam), 50)
         : 5
 
-    const where: any = { role: 'student' }
+    const where: any = {}
     if (query) {
       where.OR = [
         { name: { contains: query, mode: 'insensitive' } },
         { email: { contains: query, mode: 'insensitive' } },
       ]
     }
-    if (role && role !== 'student') {
-      return NextResponse.json({ error: 'Invalid role filter' }, { status: 400 })
+    if (admin.role === 'super_admin') {
+      if (role && role !== 'all') where.role = role
+    } else {
+      where.role = 'student'
+      if (role && role !== 'student') {
+        return NextResponse.json({ error: 'Invalid role filter' }, { status: 400 })
+      }
     }
     if (studentRole && !['user', 'ambassador', 'paid', 'unpaid', 'all'].includes(studentRole)) {
       return NextResponse.json({ error: 'Invalid student role filter' }, { status: 400 })
@@ -183,51 +188,67 @@ export async function PATCH(request: NextRequest) {
       const normalizedPhone = normalizePkPhone(body.phone || target.phone || '')
       const rating = Number(body.instituteRating ?? target.instituteRating)
 
-      if (!normalizedName || !normalizedDegree || !normalizedLevel || !normalizedInstitute || !normalizedCity || !normalizedStudentId || !normalizedPhone) {
-        return NextResponse.json({ error: 'All profile fields are required' }, { status: 400 })
-      }
-      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-        return NextResponse.json({ error: 'Institute rating must be between 1 and 5' }, { status: 400 })
+      // Different validation rules for admins vs students
+      if (target.role === 'admin' || target.role === 'super_admin') {
+        if (!normalizedName) {
+          return NextResponse.json({ error: 'Admin name is required' }, { status: 400 })
+        }
+      } else {
+        if (!normalizedName || !normalizedDegree || !normalizedLevel || !normalizedInstitute || !normalizedCity || !normalizedStudentId || !normalizedPhone) {
+          return NextResponse.json({ error: 'All profile fields are required for students' }, { status: 400 })
+        }
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+          return NextResponse.json({ error: 'Institute rating must be between 1 and 5' }, { status: 400 })
+        }
       }
       const nextStudentRole = body.studentRole ?? target.studentRole
       if (!isValidStudentRole(nextStudentRole)) {
         return NextResponse.json({ error: 'Invalid student role' }, { status: 400 })
       }
 
-      const settings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
-      const registrationSettings = extractRegistrationSettings(settings?.testSettings || {})
-      if (!registrationSettings.degrees.includes(normalizedDegree)) {
-        return NextResponse.json({ error: 'Selected degree is no longer available' }, { status: 400 })
-      }
-      if (!registrationSettings.levels.includes(normalizedLevel)) {
-        return NextResponse.json({ error: 'Selected level is no longer available' }, { status: 400 })
-      }
-
-      const duplicate = await prisma.user.findFirst({
-        where: {
-          id: { not: userId },
-          OR: [{ phone: normalizedPhone }, { studentId: normalizedStudentId }],
-        },
-        select: { phone: true, studentId: true },
-      })
-      if (duplicate) {
-        if (duplicate.phone === normalizedPhone) {
-          return NextResponse.json({ error: 'Phone number is already in use' }, { status: 409 })
+      if (target.role === 'admin' || target.role === 'super_admin') {
+        updateData.name = normalizedName
+      } else {
+        const settings = await prisma.systemSettings.findFirst({ select: { testSettings: true } })
+        const registrationSettings = extractRegistrationSettings(settings?.testSettings || {})
+        if (!registrationSettings.degrees.includes(normalizedDegree)) {
+          return NextResponse.json({ error: 'Selected degree is no longer available' }, { status: 400 })
         }
-        if (duplicate.studentId === normalizedStudentId) {
-          return NextResponse.json({ error: 'Student ID is already in use' }, { status: 409 })
+        if (!registrationSettings.levels.includes(normalizedLevel)) {
+          return NextResponse.json({ error: 'Selected level is no longer available' }, { status: 400 })
         }
-      }
 
-      updateData.name = normalizedName
-      updateData.degree = normalizedDegree
-      updateData.level = normalizedLevel
-      updateData.institute = normalizedInstitute
-      updateData.city = normalizedCity
-      updateData.studentId = normalizedStudentId
-      updateData.phone = normalizedPhone
-      updateData.instituteRating = rating
-      updateData.studentRole = nextStudentRole
+        if (normalizedPhone || normalizedStudentId) {
+          const duplicate = await prisma.user.findFirst({
+            where: {
+              id: { not: userId },
+              OR: [
+                ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+                ...(normalizedStudentId ? [{ studentId: normalizedStudentId }] : [])
+              ]
+            },
+            select: { phone: true, studentId: true },
+          })
+          if (duplicate) {
+            if (normalizedPhone && duplicate.phone === normalizedPhone) {
+              return NextResponse.json({ error: 'Phone number is already in use' }, { status: 409 })
+            }
+            if (normalizedStudentId && duplicate.studentId === normalizedStudentId) {
+              return NextResponse.json({ error: 'Student ID is already in use' }, { status: 409 })
+            }
+          }
+        }
+
+        updateData.name = normalizedName
+        updateData.degree = normalizedDegree
+        updateData.level = normalizedLevel
+        updateData.institute = normalizedInstitute
+        updateData.city = normalizedCity
+        updateData.studentId = normalizedStudentId
+        updateData.phone = normalizedPhone
+        updateData.instituteRating = rating
+        updateData.studentRole = nextStudentRole
+      }
     }
 
     if (!Object.keys(updateData).length) {

@@ -198,5 +198,16 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|practice|api/practice-mcqs|favicon.ico|sw.js).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - practice (public practice page)
+     * - api/practice-mcqs (public API)
+     * - favicon.ico, sitemap.xml, robots.txt, sw.js (standard public files)
+     * - file extensions: .*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|css|js)
+     */
+    '/((?!_next/static|_next/image|practice|api/practice-mcqs|favicon.ico|sitemap.xml|robots.txt|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|css|js)).*)',
+  ],
 }

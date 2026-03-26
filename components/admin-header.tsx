@@ -70,9 +70,9 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Users & Feedback',
     items: [
       { label: 'Users', href: '/admin/users', icon: Users, badgeKey: 'newUsersTodayCount' },
+      { label: 'Student Profiles', href: '/admin/analytics/students', icon: UserIcon },
       { label: 'Ambassador Apps', href: '/admin/join-us', icon: UserRoundCheck, badgeKey: 'pendingAmbassadorCount' },
       { label: 'Referrals', href: '/admin/referrals', icon: Share2 },
-      { label: 'Mock Notify', href: '/admin/mock-test-notify-requests', icon: Bell },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
       { label: 'Analytics & Reports', href: '/admin/analytics', icon: BarChart2 },
@@ -358,9 +358,8 @@ export function AdminHeader() {
           onClick={() => setIsMobileSidebarOpen(false)}
         />
         <aside
-          className={`absolute left-0 top-0 flex h-full w-[280px] flex-col bg-[#0f172a] text-slate-100 shadow-xl transition-transform duration-300 ease-in-out ${
-            isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-[280px]'
-          }`}
+          className={`absolute left-0 top-0 flex h-full w-[280px] flex-col bg-[#0f172a] text-slate-100 shadow-xl transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-[280px]'
+            }`}
         >
           <div className="flex h-14 items-center justify-between border-b border-slate-800 px-4">
             <div>
