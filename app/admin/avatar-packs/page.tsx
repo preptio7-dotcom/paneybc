@@ -16,7 +16,6 @@ import {
   MULTIAVATAR_PRESET_SEEDS,
   PRELOAD_AVATAR_COUNT,
   PREDEFINED_AVATAR_SEEDS,
-  READY_PLAYER_ME_STARTER_AVATAR_IDS,
   buildAvatarUrl,
   normalizeAvatarSeeds,
   type AvatarSource,
@@ -45,7 +44,6 @@ type AvatarPackRow = {
 const SOURCE_OPTIONS: Array<{ value: AvatarSource; label: string }> = [
   { value: 'dicebear', label: 'DiceBear' },
   { value: 'multiavatar', label: 'Multiavatar 3D' },
-  { value: 'readyplayerme', label: 'Ready Player Me 3D' },
 ]
 
 type PackFormState = {
@@ -74,14 +72,12 @@ function parseSeedText(value: string, variantsCount: number, source: AvatarSourc
   const text = String(value || '').trim()
   const split = text
     ? text
-        .split(/[\n,]/g)
-        .map((item) => item.trim())
-        .filter(Boolean)
+      .split(/[\n,]/g)
+      .map((item) => item.trim())
+      .filter(Boolean)
     : source === 'multiavatar'
       ? [...MULTIAVATAR_PRESET_SEEDS]
-      : source === 'readyplayerme'
-        ? [...READY_PLAYER_ME_STARTER_AVATAR_IDS]
-        : [...PREDEFINED_AVATAR_SEEDS]
+      : [...PREDEFINED_AVATAR_SEEDS]
   return normalizeAvatarSeeds(split, variantsCount)
 }
 
@@ -100,9 +96,6 @@ function sourceLabel(source: AvatarSource) {
 }
 
 function formatSeedLabel(source: AvatarSource) {
-  if (source === 'readyplayerme') {
-    return 'Avatar Thumbnail URLs (one per line)'
-  }
   if (source === 'multiavatar') {
     return 'Custom Seeds (optional, comma or newline separated)'
   }
@@ -110,9 +103,6 @@ function formatSeedLabel(source: AvatarSource) {
 }
 
 function sourceHelperText(source: AvatarSource) {
-  if (source === 'readyplayerme') {
-    return 'Generate avatars at readyplayer.me and paste avatar IDs or full thumbnail URLs.'
-  }
   if (source === 'multiavatar') {
     return 'Multiavatar uses geometric avatar generation based on each seed value.'
   }
@@ -423,9 +413,8 @@ export default function AdminAvatarPacksPage() {
                           <td className="py-3 pr-4 text-slate-700">{pack.variantsCount}</td>
                           <td className="py-3 pr-4">
                             <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                pack.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                              }`}
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${pack.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                }`}
                             >
                               {pack.isActive ? 'Active' : 'Inactive'}
                             </span>
@@ -578,11 +567,7 @@ export default function AdminAvatarPacksPage() {
               <Textarea
                 value={form.customSeeds}
                 onChange={(event) => setForm((prev) => ({ ...prev, customSeeds: event.target.value }))}
-                placeholder={
-                  form.source === 'readyplayerme'
-                    ? 'https://models.readyplayer.me/abc123.png?scene=fullbody-portrait-v1'
-                    : 'Alpha, Beta, Gamma...'
-                }
+                placeholder="Alpha, Beta, Gamma..."
                 rows={4}
               />
               <p className="text-xs text-slate-500">{sourceHelperText(form.source)}</p>

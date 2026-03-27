@@ -21,10 +21,15 @@ export async function GET() {
         prisma.user.count({
           where: { role: 'student', isBanned: false },
         }),
-      ]).then(([totalQuestions, totalSubjects, totalUsers]) => ({
+        prisma.userFeedback.aggregate({
+          _avg: { rating: true },
+          where: { status: 'approved' }
+        })
+      ]).then(([totalQuestions, totalSubjects, totalUsers, feedback]) => ({
         totalQuestions,
         totalSubjects,
         totalUsers,
+        averageRating: feedback._avg.rating || 5.0
       }))
     )
 

@@ -30,6 +30,7 @@ import {
   Users,
   UserPlus,
 } from 'lucide-react'
+import { InstituteAnalyticsChart } from '@/components/admin/institute-chart'
 
 type AdminRangePreset = 'today' | 'yesterday' | '7d' | '30d' | '90d' | 'all' | 'custom'
 type ActivityMode = 'dau' | 'wau' | 'mau'
@@ -515,8 +516,8 @@ export default function AdminAnalyticsPage() {
                     type="button"
                     onClick={() => setPreset(option.key)}
                     className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${preset === option.key
-                        ? 'border-[#16a34a] bg-[#16a34a] text-white'
-                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-200 hover:text-slate-900'
+                      ? 'border-[#16a34a] bg-[#16a34a] text-white'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-200 hover:text-slate-900'
                       }`}
                   >
                     {option.label}
@@ -603,6 +604,8 @@ export default function AdminAnalyticsPage() {
                   })}
                 </div>
               </section>
+
+              <InstituteAnalyticsChart />
 
               <section className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -1081,12 +1084,12 @@ export default function AdminAnalyticsPage() {
                             <td className="px-3 py-2 font-medium text-slate-800">{row.displayName}</td>
                             <td
                               className={`px-3 py-2 font-semibold ${row.streak >= 30
-                                  ? 'text-orange-600'
-                                  : row.streak >= 14
-                                    ? 'text-amber-600'
-                                    : row.streak >= 7
-                                      ? 'text-emerald-600'
-                                      : 'text-slate-500'
+                                ? 'text-orange-600'
+                                : row.streak >= 14
+                                  ? 'text-amber-600'
+                                  : row.streak >= 7
+                                    ? 'text-emerald-600'
+                                    : 'text-slate-500'
                                 }`}
                             >
                               {row.streak}d {row.streak >= 30 ? '(Hot)' : ''}

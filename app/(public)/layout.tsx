@@ -1,4 +1,5 @@
 import Script from 'next/script'
+import { AdBlockDetector } from '@/components/adblock-detector'
 
 export default function PublicLayout({
   children,
@@ -12,6 +13,7 @@ export default function PublicLayout({
         strategy="afterInteractive"
         crossOrigin="anonymous"
       />
+      <AdBlockDetector />
       {children}
     </>
   )

@@ -1,13 +1,12 @@
-export const DEFAULT_DICEBEAR_STYLE = 'avataaars'
+const DEFAULT_DICEBEAR_STYLE = 'avataaars'
 const DICEBEAR_BASE_URL = 'https://api.dicebear.com/7.x'
 const MULTIAVATAR_BASE_URL = 'https://api.multiavatar.com'
-const READY_PLAYER_ME_BASE_URL = 'https://models.readyplayer.me'
 const AVATAR_PROXY_PATH = '/api/avatar/proxy'
 const FALLBACK_SEED_PREFIX = 'Pack'
 export const LEGACY_AVATAR_PACK_ID = 'legacy'
 export const LEGACY_AVATAR_STYLE = 'legacy'
 
-export const PUBLIC_AVATAR_SOURCES = ['dicebear', 'multiavatar', 'readyplayerme'] as const
+export const PUBLIC_AVATAR_SOURCES = ['dicebear', 'multiavatar'] as const
 export type AvatarSource = (typeof PUBLIC_AVATAR_SOURCES)[number] | 'legacy'
 
 export const DICEBEAR_STYLE_OPTIONS: Array<{ value: string; label: string }> = [
@@ -70,19 +69,6 @@ export const MULTIAVATAR_PRESET_SEEDS = [
   'Ryu7',
 ] as const
 
-export const READY_PLAYER_ME_STARTER_AVATAR_IDS = [
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&expression=happy',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&pose=power-stance',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&size=128',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&quality=80',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&expression=happy&pose=power-stance',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&expression=happy&size=128',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&pose=power-stance&size=128',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&quality=90&size=128',
-  'https://models.readyplayer.me/64e3055495439dfcf3f0b665.png?scene=fullbody-portrait-v1&quality=70&size=128',
-] as const
-
 export const PRELOAD_AVATAR_COUNT = 4
 export const LEGACY_AVATAR_SEEDS = [
   'boy_1',
@@ -127,26 +113,6 @@ function isHttpUrl(value: string) {
   return /^https?:\/\//i.test(value)
 }
 
-function encodeReadyPlayerSeed(seed: string) {
-  const normalized = seed.replace(/^https?:\/\/models\.readyplayer\.me\//i, '').trim()
-  const withoutQuery = normalized.split('?')[0].trim()
-  const withoutExtension = withoutQuery.replace(/\.png$/i, '').trim()
-  return encodeURIComponent(withoutExtension || seed)
-}
-
-function buildReadyPlayerMeRawUrl(seed: string) {
-  const safeSeed = String(seed || '').trim()
-  if (!safeSeed) {
-    return `${READY_PLAYER_ME_BASE_URL}/${encodeReadyPlayerSeed('default')}.png?scene=fullbody-portrait-v1&size=128`
-  }
-
-  if (isHttpUrl(safeSeed)) {
-    return safeSeed
-  }
-
-  return `${READY_PLAYER_ME_BASE_URL}/${encodeReadyPlayerSeed(safeSeed)}.png?scene=fullbody-portrait-v1&size=128`
-}
-
 export function normalizeAvatarSource(value: unknown): AvatarSource {
   const source = String(value || '').trim().toLowerCase()
   if (source === 'legacy') return 'legacy'
@@ -169,10 +135,6 @@ export function buildAvatarRawUrl(style: string, seed: string, source: AvatarSou
 
   if (safeSource === 'multiavatar') {
     return `${MULTIAVATAR_BASE_URL}/${encodeURIComponent(safeSeed)}.svg`
-  }
-
-  if (safeSource === 'readyplayerme') {
-    return buildReadyPlayerMeRawUrl(safeSeed)
   }
 
   return `${DICEBEAR_BASE_URL}/${encodeURIComponent(safeStyle)}/svg?seed=${encodeURIComponent(safeSeed)}`
@@ -217,11 +179,11 @@ export function getDeterministicAvatarIndex(identifier: string, variantsCount: n
   return hashIdentifier(normalized) % divisor
 }
 
-export function normalizeAvatarSeeds(rawSeeds: unknown, variantsCount = PREDEFINED_AVATAR_SEEDS.length) {
+export function normalizeAvatarSeeds(rawSeeds: unknown, variantsCount: number = PREDEFINED_AVATAR_SEEDS.length) {
   const sanitized = Array.isArray(rawSeeds)
     ? rawSeeds
-        .map((value) => String(value || '').trim())
-        .filter(Boolean)
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
     : []
 
   const deduped: string[] = []

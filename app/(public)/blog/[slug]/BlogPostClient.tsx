@@ -128,12 +128,14 @@ function PracticeCta({
   relatedSubjects,
   subjectCounts,
   position,
+  globalQuestionStat,
   onOpen,
 }: {
   postId: string
   relatedSubjects: string[]
   subjectCounts: Record<string, SubjectCount>
   position: CtaPosition
+  globalQuestionStat?: string
   onOpen: (args: { href: string; subjectCode: string; position: CtaPosition }) => void
 }) {
   const normalizedSubjects = relatedSubjects
@@ -197,7 +199,7 @@ function PracticeCta({
     <section className="my-8 overflow-hidden rounded-[20px] border-2 border-[#86efac] bg-[linear-gradient(135deg,#f0fdf4,#dcfce7)] p-6">
       <h3 className="text-lg font-bold text-[#166534]">Ready to test your CA knowledge?</h3>
       <p className="mt-2 text-sm text-[#166534]/90">
-        Practice with 4,000+ real ICAP exam questions on Preptio — completely free.
+        Practice with {globalQuestionStat || '4,000+'} real ICAP exam questions on Preptio — completely free.
       </p>
       <button
         type="button"
@@ -227,6 +229,26 @@ export function BlogPostClient({
   const [copied, setCopied] = useState(false)
   const [viewsCount, setViewsCount] = useState(post.viewsCount)
   const [subjectCounts, setSubjectCounts] = useState<Record<string, SubjectCount>>({})
+  const [globalQuestionStat, setGlobalQuestionStat] = useState('4,000+')
+
+  useEffect(() => {
+    if (isAdminPreview) return
+    let mounted = true
+    const fetchGlobalStats = async () => {
+      try {
+        const response = await fetch('/api/public/stats')
+        if (!response.ok) return
+        const data = await response.json()
+        if (!mounted) return
+        const tq = Number(data.totalQuestions) || 0
+        setGlobalQuestionStat(tq > 0 ? `${tq.toLocaleString()}+` : '4,000+')
+      } catch {
+        // ignore
+      }
+    }
+    void fetchGlobalStats()
+    return () => { mounted = false }
+  }, [isAdminPreview])
 
   const sessionIdRef = useRef<string | null>(null)
   const pageViewEventIdRef = useRef<string | null>(null)
@@ -242,8 +264,8 @@ export function BlogPostClient({
     () =>
       Array.isArray(post.relatedSubjects)
         ? post.relatedSubjects
-            .map((item) => String(item || '').toUpperCase())
-            .filter((code): code is keyof typeof BLOG_SUBJECT_META => code in BLOG_SUBJECT_META)
+          .map((item) => String(item || '').toUpperCase())
+          .filter((code): code is keyof typeof BLOG_SUBJECT_META => code in BLOG_SUBJECT_META)
         : [],
     [post.relatedSubjects]
   )
@@ -567,7 +589,7 @@ export function BlogPostClient({
               {!isAdminPreview && paragraphSplit.hasSplit ? (
                 <>
                   <div dangerouslySetInnerHTML={{ __html: paragraphSplit.before }} />
-                  <PracticeCta postId={post.id} relatedSubjects={relatedSubjects} subjectCounts={subjectCounts} position="mid_article" onOpen={handleCtaOpen} />
+                  <PracticeCta postId={post.id} relatedSubjects={relatedSubjects} subjectCounts={subjectCounts} position="mid_article" globalQuestionStat={globalQuestionStat} onOpen={handleCtaOpen} />
                   <div dangerouslySetInnerHTML={{ __html: paragraphSplit.after }} />
                 </>
               ) : (
@@ -602,7 +624,7 @@ export function BlogPostClient({
             </div>
 
             {!isAdminPreview ? (
-              <PracticeCta postId={post.id} relatedSubjects={relatedSubjects} subjectCounts={subjectCounts} position="end_article" onOpen={handleCtaOpen} />
+              <PracticeCta postId={post.id} relatedSubjects={relatedSubjects} subjectCounts={subjectCounts} position="end_article" globalQuestionStat={globalQuestionStat} onOpen={handleCtaOpen} />
             ) : null}
 
             <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6">
@@ -645,7 +667,7 @@ export function BlogPostClient({
 
             <section className="mt-8 rounded-2xl bg-[linear-gradient(135deg,#16a34a,#15803d)] p-6 text-white">
               <h3 className="text-2xl font-black">Put Your Knowledge to the Test</h3>
-              <p className="mt-2 text-sm text-white/85">Practice with 4,000+ real CA exam questions on Preptio.</p>
+              <p className="mt-2 text-sm text-white/85">Practice with {globalQuestionStat} real CA exam questions on Preptio.</p>
               <Link href="/auth/signup" className="mt-4 inline-flex rounded-lg bg-white px-4 py-2 text-sm font-semibold text-primary-green">
                 {'Start Practicing Free ->'}
               </Link>

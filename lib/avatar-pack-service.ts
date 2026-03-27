@@ -7,7 +7,6 @@ import {
   LEGACY_AVATAR_STYLE,
   MULTIAVATAR_PRESET_SEEDS,
   PREDEFINED_AVATAR_SEEDS,
-  READY_PLAYER_ME_STARTER_AVATAR_IDS,
   PUBLIC_AVATAR_SOURCES,
   buildAvatarUrl,
   getDeterministicSeedFromPool,
@@ -41,23 +40,15 @@ const SYSTEM_PACK_PRESETS: Array<{
   variantsCount: number
   isActive: boolean
 }> = [
-  {
-    name: 'Multiavatar 3D Pack',
-    source: 'multiavatar',
-    dicebearStyle: DEFAULT_DICEBEAR_STYLE,
-    seeds: [...MULTIAVATAR_PRESET_SEEDS],
-    variantsCount: MULTIAVATAR_PRESET_SEEDS.length,
-    isActive: true,
-  },
-  {
-    name: 'Ready Player Me 3D Pack',
-    source: 'readyplayerme',
-    dicebearStyle: DEFAULT_DICEBEAR_STYLE,
-    seeds: [...READY_PLAYER_ME_STARTER_AVATAR_IDS],
-    variantsCount: READY_PLAYER_ME_STARTER_AVATAR_IDS.length,
-    isActive: true,
-  },
-]
+    {
+      name: 'Multiavatar 3D Pack',
+      source: 'multiavatar',
+      dicebearStyle: DEFAULT_DICEBEAR_STYLE,
+      seeds: [...MULTIAVATAR_PRESET_SEEDS],
+      variantsCount: MULTIAVATAR_PRESET_SEEDS.length,
+      isActive: true,
+    },
+  ]
 
 function normalizePackSource(value: unknown): AvatarSource {
   const source = normalizeAvatarSource(value)
@@ -67,9 +58,6 @@ function normalizePackSource(value: unknown): AvatarSource {
 function getDefaultSeedsForSource(source: AvatarSource) {
   if (source === 'multiavatar') {
     return [...MULTIAVATAR_PRESET_SEEDS]
-  }
-  if (source === 'readyplayerme') {
-    return [...READY_PLAYER_ME_STARTER_AVATAR_IDS]
   }
   return [...PREDEFINED_AVATAR_SEEDS]
 }
@@ -366,8 +354,8 @@ export async function resolveAvatarsForUsers<T extends AvatarUserInput>(users: T
 
   const packRows = packedIds.length
     ? await prisma.avatarPack.findMany({
-        where: { id: { in: packedIds } },
-      })
+      where: { id: { in: packedIds } },
+    })
     : []
 
   const packMap = new Map<string, AvatarPackSummary>([

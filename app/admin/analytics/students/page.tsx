@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { AdminHeader } from '@/components/admin-header'
 import { Button } from '@/components/ui/button'
 import { Search, Loader2, ChevronRight, Filter } from 'lucide-react'
+import { InstituteAnalyticsChart } from '@/components/admin/institute-chart'
 
 type StudentRow = {
     id: string
@@ -88,7 +89,9 @@ export default function AdminStudentListPage() {
             <AdminHeader />
 
             <div className="pt-[56px] lg:pt-[60px] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <InstituteAnalyticsChart />
+
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                     <div>
                         <h1 className="text-2xl font-black text-slate-900">Student Profiles</h1>
                         <p className="text-slate-500 text-sm mt-1">Track individual performance, weak areas, and engagement.</p>

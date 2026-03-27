@@ -29,7 +29,8 @@ export function HeroSection({
 }) {
   const { user } = useAuth()
   const router = useRouter()
-  const [questionStat, setQuestionStat] = useState('2000+')
+  const [questionStat, setQuestionStat] = useState('4,000+')
+  const [ratingStat, setRatingStat] = useState('4.8')
   const isDark = themeVariant === 'dark'
 
   const handlePrimaryClick = () => {
@@ -47,10 +48,10 @@ export function HeroSection({
         if (!response.ok) return
         const data = await response.json()
         const totalQuestions = Number(data.totalQuestions) || 0
-        const rounded = totalQuestions >= 1000
-          ? Math.floor(totalQuestions / 1000) * 1000
-          : totalQuestions
-        setQuestionStat(rounded > 0 ? `${rounded}+` : '2000+')
+        setQuestionStat(totalQuestions > 0 ? `${totalQuestions.toLocaleString()}+` : '4,000+')
+
+        const avg = Number(data.averageRating)
+        if (avg > 0) setRatingStat(avg.toFixed(1))
       } catch (error) {
         // keep default
       }
@@ -87,17 +88,15 @@ export function HeroSection({
           {/* Left Content */}
           <div className="hero-copy-enter flex flex-col gap-6">
             <span
-              className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[13px] font-semibold md:text-sm ${
-                isDark ? 'bg-white/15 text-white' : 'bg-primary-green/10 text-primary-green'
-              }`}
+              className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[13px] font-semibold md:text-sm ${isDark ? 'bg-white/15 text-white' : 'bg-primary-green/10 text-primary-green'
+                }`}
             >
               {'\u{1F393} Built Exclusively for ICAP CA Students'}
             </span>
 
             <h1
-              className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-balance ${
-                isDark ? 'text-white' : 'text-text-dark'
-              }`}
+              className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-balance ${isDark ? 'text-white' : 'text-text-dark'
+                }`}
             >
               Master Your CA Exams with{' '}
               <span className="relative inline-block text-primary-green">
@@ -211,19 +210,18 @@ export function HeroSection({
               </div>
 
               <div className="hero-badge-float-1 absolute -top-5 right-2 rounded-full border border-[#e2e8f0] bg-white px-[14px] py-2 text-xs font-bold text-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.1)] max-[480px]:hidden">
-                {'\u2B50'} 4.8 Student Rating
+                {'\u2B50'} {ratingStat} Student Rating
               </div>
               <div className="hero-badge-float-2 absolute -bottom-5 left-2 rounded-full border border-[#e2e8f0] bg-white px-[14px] py-2 text-xs font-bold text-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.1)] max-[480px]:hidden">
-                {'\u{1F525}'} 4,000+ Questions
+                {'\u{1F525}'} {questionStat} Questions
               </div>
             </div>
           </div>
         </div>
       </div>
       <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent ${
-          isDark ? 'to-black/30' : 'to-slate-200/35'
-        }`}
+        className={`pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent ${isDark ? 'to-black/30' : 'to-slate-200/35'
+          }`}
       />
       <style jsx>{`
         .hero-copy-enter {
