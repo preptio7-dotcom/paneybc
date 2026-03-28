@@ -16,6 +16,10 @@ import {
   getPublishedPostDetailBySlug,
   getRelatedPosts,
 } from '@/lib/blog'
+import {
+  resolveBlogFeatureVisibility,
+  resolveServerBlogViewer,
+} from '@/lib/blog-server-viewer'
 import { canViewBlogFeature } from '@/lib/blog-visibility'
 import { Adsense } from '@/components/adsense'
 

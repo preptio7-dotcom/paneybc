@@ -23,6 +23,8 @@ const BASE_SCRIPT_SOURCES = [
   'https://api.multiavatar.com',
   'https://models.readyplayer.me',
   'https://www.clarity.ms',
+  'https://scripts.clarity.ms',
+  'https://fundingchoicesmessages.google.com',
 ]
 
 const BASE_CONNECT_SOURCES = [
@@ -41,6 +43,8 @@ const BASE_CONNECT_SOURCES = [
   'https://*.doubleclick.net',
   'https://vitals.vercel-insights.com',
   'https://www.clarity.ms',
+  'https://c.bing.com',
+  'https://*.google.com',
 ]
 
 const BASE_FRAME_SOURCES = [
@@ -51,6 +55,7 @@ const BASE_FRAME_SOURCES = [
   'https://www.google.com',
   'https://*.googlesyndication.com',
   'https://*.doubleclick.net',
+  'https://fundingchoicesmessages.google.com',
 ]
 
 const BASE_IMG_SOURCES = [
@@ -113,7 +118,7 @@ export function applySecurityHeaders(
   response.headers.set('Content-Security-Policy', csp)
   response.headers.set(
     'Content-Security-Policy-Report-Only',
-    "require-trusted-types-for 'script'; trusted-types default"
+    "require-trusted-types-for 'script'; trusted-types default goog#html nextjs#bundler; allow-duplicates"
   )
 
   if (isPrivateCrawlPath(request.nextUrl.pathname)) {
