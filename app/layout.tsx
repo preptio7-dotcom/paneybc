@@ -124,16 +124,6 @@ export default function RootLayout({
               '*,::before,::after{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:var(--font-sans),system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100%}main{display:block}img{max-width:100%;height:auto}nav{position:sticky;top:0;left:0;right:0;z-index:1000}.hero-section-root{position:relative;width:100%;overflow:hidden;padding-top:86px;padding-bottom:48px}@media (min-width:768px){.hero-section-root{padding-bottom:72px}}@media (min-width:1024px){.hero-section-root{padding-bottom:96px}}',
           }}
         />
-        <link
-          rel="preload"
-          href="/_next/static/css/637d9f5fc94b5f33.css"
-          as="style"
-        />
-        <link
-          rel="preload"
-          href="/_next/static/css/c25a15431740e6bb.css"
-          as="style"
-        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />

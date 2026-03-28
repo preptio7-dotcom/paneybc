@@ -1,4 +1,4 @@
-const DEFAULT_DICEBEAR_STYLE = 'avataaars'
+export const DEFAULT_DICEBEAR_STYLE = 'avataaars'
 const DICEBEAR_BASE_URL = 'https://api.dicebear.com/7.x'
 const MULTIAVATAR_BASE_URL = 'https://api.multiavatar.com'
 const AVATAR_PROXY_PATH = '/api/avatar/proxy'

@@ -17,7 +17,7 @@ import {
   getRelatedPosts,
 } from '@/lib/blog'
 import { canViewBlogFeature } from '@/lib/blog-visibility'
-import { resolveBlogFeatureVisibility, resolveServerBlogViewer } from '@/lib/blog-server-viewer'
+import { Adsense } from '@/components/adsense'
 
 export const dynamic = 'force-dynamic'
 
@@ -120,6 +120,7 @@ export default async function BlogPostPage({
         popularPosts={popularPosts}
         categories={categories}
       />
+      <Adsense />
       <Footer />
     </main>
   )

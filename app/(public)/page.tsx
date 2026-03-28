@@ -16,6 +16,11 @@ const HomepageContent = dynamicImport(
   { loading: () => null }
 )
 
+const Adsense = dynamicImport(
+  () => import('@/components/adsense').then((module) => module.Adsense),
+  { loading: () => null }
+)
+
 export async function generateMetadata() {
   let questionCount = 4000
 
@@ -210,6 +215,9 @@ export default function Home() {
         <LogoutToast />
       </Suspense>
       <HomepageContent />
+      <Suspense fallback={null}>
+        <Adsense />
+      </Suspense>
       <div className="sr-only">
         <Link href="/practice">Free Practice MCQs</Link>
       </div>

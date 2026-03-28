@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { applySecurityHeaders } from '@/lib/security-headers'
 import { neon } from '@neondatabase/serverless'
+import type { NeonQueryFunction } from '@neondatabase/serverless'
+
+const globalForMiddleware = global as unknown as {
+  neonSql?: NeonQueryFunction<false, false>
+}
 
 const BLOCKED_MESSAGE =
   'Access Denied. Your IP address has been blocked due to suspicious activity. If you believe this is an error, contact support@preptio.com'
@@ -44,7 +49,10 @@ async function fetchIpAccessStatus(request: NextRequest) {
   if (cached && Date.now() < cached.expiresAt) return cached.result
 
   try {
-    const sql = neon(process.env.DATABASE_URL!)
+    if (!globalForMiddleware.neonSql) {
+      globalForMiddleware.neonSql = neon(process.env.DATABASE_URL!)
+    }
+    const sql = globalForMiddleware.neonSql
 
     // Check whitelist first — whitelisted IPs are never blocked
     const whitelist = await sql`SELECT 1 FROM whitelisted_ips WHERE ip_address = ${ip} LIMIT 1`

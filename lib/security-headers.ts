@@ -22,6 +22,7 @@ const BASE_SCRIPT_SOURCES = [
   'https://api.dicebear.com',
   'https://api.multiavatar.com',
   'https://models.readyplayer.me',
+  'https://www.clarity.ms',
 ]
 
 const BASE_CONNECT_SOURCES = [
@@ -39,6 +40,7 @@ const BASE_CONNECT_SOURCES = [
   'https://*.googlesyndication.com',
   'https://*.doubleclick.net',
   'https://vitals.vercel-insights.com',
+  'https://www.clarity.ms',
 ]
 
 const BASE_FRAME_SOURCES = [

@@ -26,7 +26,7 @@ async function getMcqs() {
     return questions.sort(() => 0.5 - Math.random())
 }
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function PracticePage() {
     const mcqs = await getMcqs()
