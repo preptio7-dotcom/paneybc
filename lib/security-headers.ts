@@ -43,6 +43,7 @@ const BASE_CONNECT_SOURCES = [
   'https://*.doubleclick.net',
   'https://vitals.vercel-insights.com',
   'https://www.clarity.ms',
+  'https://*.clarity.ms',
   'https://c.bing.com',
   'https://*.google.com',
 ]
@@ -118,7 +119,7 @@ export function applySecurityHeaders(
   response.headers.set('Content-Security-Policy', csp)
   response.headers.set(
     'Content-Security-Policy-Report-Only',
-    "require-trusted-types-for 'script'; trusted-types default goog#html nextjs#bundler; allow-duplicates"
+    "require-trusted-types-for 'script'; trusted-types default goog#html nextjs#bundler 'allow-duplicates'"
   )
 
   if (isPrivateCrawlPath(request.nextUrl.pathname)) {
