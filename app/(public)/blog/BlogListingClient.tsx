@@ -8,6 +8,7 @@ import type { BlogCategoryDto, BlogPostDto } from '@/lib/blog-types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getProxyMediaUrl } from '@/lib/media-url'
+import { Adsense } from '@/components/adsense'
 
 const POSTS_PER_PAGE = 9
 
@@ -238,11 +239,10 @@ export function BlogListingClient({
               <button
                 type="button"
                 onClick={() => changeCategory('all')}
-                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  activeCategory === 'all'
-                    ? 'bg-primary-green text-white'
-                    : 'border border-slate-200 bg-white text-slate-500 hover:border-primary-green'
-                }`}
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${activeCategory === 'all'
+                  ? 'bg-primary-green text-white'
+                  : 'border border-slate-200 bg-white text-slate-500 hover:border-primary-green'
+                  }`}
               >
                 All
               </button>
@@ -251,11 +251,10 @@ export function BlogListingClient({
                   key={category.id}
                   type="button"
                   onClick={() => changeCategory(category.slug)}
-                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    activeCategory === category.slug
-                      ? 'bg-primary-green text-white'
-                      : 'border border-slate-200 bg-white text-slate-500 hover:border-primary-green'
-                  }`}
+                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${activeCategory === category.slug
+                    ? 'bg-primary-green text-white'
+                    : 'border border-slate-200 bg-white text-slate-500 hover:border-primary-green'
+                    }`}
                 >
                   {category.name}
                 </button>
@@ -286,7 +285,14 @@ export function BlogListingClient({
           <div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {currentPosts.map((post, index) => (
-                <BlogCard key={post.id} post={post} priority={index < 2} />
+                <div key={post.id} className="contents">
+                  <BlogCard post={post} priority={index < 2} />
+                  {index === 2 && (
+                    <div className="col-span-1 md:col-span-2 xl:col-span-3">
+                      <Adsense />
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
 
@@ -314,11 +320,10 @@ export function BlogListingClient({
                     key={`blog-page-${pageNumber}`}
                     type="button"
                     onClick={() => setPage(pageNumber)}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
-                      pageNumber === currentPage
-                        ? 'bg-primary-green text-white'
-                        : 'border border-slate-200 bg-white text-slate-600'
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${pageNumber === currentPage
+                      ? 'bg-primary-green text-white'
+                      : 'border border-slate-200 bg-white text-slate-600'
+                      }`}
                   >
                     {pageNumber}
                   </button>
