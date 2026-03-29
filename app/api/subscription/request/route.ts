@@ -96,8 +96,18 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('Error creating subscription request:', error)
+    
+    // Handle file system errors with generic message
+    if (error.code === 'ENOENT' || error.code === 'EACCES' || error.code === 'EISDIR') {
+      return NextResponse.json(
+        { error: 'Failed to process your payment proof. Please try again.' },
+        { status: 500 }
+      )
+    }
+    
+    // Return generic error message to user (don't expose internal paths)
     return NextResponse.json(
-      { error: error.message || 'Failed to create subscription request' },
+      { error: 'Failed to submit subscription request. Please try again later.' },
       { status: 500 }
     )
   }
