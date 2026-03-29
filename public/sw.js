@@ -89,7 +89,7 @@ self.addEventListener('fetch', (event) => {
     )
 });
 
-
+self.addEventListener('push', (event) => {
     let payload = {};
     try {
         if (event.data) {
