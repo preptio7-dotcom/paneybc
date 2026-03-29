@@ -132,19 +132,40 @@ export async function POST(request: NextRequest) {
       })
 
       // Send approval email notification
-      await sendSubscriptionApprovedEmail(
+      const emailResult = await sendSubscriptionApprovedEmail(
         subscriptionRequest.user.email,
         subscriptionRequest.user.name,
         subscriptionRequest.plan
       )
+      
+      if (!emailResult.success) {
+        console.error('Email notification failed:', emailResult.error)
+      } else {
+        console.log('Approval email sent to:', subscriptionRequest.user.email)
+      }
+
+      // Send push notification to user
+      try {
+        // Get user's push subscriptions from database if available
+        // For now, we'll mark this as approved so the user sees it on next load
+        console.log('Subscription approved for user:', subscriptionRequest.userId)
+      } catch (pushError) {
+        console.error('Push notification error:', pushError)
+      }
     } else if (action === 'reject') {
       // Send rejection email notification
-      await sendSubscriptionRejectedEmail(
+      const emailResult = await sendSubscriptionRejectedEmail(
         subscriptionRequest.user.email,
         subscriptionRequest.user.name,
         subscriptionRequest.plan,
         rejectionReason
       )
+      
+      if (!emailResult.success) {
+        console.error('Rejection email failed:', emailResult.error)
+      } else {
+        console.log('Rejection email sent to:', subscriptionRequest.user.email)
+      }
     }
 
     // Log audit

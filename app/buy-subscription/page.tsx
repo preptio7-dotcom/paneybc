@@ -43,6 +43,7 @@ function BuySubscriptionContent() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodInfo[]>([])
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<PaymentMethodInfo | null>(null)
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
   const [formData, setFormData] = useState<SubscriptionFormData>({
     plan: 'one_month',
     paymentMethodId: '',
@@ -87,7 +88,19 @@ function BuySubscriptionContent() {
     if (!loading && (!user || user.role !== 'student')) {
       router.push('/auth/login')
     }
-  }, [user, loading, router])
+    
+    // Check if user has active subscription
+    if (user && user.adsFreeUntil) {
+      const adsFreeUntilDate = new Date(user.adsFreeUntil)
+      if (adsFreeUntilDate > new Date()) {
+        setHasActiveSubscription(true)
+        toast({
+          title: '✅ You Already Have an Active Subscription!',
+          description: 'Ads are disabled on your account. Enjoy!',
+        })
+      }
+    }
+  }, [user, loading, router, toast])
 
   const handlePaymentMethodChange = (methodId: string) => {
     const method = paymentMethods.find(m => m.id === methodId)
@@ -212,29 +225,44 @@ function BuySubscriptionContent() {
   const planDuration = formData.plan === 'one_month' ? '1 Month' : 'Lifetime'
 
   return (
-    <main className="min-h-screen bg-background-light py-12">
-      <div className="max-w-2xl mx-auto px-4">
+    <main className="min-h-screen bg-background-light py-6 md:py-12">
+      <div className="w-full max-w-2xl mx-auto px-4">
+        {/* Active Subscription Banner */}
+        {hasActiveSubscription && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-green-900">✅ You Have an Active Subscription!</h3>
+                <p className="text-sm text-green-800 mt-1">
+                  Your account is enjoying an ad-free experience. Ads won't show across the platform.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
             ← Back to Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-text-dark mt-4 mb-2">Remove Ads</h1>
-          <p className="text-text-light">Complete your subscription to enjoy an ad-free experience</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-text-dark mt-4 mb-2">Remove Ads</h1>
+          <p className="text-text-light text-sm md:text-base">Complete your subscription to enjoy an ad-free experience</p>
         </div>
 
         {/* Plan Summary */}
         <Card className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <CardContent className="pt-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
               <div>
                 <p className="text-sm text-text-light mb-1">Selected Plan</p>
-                <h2 className="text-2xl font-bold text-text-dark">
+                <h2 className="text-xl md:text-2xl font-bold text-text-dark">
                   {planDuration === 'Lifetime' ? 'Lifetime Premium' : 'Monthly Premium'}
                 </h2>
               </div>
-              <div className="text-right">
-                <p className="text-4xl font-bold text-blue-600">PKR {planPrice}</p>
+              <div className="md:text-right">
+                <p className="text-3xl md:text-4xl font-bold text-blue-600">PKR {planPrice}</p>
                 <p className="text-xs text-text-light mt-1">{planDuration}</p>
               </div>
             </div>

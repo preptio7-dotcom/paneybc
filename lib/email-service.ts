@@ -92,16 +92,24 @@ If you have any questions or need support, feel free to contact us.
   `
 
   try {
-    await transporter.sendMail({
+    const mailOptions = {
       from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@preptio.com',
       to: userEmail,
       subject: '🎉 Your Subscription Has Been Approved!',
       text: textContent,
       html: htmlContent,
-    })
+    }
+
+    console.log('[Email] Attempting to send approval email to:', userEmail)
+    await transporter.sendMail(mailOptions)
+    console.log('[Email] Approval email sent successfully to:', userEmail)
     return { success: true }
   } catch (error) {
-    console.error('Failed to send subscription approval email:', error)
+    console.error('[Email] Failed to send subscription approval email:', {
+      email: userEmail,
+      error: String(error),
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
     // Don't throw - email failure shouldn't fail the subscription approval
     return { success: false, error: String(error) }
   }

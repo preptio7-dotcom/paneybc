@@ -368,7 +368,7 @@ export default function AdminSubscriptionsPage() {
 
       {/* Payment Proof Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Payment Proof</DialogTitle>
             <DialogDescription>
@@ -393,7 +393,7 @@ export default function AdminSubscriptionsPage() {
                 <img
                   src={selectedRequest.paymentProofUrl}
                   alt="Payment proof"
-                  className="max-w-full h-auto rounded-lg"
+                  className="max-w-full h-auto rounded-lg max-h-[70vh] object-contain"
                 />
               )}
             </div>
@@ -403,7 +403,7 @@ export default function AdminSubscriptionsPage() {
 
       {/* Rejection Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent>
+        <DialogContent className="w-full max-w-lg mx-auto">
           <DialogHeader>
             <DialogTitle>Reject Subscription Request</DialogTitle>
             <DialogDescription>
