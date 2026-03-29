@@ -5,41 +5,42 @@ import { useEffect } from 'react'
 /**
  * Auto-update detector component
  * Registers service worker and checks for new builds
- * Forces refresh when a new version is detected
+ * Forces refresh when a new version is detected (only after user has been on page for 10+ seconds)
  */
 export function AutoUpdateDetector() {
   useEffect(() => {
+    let pageLoadTime = Date.now()
+    const MIN_TIME_BEFORE_RELOAD = 10000 // Wait 10 seconds before allowing reloads
+
     // Register service worker for cache management
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
         .then((registration) => {
           console.log('[App] Service Worker registered:', registration)
 
-          // Check for updates every 30 seconds
-          setInterval(() => {
-            registration.update()
-          }, 30000)
-
-          // When a new service worker becomes active, reload the page
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing
-            newWorker?.addEventListener('statechange', () => {
-              if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-                console.log('[App] New build detected! Reloading...')
-                // Reload silently without notifying the user
-                window.location.reload()
-              }
+          // Check for updates - but less aggressively
+          const updateCheckInterval = setInterval(() => {
+            registration.update().catch((error) => {
+              console.error('[App] Error checking for updates:', error)
             })
-          })
+          }, 60000) // Check every 60 seconds instead of 30
+
+          return () => clearInterval(updateCheckInterval)
         })
         .catch((error) => {
           console.error('[App] Service Worker registration failed:', error)
         })
     }
 
-    // Also check for new builds via a version endpoint (optional fallback)
+    // Check for new builds via a version endpoint (optional fallback)
     const checkBuildVersion = async () => {
       try {
+        // Only attempt reload if page has been loaded for more than 10 seconds
+        const timeSinceLoad = Date.now() - pageLoadTime
+        if (timeSinceLoad < MIN_TIME_BEFORE_RELOAD) {
+          return
+        }
+
         const response = await fetch('/api/build-version', {
           headers: { 'Cache-Control': 'no-cache' }
         })
@@ -47,19 +48,21 @@ export function AutoUpdateDetector() {
         const storedVersion = sessionStorage.getItem('build-version')
 
         if (storedVersion && storedVersion !== version) {
-          console.log('[App] New build detected via version check! Reloading...')
-          window.location.reload()
+          console.log('[App] New build detected! Reloading on next navigation...')
+          // Only reload on next page navigation, not immediately
+          window.__buildUpdated = true
+          sessionStorage.setItem('build-version', version)
+        } else if (!storedVersion) {
+          sessionStorage.setItem('build-version', version)
         }
-
-        sessionStorage.setItem('build-version', version)
       } catch (error) {
         console.error('[App] Failed to check build version:', error)
       }
     }
 
     checkBuildVersion()
-    // Check every 2 minutes
-    const interval = setInterval(checkBuildVersion, 120000)
+    // Check every 3 minutes instead of 2
+    const interval = setInterval(checkBuildVersion, 180000)
 
     return () => clearInterval(interval)
   }, [])

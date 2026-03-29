@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
@@ -32,9 +32,11 @@ type SubscriptionFormData = {
   paymentDetails: string
 }
 
-export default function BuySubscriptionPage() {
+// Inner component that uses useSearchParams
+function BuySubscriptionContent() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,21 +44,11 @@ export default function BuySubscriptionPage() {
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<PaymentMethodInfo | null>(null)
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
   const [formData, setFormData] = useState<SubscriptionFormData>({
-    plan: 'one_month',
+    plan: (searchParams.get('plan') as 'one_month' | 'lifetime') || 'one_month',
     paymentMethodId: '',
     paymentProofFile: null,
     paymentDetails: '',
   })
-
-  // Read plan from search params when component mounts (client-only)
-  useEffect(() => {
-    // useSearchParams is only called inside an effect to avoid SSR issues
-    const searchParams = useSearchParams()
-    const planParam = searchParams.get('plan')
-    if (planParam === 'one_month' || planParam === 'lifetime') {
-      setFormData(prev => ({ ...prev, plan: planParam }))
-    }
-  }, [])
 
   // Fetch payment methods
   useEffect(() => {
@@ -468,5 +460,21 @@ export default function BuySubscriptionPage() {
         </p>
       </div>
     </main>
+  )
+}
+
+// Wrapper component with Suspense boundary for useSearchParams
+export default function BuySubscriptionPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-background-light flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-text-light">Loading subscription form...</p>
+        </div>
+      </main>
+    }>
+      <BuySubscriptionContent />
+    </Suspense>
   )
 }
