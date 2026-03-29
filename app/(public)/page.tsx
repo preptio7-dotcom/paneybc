@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { Navigation } from '@/components/navigation'
+import { HomeWrapper } from '@/components/home-wrapper'
 import dynamicImport from 'next/dynamic'
 import { Suspense } from 'react'
 import Link from 'next/link'
@@ -211,16 +212,18 @@ export default function Home() {
   return (
     <main className="w-full">
       <Navigation />
-      <Suspense fallback={null}>
-        <LogoutToast />
-      </Suspense>
-      <HomepageContent />
-      <Suspense fallback={null}>
-        <Adsense />
-      </Suspense>
-      <div className="sr-only">
-        <Link href="/practice">Free Practice MCQs</Link>
-      </div>
+      <HomeWrapper>
+        <Suspense fallback={null}>
+          <LogoutToast />
+        </Suspense>
+        <HomepageContent />
+        <Suspense fallback={null}>
+          <Adsense />
+        </Suspense>
+        <div className="sr-only">
+          <Link href="/practice">Free Practice MCQs</Link>
+        </div>
+      </HomeWrapper>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
