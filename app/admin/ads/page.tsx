@@ -28,7 +28,7 @@ export default function AdminAdsPage() {
   const [adSenseConfig, setAdSenseConfig] = useState<any>({
     globalEnabled: true,
     allowedPaths: ['/', '/blog', '/blog/*'],
-    blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/buy-subscription', '/register'],
+    blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
     showAdsToUnpaid: true,
     showAdsToPaid: false,
     showAdsToAmbassador: false,
