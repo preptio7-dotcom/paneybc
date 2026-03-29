@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { uploadBufferToR2 } from '@/lib/r2-storage'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -66,32 +67,27 @@ export async function POST(request: NextRequest) {
     const bytes = await paymentProofFile.arrayBuffer()
     const buffer = Buffer.from(bytes)
     
-    // Convert to base64 for storage
-    const fileBase64 = buffer.toString('base64')
+    // Generate unique filename for R2
     const fileExtension = paymentProofFile.name.split('.').pop() || 'bin'
     const fileName = paymentProofFile.name
+    const uniqueKey = `subscription-proofs/${crypto.randomBytes(16).toString('hex')}.${fileExtension}`
     
-    // Generate unique proof ID
-    const proofId = crypto.randomBytes(16).toString('hex')
-    const proofUrl = `/api/subscription/payment-proof/${proofId}`
+    // Upload to Cloudflare R2
+    const paymentProofUrl = await uploadBufferToR2({
+      key: uniqueKey,
+      body: buffer,
+      contentType: paymentProofFile.type || 'application/octet-stream',
+      cacheControl: 'public, max-age=31536000', // Cache for 1 year
+    })
 
-    // Create subscription request with file data
+    // Create subscription request with R2 URL
     const subscriptionRequest = await (prisma.subscriptionRequest.create as any)({
       data: {
         userId: decoded.userId,
         plan: plan as 'one_month' | 'lifetime',
-        paymentProofUrl: proofUrl,
+        paymentProofUrl,
         paymentMethod: paymentMethod.displayName,
         status: 'pending',
-        // Store file metadata for later retrieval
-        additionalInfo: {
-          proofId,
-          fileName,
-          fileExtension,
-          fileSize: paymentProofFile.size,
-          fileBase64,
-          uploadedAt: new Date().toISOString(),
-        },
       },
     })
 
