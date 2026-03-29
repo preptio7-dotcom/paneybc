@@ -108,6 +108,7 @@ import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 import { DeferredGtag } from "@/components/deferred-gtag"
 import { WelcomePopup } from "@/components/welcome-popup"
 import { SubscriptionPopup } from "@/components/subscription-popup"
+import { AutoUpdateDetector } from "@/components/auto-update-detector"
 
 import { AdsLoader } from "@/components/ads-loader"
 import Script from 'next/script'
@@ -144,6 +145,7 @@ export default function RootLayout({
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <TrustedTypesBootstrap />
         <DeferredGtag />
+        <AutoUpdateDetector />
         <AuthProvider>
           <AdsLoader />
           <PWARegistration />
