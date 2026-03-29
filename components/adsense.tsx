@@ -8,14 +8,14 @@ import { useEffect, useState } from 'react'
 
 export function Adsense() {
     const pathname = usePathname()
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const { settings, loading } = useSystemSettings()
     const [shouldShowAd, setShouldShowAd] = useState(false)
     const [adPushed, setAdPushed] = useState(false)
 
     // Stage 1: Determine eligibility
     useEffect(() => {
-        if (loading) return
+        if (loading || authLoading) return
 
         const config = settings?.adSenseConfig || {
             globalEnabled: true,
@@ -31,7 +31,7 @@ export function Adsense() {
         
         // Reset push state if path changes
         setAdPushed(false)
-    }, [pathname, loading, settings, user])
+    }, [pathname, loading, settings, user, authLoading])
 
     // Stage 2: Inject ad into the rendered slot
     useEffect(() => {
@@ -58,6 +58,7 @@ export function Adsense() {
         >
             <ins
                 className="adsbygoogle"
+                style={{ display: 'block' }}
                 data-ad-client="ca-pub-5583540622875378"
                 data-ad-slot="7458772554"
                 data-ad-format="auto"

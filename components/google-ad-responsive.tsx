@@ -8,7 +8,7 @@ import { useSystemSettings } from '@/hooks/use-system-settings'
 
 export function GoogleAdResponsive({ slot }: { slot: string }) {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { settings, loading } = useSystemSettings()
 
   const config = settings?.adSenseConfig || {
@@ -20,7 +20,7 @@ export function GoogleAdResponsive({ slot }: { slot: string }) {
     showAdsToAmbassador: false,
   }
 
-  const shouldShowAd = !loading && shouldLoadAdsForContext(pathname || '/', user, config)
+  const shouldShowAd = !loading && !authLoading && shouldLoadAdsForContext(pathname || '/', user, config)
 
   useEffect(() => {
     if (!shouldShowAd) {
@@ -43,6 +43,7 @@ export function GoogleAdResponsive({ slot }: { slot: string }) {
     <div className="my-6 w-full flex justify-center">
       <ins
         className="adsbygoogle"
+        style={{ display: 'block' }}
         data-ad-client="ca-pub-5583540622875378"
         data-ad-slot={slot}
         data-ad-format="auto"
