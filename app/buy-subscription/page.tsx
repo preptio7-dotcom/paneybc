@@ -44,11 +44,19 @@ function BuySubscriptionContent() {
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<PaymentMethodInfo | null>(null)
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
   const [formData, setFormData] = useState<SubscriptionFormData>({
-    plan: (searchParams.get('plan') as 'one_month' | 'lifetime') || 'one_month',
+    plan: 'one_month',
     paymentMethodId: '',
     paymentProofFile: null,
     paymentDetails: '',
   })
+
+  // Update plan from search params when component mounts
+  useEffect(() => {
+    const plan = searchParams.get('plan')
+    if (plan === 'one_month' || plan === 'lifetime') {
+      setFormData(prev => ({ ...prev, plan }))
+    }
+  }, [searchParams])
 
   // Fetch payment methods
   useEffect(() => {

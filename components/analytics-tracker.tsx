@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 export function AnalyticsTracker() {
     const pathname = usePathname()
-    const searchParams = useSearchParams()
     const lastTracked = useRef<{ path: string; time: number } | null>(null)
 
     useEffect(() => {
@@ -46,7 +45,7 @@ export function AnalyticsTracker() {
         }
 
         logVisit()
-    }, [pathname, searchParams])
+    }, [pathname])
 
     return null
 }
