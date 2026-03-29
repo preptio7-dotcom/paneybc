@@ -24,18 +24,21 @@ export function GoogleAdUnit1() {
     showAdsToAmbassador: false,
   }
 
-  if (loading || !shouldLoadAdsForContext(pathname || '/', user, config)) {
-    return null
-  }
+  const shouldShowAd = !loading && shouldLoadAdsForContext(pathname || '/', user, config)
 
   useEffect(() => {
+    if (!shouldShowAd) return
     try {
       // @ts-ignore
       ;(window.adsbygoogle = window.adsbygoogle || []).push({})
     } catch (err) {
       console.error('AdSense error:', err)
     }
-  }, [])
+  }, [shouldShowAd])
+
+  if (!shouldShowAd) {
+    return null
+  }
 
   return (
     <div className="my-6">
@@ -69,18 +72,21 @@ export function GoogleAdUnit2() {
     showAdsToAmbassador: false,
   }
 
-  if (loading || !shouldLoadAdsForContext(pathname || '/', user, config)) {
-    return null
-  }
+  const shouldShowAd = !loading && shouldLoadAdsForContext(pathname || '/', user, config)
 
   useEffect(() => {
+    if (!shouldShowAd) return
     try {
       // @ts-ignore
       ;(window.adsbygoogle = window.adsbygoogle || []).push({})
     } catch (err) {
       console.error('AdSense error:', err)
     }
-  }, [])
+  }, [shouldShowAd])
+
+  if (!shouldShowAd) {
+    return null
+  }
 
   return (
     <div className="my-6">
@@ -113,18 +119,21 @@ export function GoogleAdUnit3() {
     showAdsToAmbassador: false,
   }
 
-  if (loading || !shouldLoadAdsForContext(pathname || '/', user, config)) {
-    return null
-  }
+  const shouldShowAd = !loading && shouldLoadAdsForContext(pathname || '/', user, config)
 
   useEffect(() => {
+    if (!shouldShowAd) return
     try {
       // @ts-ignore
       ;(window.adsbygoogle = window.adsbygoogle || []).push({})
     } catch (err) {
       console.error('AdSense error:', err)
     }
-  }, [])
+  }, [shouldShowAd])
+
+  if (!shouldShowAd) {
+    return null
+  }
 
   return (
     <div className="my-6">

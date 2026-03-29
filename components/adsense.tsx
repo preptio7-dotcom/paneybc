@@ -34,7 +34,6 @@ export function Adsense() {
                 globalEnabled: config.globalEnabled,
                 userRole: user?.role,
                 studentRole: user?.studentRole,
-                adsFreeUntil: user?.adsFreeUntil,
                 userExists: !!user,
             })
         }

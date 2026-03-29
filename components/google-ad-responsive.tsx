@@ -20,13 +20,10 @@ export function GoogleAdResponsive({ slot }: { slot: string }) {
     showAdsToAmbassador: false,
   }
 
-  // Don't render if ads shouldn't be shown
-  if (!loading && !shouldLoadAdsForContext(pathname || '/', user, config)) {
-    return null
-  }
+  const shouldShowAd = !loading && shouldLoadAdsForContext(pathname || '/', user, config)
 
   useEffect(() => {
-    if (loading || !shouldLoadAdsForContext(pathname || '/', user, config)) {
+    if (!shouldShowAd) {
       return
     }
 
@@ -36,7 +33,11 @@ export function GoogleAdResponsive({ slot }: { slot: string }) {
     } catch (err) {
       console.error('AdSense error:', err)
     }
-  }, [pathname, user, loading])
+  }, [pathname, user, loading, shouldShowAd])
+
+  if (!shouldShowAd) {
+    return null
+  }
 
   return (
     <div className="my-6 flex justify-center">
