@@ -300,27 +300,6 @@ function BuySubscriptionContent() {
                     />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm text-text-light mb-1 block">Student ID</Label>
-                    <Input
-                      type="text"
-                      value={(user as any).studentId || 'Not provided'}
-                      disabled
-                      className="bg-white"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm text-text-light mb-1 block">Roll Number (CEN)</Label>
-                    <Input
-                      type="text"
-                      value={(user as any).cenNumber || 'Not provided'}
-                      disabled
-                      className="bg-white"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Plan Selection */}

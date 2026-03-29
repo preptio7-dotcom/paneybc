@@ -31,6 +31,8 @@ export default function PrivacyPage() {
                                     <li><strong>Personal Data:</strong> Name, email address, password, and avatar selection.</li>
                                     <li><strong>Performance Data:</strong> Quiz results, practice history, and progress tracking.</li>
                                     <li><strong>Communication Data:</strong> Messages sent via our contact forms.</li>
+                                    <li><strong>Subscription Data:</strong> Subscription plan details, purchase history, and payment proof documentation uploaded for verification.</li>
+                                    <li><strong>Payment Information:</strong> Payment method type (Nayapay, Easypaisa, Bank Transfer) and transaction details necessary for subscription processing.</li>
                                 </ul>
                             </section>
 
@@ -44,6 +46,10 @@ export default function PrivacyPage() {
                                     <li>To send you administrative information.</li>
                                     <li>To provide you with the Services and track your progress.</li>
                                     <li>To respond to user inquiries and offer support.</li>
+                                    <li>To process subscription requests and manage your subscription status (Monthly or Lifetime plans).</li>
+                                    <li>To verify payment proof and approve/reject subscription requests.</li>
+                                    <li>To communicate subscription status updates, approvals, and rejections via email.</li>
+                                    <li>To enable ad-free experience for subscribed users.</li>
                                 </ul>
                             </section>
 
@@ -55,14 +61,28 @@ export default function PrivacyPage() {
                             </section>
 
                             <section>
-                                <h2 className="text-xl font-bold text-text-dark mb-4">5. Your Privacy Rights</h2>
+                                <h2 className="text-xl font-bold text-text-dark mb-4">5. Payment & Subscription Processing</h2>
+                                <p>
+                                    When you subscribe to Preptio's premium plans (Monthly or Lifetime), we collect payment proof to verify your payment. This information is used solely for subscription verification and approval purposes.
+                                </p>
+                                <ul className="list-disc pl-6 space-y-2">
+                                    <li><strong>Payment Proof Storage:</strong> Payment proofs are uploaded to our secure cloud storage (Cloudflare R2) and accessible only to authorized administrators for verification.</li>
+                                    <li><strong>Subscription Status:</strong> Your subscription status (pending, approved, rejected, or cancelled) is tracked in our system to manage ad-free access and feature availability.</li>
+                                    <li><strong>Payment Methods:</strong> We support Nayapay, Easypaisa, and Bank Transfer. We do not store payment card information directly; payment proofs serve as verification.</li>
+                                    <li><strong>Admin Review:</strong> Our admin team manually verifies payment proofs and notifies you of approval or rejection via email.</li>
+                                    <li><strong>Subscription Cancellation:</strong> You may cancel your subscription anytime. Once cancelled, ad-free access will be disabled and normal operation resumes.</li>
+                                </ul>
+                            </section>
+
+                            <section>
+                                <h2 className="text-xl font-bold text-text-dark mb-4">6. Your Privacy Rights</h2>
                                 <p>
                                     In some regions, you have certain rights under applicable data protection laws. These may include the right (i) to request access and obtain a copy of your personal information, (ii) to request rectification or erasure; (iii) to restrict the processing of your personal information; and (iv) if applicable, to data portability.
                                 </p>
                             </section>
 
                             <section>
-                                <h2 className="text-xl font-bold text-text-dark mb-4">6. Updates to This Policy</h2>
+                                <h2 className="text-xl font-bold text-text-dark mb-4">7. Updates to This Policy</h2>
                                 <p>
                                     We may update this privacy notice from time to time. The updated version will be indicated by an updated "Revised" date and the updated version will be effective as soon as it is accessible.
                                 </p>

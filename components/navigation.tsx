@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/auth-context'
 import Image from 'next/image'
 import { NotificationOptIn } from './notification-opt-in'
 import { usePathname } from 'next/navigation'
+import { PremiumBadge } from './premium-badge'
+import { PremiumMobileButton } from './premium-badge'
 import {
   canAccessBetaFeature,
   DEFAULT_BETA_FEATURE_SETTINGS,
@@ -293,7 +295,8 @@ export function Navigation() {
         {/* Auth Buttons - Desktop */}
         <div className="hidden md:flex items-center gap-3">
           {user ? (
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              <PremiumBadge />
               <Link
                 href={user.role === 'admin' ? '/admin' : '/dashboard'}
                 className="text-text-dark hover:text-primary-green font-medium transition-colors"
@@ -384,6 +387,8 @@ export function Navigation() {
       {isMenuOpen && (
         <div className="absolute top-[70px] left-0 right-0 bg-white border-b border-border md:hidden">
           <div className="flex flex-col gap-4 p-4">
+            {/* Mobile Premium Button */}
+            <PremiumMobileButton />
             {showDashboardNav ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2">
                 {dashboardSectionLinks.slice(0, 1).map((link) => (

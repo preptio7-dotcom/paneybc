@@ -6,24 +6,21 @@ import { useAuth } from '@/lib/auth-context'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Check, Zap } from 'lucide-react'
+import { Check, Zap, X } from 'lucide-react'
 import Link from 'next/link'
 
 export function SubscriptionPopup() {
   const pathname = usePathname()
   const { user, loading } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
-  const [hasSeenPopup, setHasSeenPopup] = useState(false)
+  const [hasChecked24h, setHasChecked24h] = useState(false)
 
   useEffect(() => {
-    // Only show to registered users (not admin/super_admin)
-    if (!loading && user && user.role === 'student' && !hasSeenPopup) {
+    // Only show to logged-in students (not admin/super_admin)
+    if (!loading && user && user.role === 'student' && !hasChecked24h) {
       // Check if they already have ads disabled (active subscription)
       const userData = user as any
       const adsFreeUntil = userData?.adsFreeUntil
@@ -32,26 +29,37 @@ export function SubscriptionPopup() {
         const expiryDate = new Date(adsFreeUntil)
         const now = new Date()
         if (expiryDate > now) {
+          setHasChecked24h(true)
           return // Don't show if they already have active subscription
         }
       }
       
-      // Check if they've dismissed this session
-      const sessionDismissed = sessionStorage.getItem('subscription_popup_dismissed')
-      if (!sessionDismissed) {
-        // Show popup after 5 seconds
-        const timer = setTimeout(() => {
-          setIsOpen(true)
-          setHasSeenPopup(true)
-        }, 5000)
-        return () => clearTimeout(timer)
+      // Check 24-hour dismiss time
+      const lastDismissTime = localStorage.getItem('subscription_popup_last_dismiss')
+      if (lastDismissTime) {
+        const lastDismiss = new Date(lastDismissTime)
+        const now = new Date()
+        const hoursSinceDismiss = (now.getTime() - lastDismiss.getTime()) / (1000 * 60 * 60)
+        
+        if (hoursSinceDismiss < 24) {
+          setHasChecked24h(true)
+          return // Don't show within 24 hours of last dismissal
+        }
       }
+      
+      setHasChecked24h(true)
+      
+      // Show popup after 3 seconds
+      const timer = setTimeout(() => {
+        setIsOpen(true)
+      }, 3000)
+      return () => clearTimeout(timer)
     }
-  }, [user, loading, hasSeenPopup])
+  }, [user, loading, hasChecked24h])
 
   const handleClose = () => {
     setIsOpen(false)
-    sessionStorage.setItem('subscription_popup_dismissed', 'true')
+    localStorage.setItem('subscription_popup_last_dismiss', new Date().toISOString())
   }
 
   // Close popup when user navigates to subscription page
@@ -67,112 +75,121 @@ export function SubscriptionPopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md md:max-w-2xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
-        <DialogHeader>
-          <DialogTitle className="text-xl md:text-2xl">Go Ad-Free with Premium</DialogTitle>
-          <DialogDescription className="text-sm md:text-base">
-            Choose your preferred subscription plan and enjoy an uninterrupted learning experience
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-[95vw] max-w-sm md:max-w-lg max-h-[85vh] overflow-hidden rounded-2xl p-0 gap-0 shadow-2xl border-0">
+        {/* Close Button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 z-50 p-1 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5 text-gray-600" />
+        </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-4 md:py-6">
-          {/* Monthly Plan */}
-          <Card className="relative p-4 md:p-6 border-2 hover:border-blue-500 transition-colors">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-base md:text-lg font-bold text-text-dark">Monthly Plan</h3>
-                <p className="text-xs md:text-sm text-text-light mt-1">One month of ad-free learning</p>
-              </div>
+        <div className="overflow-y-auto max-h-[85vh] scrollbar-hide">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 pt-8 pb-6 text-white">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">Remove Ads & Study Freely</h2>
+            <p className="text-blue-100 text-sm">Go premium for an uninterrupted learning experience</p>
+          </div>
 
-              <div className="py-4 border-y">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl md:text-4xl font-bold text-text-dark">PKR 200</span>
-                  <span className="text-xs md:text-sm text-text-light">/month</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Check className="w-4 md:w-5 h-4 md:h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs md:text-sm text-text-dark">Ad-free for 1 month</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-4 md:w-5 h-4 md:h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs md:text-sm text-text-dark">Full access to all features</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-4 md:w-5 h-4 md:h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs md:text-sm text-text-dark">Cancel anytime</span>
-                </div>
-              </div>
-
+          {/* Content */}
+          <div className="px-6 py-6 space-y-6">
+            {/* Plans Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Monthly Plan */}
               <Link href={`/buy-subscription?plan=one_month`} className="block">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                  Choose Plan
-                </Button>
+                <div className="relative h-full p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Monthly</h3>
+                      <p className="text-xs text-gray-600">1 month of freedom</p>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-3">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-text-dark">PKR 200</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs text-gray-700">Ad-free browsing</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs text-gray-700">All features unlocked</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs text-gray-700">Cancel anytime</span>
+                      </div>
+                    </div>
+
+                    <Button className="w-full text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold group-hover:shadow-md transition-all">
+                      Choose Now
+                    </Button>
+                  </div>
+                </div>
               </Link>
-            </div>
-          </Card>
 
-          {/* Lifetime Plan */}
-          <Card className="relative p-4 md:p-6 border-2 border-emerald-500 hover:border-emerald-600 transition-colors bg-gradient-to-br from-emerald-50 to-transparent">
-            <div className="absolute top-2 md:top-3 right-2 md:right-3 bg-emerald-500 text-white text-xs font-bold px-2 md:px-3 py-1 rounded-full flex items-center gap-1">
-              <Zap className="w-3 h-3" />
-              Best Value
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-base md:text-lg font-bold text-text-dark">Lifetime Plan</h3>
-                <p className="text-xs md:text-sm text-text-light mt-1">Permanent ad-free access</p>
-              </div>
-
-              <div className="py-4 border-y">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl md:text-4xl font-bold text-emerald-600">PKR 1,200</span>
-                  <span className="text-text-light text-xs md:text-sm">/one-time</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Check className="w-4 md:w-5 h-4 md:h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs md:text-sm text-text-dark">Lifetime ad-free access</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-4 md:w-5 h-4 md:h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs md:text-sm text-text-dark">Full access to all features</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-4 md:w-5 h-4 md:h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs md:text-sm text-text-dark">One-time payment, never expires</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-4 md:w-5 h-4 md:h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs md:text-sm text-text-dark">Save PKR 2,400+ over time</span>
-                </div>
-              </div>
-
+              {/* Lifetime Plan */}
               <Link href={`/buy-subscription?plan=lifetime`} className="block">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
-                  Choose Plan
-                </Button>
+                <div className="relative h-full p-4 border-2 border-emerald-500 rounded-xl bg-gradient-to-br from-emerald-50 to-transparent hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="absolute -top-3 right-4 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    Best
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Lifetime</h3>
+                      <p className="text-xs text-gray-600">Forever ad-free</p>
+                    </div>
+
+                    <div className="border-t border-emerald-200 pt-3">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-emerald-600">PKR 1,200</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs text-gray-700">Lifetime access</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs text-gray-700">All features forever</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs text-gray-700">One-time payment</span>
+                      </div>
+                    </div>
+
+                    <Button className="w-full text-xs md:text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold group-hover:shadow-md transition-all">
+                      Choose Now
+                    </Button>
+                  </div>
+                </div>
               </Link>
             </div>
-          </Card>
-        </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pt-4 border-t">
-          <p className="text-xs text-text-light">
-            Secure payment via Nayapay, Easypaisa, or Bank Transfer
-          </p>
-          <Button
-            variant="ghost"
-            onClick={handleClose}
-            className="text-text-light hover:text-text-dark text-xs md:text-sm"
-          >
-            Maybe later
-          </Button>
+            {/* Footer */}
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-600 text-center mb-3">
+                ✓ Secure payment via Nayapay, Easypaisa, Bank Transfer
+              </p>
+              <Button
+                variant="ghost"
+                onClick={handleClose}
+                className="w-full text-gray-700 hover:bg-gray-100"
+              >
+                Maybe Later
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
