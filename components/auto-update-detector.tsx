@@ -48,9 +48,7 @@ export function AutoUpdateDetector() {
         const storedVersion = sessionStorage.getItem('build-version')
 
         if (storedVersion && storedVersion !== version) {
-          console.log('[App] New build detected! Reloading on next navigation...')
-          // Only reload on next page navigation, not immediately
-          window.__buildUpdated = true
+          console.log('[App] New build detected! Version updated in storage')
           sessionStorage.setItem('build-version', version)
         } else if (!storedVersion) {
           sessionStorage.setItem('build-version', version)
