@@ -45,6 +45,7 @@ export default function AdminSubscriptionsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending')
   const [selectedRequest, setSelectedRequest] = useState<SubscriptionRequest | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
   const [processingId, setProcessingId] = useState<string | null>(null)
 
@@ -92,6 +93,7 @@ export default function AdminSubscriptionsPage() {
         description: 'Subscription request approved successfully',
       })
 
+      setShowPreview(false)
       setSelectedRequest(null)
       await loadRequests()
     } catch (error: any) {
@@ -133,6 +135,7 @@ export default function AdminSubscriptionsPage() {
         description: 'Subscription request rejected',
       })
 
+      setShowRejectDialog(false)
       setSelectedRequest(null)
       setRejectionReason('')
       await loadRequests()
@@ -321,7 +324,10 @@ export default function AdminSubscriptionsPage() {
                               size="sm"
                               variant="destructive"
                               disabled={processingId === request.id}
-                              onClick={() => setSelectedRequest(request)}
+                              onClick={() => {
+                                setSelectedRequest(request)
+                                setShowRejectDialog(true)
+                              }}
                             >
                               Reject
                             </Button>
@@ -361,7 +367,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {/* Payment Proof Preview Dialog */}
-      <Dialog open={showPreview && !selectedRequest?.status} onOpenChange={setShowPreview}>
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Payment Proof</DialogTitle>
@@ -396,7 +402,7 @@ export default function AdminSubscriptionsPage() {
       </Dialog>
 
       {/* Rejection Dialog */}
-      <Dialog open={!!selectedRequest && selectedRequest.status === 'pending'} onOpenChange={() => setSelectedRequest(null)}>
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reject Subscription Request</DialogTitle>
@@ -422,6 +428,7 @@ export default function AdminSubscriptionsPage() {
             <Button
               variant="outline"
               onClick={() => {
+                setShowRejectDialog(false)
                 setSelectedRequest(null)
                 setRejectionReason('')
               }}
