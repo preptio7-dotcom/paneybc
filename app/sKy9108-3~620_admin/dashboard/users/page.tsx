@@ -1,11 +1,20 @@
-'use client'
+﻿'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Search, UserMinus, UserX, ShieldAlert, Pencil } from 'lucide-react'
+import { Loader2, Search, UserMinus, UserX, ShieldAlert, Lock } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 
 type UserRow = {
   id: string
@@ -14,6 +23,7 @@ type UserRow = {
   role: 'student' | 'admin' | 'super_admin'
   isBanned: boolean
   createdAt: string
+  adminPermissions?: Record<string, any>
 }
 
 export default function SuperAdminUsersPage() {
@@ -24,6 +34,12 @@ export default function SuperAdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'admin' | 'super_admin'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all')
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null)
+  const [permissions, setPermissions] = useState<Record<string, boolean>>({
+    canManagePayments: false,
+    canManageAds: false,
+  })
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams()
@@ -75,32 +91,6 @@ export default function SuperAdminUsersPage() {
     }
   }
 
-  const handleEditName = async (userId: string, currentName: string) => {
-    if (busyUserId) return
-    const newName = window.prompt("Enter the new name for this user:", currentName)
-    if (newName === null || newName.trim() === "" || newName.trim() === currentName) return
-
-    try {
-      setBusyUserId(userId)
-      const response = await fetch('/api/super-admin/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, name: newName.trim() }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to update string')
-
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, name: newName.trim() } : u))
-      )
-      toast.success("Name updated successfully")
-    } catch (error: any) {
-      toast.error('Error', { description: error.message || 'Failed to update name' })
-    } finally {
-      setBusyUserId(null)
-    }
-  }
-
   const handleDelete = async (userId: string) => {
     if (busyUserId) return
     if (!confirm('Delete this user? This cannot be undone.')) return
@@ -118,6 +108,41 @@ export default function SuperAdminUsersPage() {
       toast.success('User deleted')
     } catch (error: any) {
       toast.error('Error', { description: error.message || 'Failed to delete user' })
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  const openPermissionsDialog = (user: UserRow) => {
+    setSelectedUser(user)
+    setPermissions({
+      canManagePayments: user.adminPermissions?.canManagePayments ?? false,
+      canManageAds: user.adminPermissions?.canManageAds ?? false,
+    })
+    setPermissionsDialogOpen(true)
+  }
+
+  const handleSavePermissions = async () => {
+    if (!selectedUser) return
+    try {
+      setBusyUserId(selectedUser.id)
+      const response = await fetch('/api/super-admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser.id, adminPermissions: permissions }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to update permissions')
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === selectedUser.id ? { ...u, adminPermissions: permissions } : u
+        )
+      )
+      toast.success('Permissions updated successfully')
+      setPermissionsDialogOpen(false)
+    } catch (error: any) {
+      toast.error('Error', { description: error.message || 'Failed to update permissions' })
     } finally {
       setBusyUserId(null)
     }
@@ -207,16 +232,19 @@ export default function SuperAdminUsersPage() {
                       </td>
                       <td className="py-3 px-6 text-gray-400">{new Date(user.createdAt).toLocaleDateString()}</td>
                       <td className="py-3 px-6 text-right space-x-2">
-                        {/* <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleEditName(user.id, user.name)}
-                          disabled={busyUserId === user.id || user.role === 'super_admin'}
-                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 px-2"
-                          title="Edit Name"
-                        >
-                          <Pencil size={14} />
-                        </Button> */}
+                        {user.role === 'admin' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openPermissionsDialog(user)}
+                            disabled={busyUserId === user.id}
+                            className="gap-2 border-blue-700 text-blue-200 hover:bg-blue-500/10"
+                            title="Manage Permissions"
+                          >
+                            <Lock size={14} />
+                            Permissions
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -245,6 +273,56 @@ export default function SuperAdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-gray-900 border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-white">Manage Admin Permissions</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedUser?.name} ({selectedUser?.email})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="canManagePayments"
+                checked={permissions.canManagePayments}
+                onCheckedChange={(checked) =>
+                  setPermissions((prev) => ({ ...prev, canManagePayments: Boolean(checked) }))
+                }
+                className="border-gray-600"
+              />
+              <label htmlFor="canManagePayments" className="text-white cursor-pointer">
+                <div className="font-medium">Manage Payments</div>
+                <div className="text-xs text-gray-400">Can add/edit/delete payment methods and approve subscriptions</div>
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="canManageAds"
+                checked={permissions.canManageAds}
+                onCheckedChange={(checked) =>
+                  setPermissions((prev) => ({ ...prev, canManageAds: Boolean(checked) }))
+                }
+                className="border-gray-600"
+              />
+              <label htmlFor="canManageAds" className="text-white cursor-pointer">
+                <div className="font-medium">Manage Ads</div>
+                <div className="text-xs text-gray-400">Can configure AdSense and ad settings</div>
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPermissionsDialogOpen(false)} className="border-gray-700 text-gray-200">
+              Cancel
+            </Button>
+            <Button onClick={handleSavePermissions} className="bg-primary-green text-white hover:bg-primary-green/90" disabled={busyUserId === selectedUser?.id}>
+              {busyUserId === selectedUser?.id ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

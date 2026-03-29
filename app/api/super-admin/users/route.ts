@@ -107,6 +107,10 @@ export async function PATCH(request: NextRequest) {
       }
       updateData.name = newName
     }
+    if (body.hasOwnProperty('adminPermissions') && target.role === 'admin') {
+      // Only allow updating permissions for admin users
+      updateData.adminPermissions = body.adminPermissions
+    }
 
     const updated = await prisma.user.update({
       where: { id: userId },
