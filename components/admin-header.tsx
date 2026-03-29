@@ -10,6 +10,7 @@ import {
   BookOpen,
   Building2,
   ClipboardList,
+  CreditCard,
   FileText,
   FlaskConical,
   HelpCircle,
@@ -73,6 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Student Profiles', href: '/admin/analytics/students', icon: UserIcon },
       { label: 'Ambassador Apps', href: '/admin/join-us', icon: UserRoundCheck, badgeKey: 'pendingAmbassadorCount' },
       { label: 'Referrals', href: '/admin/referrals', icon: Share2 },
+      { label: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
       { label: 'Analytics & Reports', href: '/admin/analytics', icon: BarChart2 },
@@ -111,6 +113,8 @@ const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin\/analytics$/, title: 'Analytics & Reports' },
   { match: /^\/admin\/users$/, title: 'User Management' },
   { match: /^\/admin\/referrals$/, title: 'Ambassador Referrals' },
+  { match: /^\/admin\/subscriptions$/, title: 'Subscription Requests' },
+  { match: /^\/admin\/payment-methods$/, title: 'Payment Methods' },
 ]
 
 function isActiveRoute(pathname: string, href: string) {
