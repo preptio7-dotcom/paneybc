@@ -24,15 +24,8 @@ export default function AdminAdsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isForbidden, setIsForbidden] = useState(false)
-  const [adsEnabled, setAdsEnabled] = useState(false)
-  const [adSenseConfig, setAdSenseConfig] = useState<any>({
-    globalEnabled: true,
-    allowedPaths: ['/', '/blog', '/blog/*'],
-    blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-    showAdsToUnpaid: true,
-    showAdsToPaid: false,
-    showAdsToAmbassador: false,
-  })
+  const [adsEnabled, setAdsEnabled] = useState<boolean | null>(null)
+  const [adSenseConfig, setAdSenseConfig] = useState<any>(null)
   const [dashboardAd, setDashboardAd] = useState<AdContent>({
     headline: '',
     body: '',
@@ -60,9 +53,15 @@ export default function AdminAdsPage() {
         }
         const data = await response.json()
         setAdsEnabled(Boolean(data.adsEnabled))
-        if (data.adSenseConfig) {
-          setAdSenseConfig(data.adSenseConfig)
+        const config = data.adSenseConfig || {
+          globalEnabled: true,
+          allowedPaths: ['/', '/blog', '/blog/*'],
+          blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
+          showAdsToUnpaid: true,
+          showAdsToPaid: false,
+          showAdsToAmbassador: false,
         }
+        setAdSenseConfig(config)
         setDashboardAd({
           headline: data.adContent?.dashboard?.headline || '',
           body: data.adContent?.dashboard?.body || '',
@@ -177,6 +176,12 @@ export default function AdminAdsPage() {
                 <CardDescription>Grandular control over where and to whom Google Ads are shown.</CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
+                {isLoading || !adSenseConfig ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-text-light">Loading settings...</div>
+                  </div>
+                ) : (
+                  <>
                 <div className="flex items-center justify-between">
                     <div>
                         <Label className="text-base font-bold">Global AdSense Toggle</Label>
@@ -185,6 +190,7 @@ export default function AdminAdsPage() {
                     <Switch 
                         checked={adSenseConfig.globalEnabled} 
                         onCheckedChange={(val) => handleToggleGlobal(val)} 
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -195,6 +201,7 @@ export default function AdminAdsPage() {
                             <Switch 
                                 checked={adSenseConfig.showAdsToUnpaid} 
                                 onCheckedChange={(val) => setAdSenseConfig((prev: any) => ({ ...prev, showAdsToUnpaid: val }))} 
+                                disabled={isLoading}
                             />
                             <Label>Unpaid Students</Label>
                         </div>
@@ -202,6 +209,7 @@ export default function AdminAdsPage() {
                             <Switch 
                                 checked={adSenseConfig.showAdsToPaid} 
                                 onCheckedChange={(val) => setAdSenseConfig((prev: any) => ({ ...prev, showAdsToPaid: val }))} 
+                                disabled={isLoading}
                             />
                             <Label>Paid Students</Label>
                         </div>
@@ -209,6 +217,7 @@ export default function AdminAdsPage() {
                             <Switch 
                                 checked={adSenseConfig.showAdsToAmbassador} 
                                 onCheckedChange={(val) => setAdSenseConfig((prev: any) => ({ ...prev, showAdsToAmbassador: val }))} 
+                                disabled={isLoading}
                             />
                             <Label>Ambassadors</Label>
                         </div>
@@ -225,6 +234,7 @@ export default function AdminAdsPage() {
                                 ...prev, 
                                 allowedPaths: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
                             }))} 
+                            disabled={isLoading}
                         />
                     </div>
                     <div className="space-y-2">
@@ -236,9 +246,12 @@ export default function AdminAdsPage() {
                                 ...prev, 
                                 blockedPaths: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
                             }))} 
+                            disabled={isLoading}
                         />
                     </div>
                 </div>
+                  </>
+                )}
             </CardContent>
           </Card>
 
