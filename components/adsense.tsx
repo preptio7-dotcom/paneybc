@@ -54,12 +54,10 @@ export function Adsense() {
 
     return (
         <div 
-            className="max-w-7xl mx-auto px-4 my-8 w-full overflow-hidden text-center" 
-            style={{ minHeight: '250px' }}
+            className="max-w-7xl mx-auto px-4 my-8 w-full overflow-hidden text-center"
         >
             <ins
                 className="adsbygoogle"
-                style={{ display: 'block', margin: '0 auto', width: '100%', minHeight: '250px' }}
                 data-ad-client="ca-pub-5583540622875378"
                 data-ad-slot="7458772554"
                 data-ad-format="auto"

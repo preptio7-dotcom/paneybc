@@ -43,7 +43,6 @@ export function GoogleAdFluid({ slot, layoutKey }: { slot: string; layoutKey: st
     <div className="my-6 w-full flex justify-center">
       <ins
         className="adsbygoogle"
-        style={{ display: 'block', width: '100%', minHeight: '250px' }}
         data-ad-format="fluid"
         data-ad-layout-key={layoutKey}
         data-ad-client="ca-pub-5583540622875378"

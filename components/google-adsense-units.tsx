@@ -44,7 +44,6 @@ export function GoogleAdUnit1() {
     <div className="my-6 w-full">
       <ins
         className="adsbygoogle"
-        style={{ display: 'block', width: '100%', minHeight: '250px' }}
         data-ad-client="ca-pub-5583540622875378"
         data-ad-slot="7458772554"
         data-ad-format="auto"
@@ -92,7 +91,6 @@ export function GoogleAdUnit2() {
     <div className="my-6">
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
         data-ad-format="fluid"
         data-ad-layout-key="-6t+ed+2i-1n-4w"
         data-ad-client="ca-pub-5583540622875378"
@@ -139,7 +137,6 @@ export function GoogleAdUnit3() {
     <div className="my-6">
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
         data-ad-client="ca-pub-5583540622875378"
         data-ad-slot="7458772554"
         data-ad-format="auto"
