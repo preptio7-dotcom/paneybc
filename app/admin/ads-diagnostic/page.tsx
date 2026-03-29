@@ -32,7 +32,6 @@ export default function AdsDiagnosticPage() {
           id: user?.id,
           role: user?.role,
           studentRole: user?.studentRole,
-          adsFreeUntil: user?.adsFreeUntil,
         },
         settings: {
           loaded: !loading,

@@ -156,17 +156,15 @@ export default function AdminAdsPage() {
 
   const handleToggleGlobal = async (value: boolean) => {
     try {
-      setAdSenseConfig((prev: any) => ({ ...prev, globalEnabled: value }))
+      const updatedConfig = { ...adSenseConfig, globalEnabled: value }
+      setAdSenseConfig(updatedConfig)
       // Auto-save to database immediately
       const response = await fetch('/api/admin/system/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           adsEnabled,
-          adSenseConfig: {
-            ...adSenseConfig,
-            globalEnabled: value,
-          },
+          adSenseConfig: updatedConfig,
           adContent: {
             dashboard: dashboardAd,
             results: resultsAd,
