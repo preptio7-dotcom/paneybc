@@ -4,10 +4,24 @@ import { Navigation } from '@/components/navigation'
 import { HomepageContent } from '@/components/homepage-content'
 import { Adsense } from '@/components/adsense'
 import { LogoutToast } from '@/components/logout-toast'
-import { HomeWrapper } from '@/components/home-wrapper'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import type { Metadata } from 'next'
+
+const LogoutToast = dynamicImport(
+  () => import('@/components/logout-toast').then((module) => module.LogoutToast),
+  { loading: () => null }
+)
+
+const HomepageContent = dynamicImport(
+  () => import('@/components/homepage-content').then((module) => module.HomepageContent),
+  { loading: () => null }
+)
+
+const Adsense = dynamicImport(
+  () => import('@/components/adsense').then((module) => module.Adsense),
+  { loading: () => null }
+)
 
 export async function generateMetadata() {
   let questionCount = 4000
@@ -199,14 +213,12 @@ export default function Home() {
   return (
     <main className="w-full">
       <Navigation />
-      <HomeWrapper>
-        <LogoutToast />
-        <HomepageContent />
-        <Adsense />
-        <div className="sr-only">
-          <Link href="/practice">Free Practice MCQs</Link>
-        </div>
-      </HomeWrapper>
+      <LogoutToast />
+      <HomepageContent />
+      <Adsense />
+      <div className="sr-only">
+        <Link href="/practice">Free Practice MCQs</Link>
+      </div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
