@@ -4,53 +4,38 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { shouldLoadAdsForContext } from '@/lib/ad-access'
 import { useSystemSettings } from '@/hooks/use-system-settings'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 export function Adsense() {
     const pathname = usePathname()
     const { user, loading: authLoading } = useAuth()
     const { settings, loading } = useSystemSettings()
-    const [shouldShowAd, setShouldShowAd] = useState(false)
-    const [adPushed, setAdPushed] = useState(false)
 
-    // Stage 1: Determine eligibility
-    useEffect(() => {
-        if (loading || authLoading) return
+    // Don't render anything while loading
+    if (authLoading || loading) return null
 
-        const config = settings?.adSenseConfig || {
-            globalEnabled: true,
-            allowedPaths: ['/', '/blog', '/blog/*'],
-            blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-            showAdsToUnpaid: true,
-            showAdsToPaid: false,
-            showAdsToAmbassador: false,
-        }
+    const config = settings?.adSenseConfig || {
+        globalEnabled: true,
+        allowedPaths: ['/', '/blog', '/blog/*'],
+        blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
+        showAdsToUnpaid: true,
+        showAdsToPaid: false,
+        showAdsToAmbassador: false,
+    }
 
-        const isEligible = shouldLoadAdsForContext(pathname || '/', user, config)
-        setShouldShowAd(isEligible)
-        
-        // Reset push state if path changes
-        setAdPushed(false)
-    }, [pathname, loading, settings, user, authLoading])
-
-    // Stage 2: Inject ad into the rendered slot
-    useEffect(() => {
-        if (shouldShowAd && !adPushed) {
-            try {
-                // We use a small timeout to ensure the DOM has actually updated 
-                // and the container has non-zero width before AdSense tries to measure it.
-                setTimeout(() => {
-                    // @ts-ignore
-                    ;(window.adsbygoogle = window.adsbygoogle || []).push({})
-                    setAdPushed(true)
-                }, 100)
-            } catch (err) {
-                console.error('AdSense push error:', err)
-            }
-        }
-    }, [shouldShowAd, adPushed])
-
+    const shouldShowAd = shouldLoadAdsForContext(pathname || '/', user, config)
+    
     if (!shouldShowAd) return null
+
+    // Inject ad into the rendered slot
+    useEffect(() => {
+        try {
+            // @ts-ignore
+            ;(window.adsbygoogle = window.adsbygoogle || []).push({})
+        } catch (err) {
+            console.error('AdSense push error:', err)
+        }
+    }, [shouldShowAd])
 
     return (
         <div 
