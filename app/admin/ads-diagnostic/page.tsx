@@ -55,8 +55,8 @@ export default function AdsDiagnosticPage() {
     }
   }, [loading, pathname, user, settings])
 
-  if (!user || user.role !== 'super_admin') {
-    return <div className="p-4 text-red-600">Super admin access only</div>
+  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+    return <div className="p-4 text-red-600">Admin access required</div>
   }
 
   return (
