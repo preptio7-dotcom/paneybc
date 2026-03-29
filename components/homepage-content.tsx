@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useState } from 'react'
 import { HeroSection } from '@/components/hero-section'
 import { LazyHomeSection } from '@/components/lazy-home-section'
+import { GoogleAdUnit1, GoogleAdUnit2 } from '@/components/google-adsense-units'
 import {
   DEFAULT_HOMEPAGE_HERO_MOTION_SETTINGS,
   DEFAULT_HOMEPAGE_THEME_SETTINGS,
@@ -169,8 +170,14 @@ export function HomepageContent() {
       <LazyHomeSection minHeight={520}>
         <StatsSection themeVariant={sectionConfig.stats} reduceMotion={reduceMotion} />
       </LazyHomeSection>
+      <LazyHomeSection minHeight={250}>
+        <GoogleAdUnit1 />
+      </LazyHomeSection>
       <LazyHomeSection minHeight={180}>
         <HomeAdBanner />
+      </LazyHomeSection>
+      <LazyHomeSection minHeight={250}>
+        <GoogleAdUnit2 />
       </LazyHomeSection>
       <LazyHomeSection minHeight={620}>
         <HomeFeedbackSection themeVariant={sectionConfig.feedback} reduceMotion={reduceMotion} />

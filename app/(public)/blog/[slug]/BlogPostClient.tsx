@@ -10,6 +10,7 @@ import type { BlogCategoryDto, BlogPostDto } from '@/lib/blog-types'
 import { BLOG_SUBJECT_META } from '@/lib/blog-related-subjects'
 import { getProxyMediaUrl, proxyImageSourcesInHtml } from '@/lib/media-url'
 import { Adsense } from '@/components/adsense'
+import { GoogleAdUnit1, GoogleAdUnit3 } from '@/components/google-adsense-units'
 
 type TocItem = {
   id: string
@@ -591,10 +592,16 @@ export function BlogPostClient({
                 <>
                   <div dangerouslySetInnerHTML={{ __html: paragraphSplit.before }} />
                   <div className="my-6">
+                    <GoogleAdUnit1 />
+                  </div>
+                  <div className="my-6">
                     <Adsense />
                   </div>
                   <PracticeCta postId={post.id} relatedSubjects={relatedSubjects} subjectCounts={subjectCounts} position="mid_article" globalQuestionStat={globalQuestionStat} onOpen={handleCtaOpen} />
                   <div dangerouslySetInnerHTML={{ __html: paragraphSplit.after }} />
+                  <div className="my-6">
+                    <GoogleAdUnit3 />
+                  </div>
                 </>
               ) : (
                 <div dangerouslySetInnerHTML={{ __html: prepared.content }} />
