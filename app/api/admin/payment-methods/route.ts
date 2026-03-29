@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch fresh user from DB to check current permissions
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.userId },
       select: { id: true, role: true, adminPermissions: true }
     })
 

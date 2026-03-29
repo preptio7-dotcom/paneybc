@@ -19,7 +19,7 @@ export async function PATCH(
 
     // Fetch fresh user from DB to check current permissions
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.userId },
       select: { id: true, role: true, adminPermissions: true }
     })
 
@@ -75,7 +75,7 @@ export async function DELETE(
 
     // Fetch fresh user from DB to check current permissions
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.userId },
       select: { id: true, role: true, adminPermissions: true }
     })
 
