@@ -41,10 +41,10 @@ export function GoogleAdUnit1() {
   }
 
   return (
-    <div className="my-6">
+    <div className="my-6 w-full">
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: 'block', width: '100%', minHeight: '250px' }}
         data-ad-client="ca-pub-5583540622875378"
         data-ad-slot="7458772554"
         data-ad-format="auto"

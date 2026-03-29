@@ -40,10 +40,10 @@ export function GoogleAdResponsive({ slot }: { slot: string }) {
   }
 
   return (
-    <div className="my-6 flex justify-center">
+    <div className="my-6 w-full flex justify-center">
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: 'block', width: '100%', maxWidth: '728px', minHeight: '90px' }}
         data-ad-client="ca-pub-5583540622875378"
         data-ad-slot={slot}
         data-ad-format="auto"

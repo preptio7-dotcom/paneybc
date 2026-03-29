@@ -40,10 +40,10 @@ export function GoogleAdFluid({ slot, layoutKey }: { slot: string; layoutKey: st
   }
 
   return (
-    <div className="my-6 flex justify-center">
+    <div className="my-6 w-full flex justify-center">
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: 'block', width: '100%', minHeight: '250px' }}
         data-ad-format="fluid"
         data-ad-layout-key={layoutKey}
         data-ad-client="ca-pub-5583540622875378"
