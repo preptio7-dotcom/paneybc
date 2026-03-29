@@ -16,7 +16,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle, CheckCircle2, Upload } from 'lucide-react'
 import Link from 'next/link'
-import { ActiveSubscriptionUI } from '@/components/active-subscription-ui'
 
 type PaymentMethodInfo = {
   id: string
@@ -232,13 +231,23 @@ function BuySubscriptionContent() {
   return (
     <main className="min-h-screen bg-background-light py-6 md:py-12">
       <div className="w-full max-w-2xl mx-auto px-4">
-        {/* Active Subscription */}
+        {/* Already Subscribed Message */}
         {isSubscribed && (
-          <ActiveSubscriptionUI
-            adsFreeUntil={(user as any).adsFreeUntil}
-            plan={formData.plan}
-            onCancel={() => refreshStatus()}
-          />
+          <Card className="mb-6 border-2 border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
+                <div>
+                  <h2 className="text-lg md:text-xl font-bold text-green-900">
+                    ✅ You Already Have an Active Subscription
+                  </h2>
+                  <p className="text-sm text-green-800 mt-1">
+                    Ads are disabled on your account. Enjoy your ad-free experience!
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Only show form if no active subscription */}

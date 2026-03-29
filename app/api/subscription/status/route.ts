@@ -8,8 +8,14 @@ export async function POST(request: NextRequest) {
   try {
     const decoded = getCurrentUser(request)
 
+    // If not authenticated, return not subscribed
     if (!decoded || decoded.role !== 'student') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({
+        success: true,
+        isSubscribed: false,
+        adsFreeUntil: null,
+        expiresAt: null,
+      })
     }
 
     // Fetch user with their subscription data
@@ -24,7 +30,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({
+        success: true,
+        isSubscribed: false,
+        adsFreeUntil: null,
+        expiresAt: null,
+      })
     }
 
     // Check if they have an active subscription
@@ -38,9 +49,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('Error refreshing subscription status:', error)
-    return NextResponse.json(
-      { error: 'Failed to refresh subscription status' },
-      { status: 500 }
-    )
+    // Return not subscribed on error instead of 500
+    return NextResponse.json({
+      success: true,
+      isSubscribed: false,
+      adsFreeUntil: null,
+      expiresAt: null,
+    })
   }
 }

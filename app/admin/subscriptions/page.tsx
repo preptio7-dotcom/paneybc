@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { CheckCircle2, XCircle, Clock, Eye, Loader2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, Eye, Loader2, AlertCircle } from 'lucide-react'
 
 type SubscriptionRequest = {
   id: string
@@ -138,6 +138,46 @@ export default function AdminSubscriptionsPage() {
       setShowRejectDialog(false)
       setSelectedRequest(null)
       setRejectionReason('')
+      await loadRequests()
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleCancelSubscription = async (request: SubscriptionRequest) => {
+    if (!confirm('Are you sure you want to cancel this user\'s subscription? Ads will be re-enabled on their account.')) {
+      return
+    }
+
+    try {
+      setProcessingId(request.id)
+      const response = await fetch('/api/admin/subscriptions/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: request.user.id,
+          subscriptionRequestId: request.id,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to cancel subscription')
+      }
+
+      toast({
+        title: 'Subscription Cancelled',
+        description: `Subscription cancelled for ${request.user.name}. Ads will be re-enabled.`,
+      })
+
+      setShowPreview(false)
+      setSelectedRequest(null)
       await loadRequests()
     } catch (error: any) {
       toast({
@@ -348,6 +388,17 @@ export default function AdminSubscriptionsPage() {
                             </Button>
                           </>
                         )}
+
+                        {request.status === 'approved' && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={processingId === request.id}
+                            onClick={() => handleCancelSubscription(request)}
+                          >
+                            {processingId === request.id ? 'Cancelling...' : 'Cancel Subscription'}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -394,21 +445,25 @@ export default function AdminSubscriptionsPage() {
           {selectedRequest?.paymentProofUrl && (
             <div className="space-y-4">
               {selectedRequest.paymentProofUrl.endsWith('.pdf') ? (
-                <p className="text-text-light">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <a
                     href={selectedRequest.paymentProofUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-600 hover:underline inline-flex items-center gap-2"
                   >
                     📄 Open PDF in new tab
                   </a>
-                </p>
+                </div>
               ) : (
                 <img
                   src={selectedRequest.paymentProofUrl}
                   alt="Payment proof"
                   className="max-w-full h-auto rounded-lg max-h-[70vh] object-contain"
+                  onError={(e) => {
+                    console.error('Image load error:', selectedRequest.paymentProofUrl)
+                    e.currentTarget.style.display = 'none'
+                  }}
                 />
               )}
             </div>
