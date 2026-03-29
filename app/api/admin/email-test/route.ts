@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/verify-auth'
+import { getCurrentUser } from '@/lib/auth'
 import nodemailer from 'nodemailer'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = verifyAuth(request)
+    const decoded = getCurrentUser(request)
     
     if (!decoded || decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
