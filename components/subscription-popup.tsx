@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import {
   Dialog,
@@ -15,6 +16,7 @@ import { Check, Zap } from 'lucide-react'
 import Link from 'next/link'
 
 export function SubscriptionPopup() {
+  const pathname = usePathname()
   const { user, loading } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [hasSeenPopup, setHasSeenPopup] = useState(false)
@@ -45,6 +47,13 @@ export function SubscriptionPopup() {
     setIsOpen(false)
     sessionStorage.setItem('subscription_popup_dismissed', 'true')
   }
+
+  // Close popup when user navigates to subscription page
+  useEffect(() => {
+    if (pathname === '/buy-subscription') {
+      handleClose()
+    }
+  }, [pathname])
 
   if (!user || user.role !== 'student') {
     return null
