@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="#0f172a"/>
-  <text x="16" y="22" font-size="20" font-weight="bold" fill="#fde047" text-anchor="middle" font-family="Arial">P</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" fill="url(#grad)"/>
+  <circle cx="96" cy="96" r="85" fill="#10b981" opacity="0.1"/>
+  <text x="96" y="115" font-size="90" font-weight="bold" fill="#10b981" text-anchor="middle" font-family="Arial, sans-serif" letter-spacing="2">P</text>
 </svg>
