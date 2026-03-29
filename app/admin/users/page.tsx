@@ -541,7 +541,6 @@ export default function AdminUsersPage() {
                               ) : null}
                               {isColumnVisible('actions') ? (
                                 <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
-                                  {/* Edit button hidden
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -552,7 +551,6 @@ export default function AdminUsersPage() {
                                     <Pencil size={14} />
                                     Edit
                                   </Button>
-                                  */}
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -603,7 +601,6 @@ export default function AdminUsersPage() {
                           </div>
 
                           <div className="grid grid-cols-1 gap-2">
-                            {/* Edit button hidden
                             <Button
                               size="sm"
                               variant="outline"
@@ -614,7 +611,6 @@ export default function AdminUsersPage() {
                               <Pencil size={14} />
                               Edit
                             </Button>
-                            */}
                             <Button
                               size="sm"
                               variant="outline"
