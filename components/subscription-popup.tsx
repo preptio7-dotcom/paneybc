@@ -11,27 +11,22 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Check, Zap, X } from 'lucide-react'
 import Link from 'next/link'
+import { useSubscriptionStatus } from '@/hooks/use-subscription-status'
 
 export function SubscriptionPopup() {
   const pathname = usePathname()
   const { user, loading } = useAuth()
+  const { isSubscribed } = useSubscriptionStatus()
   const [isOpen, setIsOpen] = useState(false)
   const [hasChecked24h, setHasChecked24h] = useState(false)
 
   useEffect(() => {
     // Only show to logged-in students (not admin/super_admin)
     if (!loading && user && user.role === 'student' && !hasChecked24h) {
-      // Check if they already have ads disabled (active subscription)
-      const userData = user as any
-      const adsFreeUntil = userData?.adsFreeUntil
-      
-      if (adsFreeUntil) {
-        const expiryDate = new Date(adsFreeUntil)
-        const now = new Date()
-        if (expiryDate > now) {
-          setHasChecked24h(true)
-          return // Don't show if they already have active subscription
-        }
+      // Don't show if user already has active subscription
+      if (isSubscribed) {
+        setHasChecked24h(true)
+        return
       }
       
       // Check 24-hour dismiss time
@@ -55,7 +50,7 @@ export function SubscriptionPopup() {
       }, 3000)
       return () => clearTimeout(timer)
     }
-  }, [user, loading, hasChecked24h])
+  }, [user, loading, isSubscribed, hasChecked24h])
 
   const handleClose = () => {
     setIsOpen(false)

@@ -105,9 +105,10 @@ export async function POST(request: NextRequest) {
       // Calculate ads-free until date based on plan
       const now = new Date()
       if (subscriptionRequest.plan === 'one_month') {
-        adsFreeUntil = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())
+        // Add 30 days for monthly plan
+        adsFreeUntil = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
       } else {
-        // lifetime - set to a very far date (2099)
+        // lifetime - set to a very far date (December 31, 2099)
         adsFreeUntil = new Date(2099, 11, 31)
       }
     }
