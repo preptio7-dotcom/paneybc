@@ -298,7 +298,6 @@ export async function POST(request: NextRequest) {
       where: { id: settings.id },
       data: {
         ...(typeof payload.adsEnabled === 'boolean' ? { adsEnabled: payload.adsEnabled } : {}),
-        ...(payload.adSenseConfig?.globalEnabled !== undefined ? { adsEnabled: payload.adSenseConfig.globalEnabled } : {}),
         ...(typeof payload.welcomeMessageTemplate === 'string'
           ? { welcomeMessageTemplate: payload.welcomeMessageTemplate } : {}),
         ...(typeof payload.activeAvatarPackId === 'string' || payload.activeAvatarPackId === null
