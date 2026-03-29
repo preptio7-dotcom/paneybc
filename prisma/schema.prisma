@@ -194,6 +194,7 @@ enum SubscriptionRequestStatus {
   pending
   approved
   rejected
+  cancelled
 }
 
 enum PaymentMethodType {

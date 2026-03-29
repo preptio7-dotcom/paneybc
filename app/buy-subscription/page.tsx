@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle, CheckCircle2, Upload } from 'lucide-react'
 import Link from 'next/link'
+import { ActiveSubscriptionUI } from '@/components/active-subscription-ui'
 
 type PaymentMethodInfo = {
   id: string
@@ -228,29 +229,26 @@ function BuySubscriptionContent() {
   return (
     <main className="min-h-screen bg-background-light py-6 md:py-12">
       <div className="w-full max-w-2xl mx-auto px-4">
-        {/* Active Subscription Banner */}
+        {/* Active Subscription */}
         {hasActiveSubscription && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-green-900">✅ You Have an Active Subscription!</h3>
-                <p className="text-sm text-green-800 mt-1">
-                  Your account is enjoying an ad-free experience. Ads won't show across the platform.
-                </p>
-              </div>
-            </div>
-          </div>
+          <ActiveSubscriptionUI
+            adsFreeUntil={(user as any).adsFreeUntil}
+            plan={formData.plan}
+            onCancel={() => setHasActiveSubscription(false)}
+          />
         )}
 
-        {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-            ← Back to Dashboard
-          </Link>
-          <h1 className="text-2xl md:text-3xl font-bold text-text-dark mt-4 mb-2">Remove Ads</h1>
-          <p className="text-text-light text-sm md:text-base">Complete your subscription to enjoy an ad-free experience</p>
-        </div>
+        {/* Only show form if no active subscription */}
+        {!hasActiveSubscription && (
+          <>
+            {/* Header */}
+            <div className="mb-6 md:mb-8">
+              <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                ← Back to Dashboard
+              </Link>
+              <h1 className="text-2xl md:text-3xl font-bold text-text-dark mt-4 mb-2">Remove Ads</h1>
+              <p className="text-text-light text-sm md:text-base">Complete your subscription to enjoy an ad-free experience</p>
+            </div>
 
         {/* Plan Summary */}
         <Card className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
@@ -495,6 +493,8 @@ function BuySubscriptionContent() {
         <p className="text-center text-xs text-text-light mt-6">
           By submitting, you agree to our terms. Your information is secure and will only be used for subscription verification.
         </p>
+          </>
+        )}
       </div>
     </main>
   )

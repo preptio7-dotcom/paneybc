@@ -42,7 +42,7 @@ export default function AdminSubscriptionsPage() {
   const [total, setTotal] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'cancelled'>('pending')
   const [selectedRequest, setSelectedRequest] = useState<SubscriptionRequest | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
@@ -184,6 +184,12 @@ export default function AdminSubscriptionsPage() {
             <XCircle className="w-3 h-3" /> Rejected
           </span>
         )
+      case 'cancelled':
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">
+            <XCircle className="w-3 h-3" /> Cancelled
+          </span>
+        )
       default:
         return status
     }
@@ -244,6 +250,15 @@ export default function AdminSubscriptionsPage() {
                   }}
                 >
                   Rejected
+                </Button>
+                <Button
+                  variant={statusFilter === 'cancelled' ? 'default' : 'outline'}
+                  onClick={() => {
+                    setStatusFilter('cancelled')
+                    setCurrentPage(1)
+                  }}
+                >
+                  Cancelled
                 </Button>
               </div>
             </CardContent>
