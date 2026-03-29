@@ -59,7 +59,17 @@ export async function PATCH(
       { status: 500 }
     )
   }
-}(decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const decoded = getCurrentUser(request)
+
+    if (!decoded || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -70,17 +80,7 @@ export async function PATCH(
     })
 
     if (!user || !hasPermission(user.role, user.adminPermissions, 'canManagePayments')) {
-      return NextResponse.json({ error: 'Forbidden: No Payment access' }, { status: 403
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-    const decoded = getCurrentUser(request)
-
-    if (!decoded || decoded.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Forbidden: No Payment access' }, { status: 403 })
     }
 
     await prisma.paymentMethod.delete({
