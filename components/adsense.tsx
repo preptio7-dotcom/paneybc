@@ -39,7 +39,8 @@ export function Adsense() {
 
     return (
         <div 
-            className="max-w-7xl mx-auto px-4 my-8 w-full overflow-hidden text-center"
+            className="mx-auto px-4 my-8 w-full overflow-hidden text-center"
+            style={{ maxWidth: '728px' }}
         >
             <ins
                 className="adsbygoogle"

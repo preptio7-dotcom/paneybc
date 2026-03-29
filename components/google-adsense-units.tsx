@@ -41,15 +41,17 @@ export function GoogleAdUnit1() {
   }
 
   return (
-    <div className="my-6 w-full">
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-5583540622875378"
-        data-ad-slot="7458772554"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
+    <div className="my-6 w-full flex justify-center">
+      <div style={{ maxWidth: '728px', width: '100%' }}>
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client="ca-pub-5583540622875378"
+          data-ad-slot="7458772554"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </div>
     </div>
   )
 }
@@ -89,15 +91,17 @@ export function GoogleAdUnit2() {
   }
 
   return (
-    <div className="my-6">
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-format="fluid"
-        data-ad-layout-key="-6t+ed+2i-1n-4w"
-        data-ad-client="ca-pub-5583540622875378"
-        data-ad-slot="8411378687"
-      ></ins>
+    <div className="my-6 w-full flex justify-center">
+      <div style={{ maxWidth: '728px', width: '100%' }}>
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-format="fluid"
+          data-ad-layout-key="-6t+ed+2i-1n-4w"
+          data-ad-client="ca-pub-5583540622875378"
+          data-ad-slot="8411378687"
+        ></ins>
+      </div>
     </div>
   )
 }
@@ -136,15 +140,17 @@ export function GoogleAdUnit3() {
   }
 
   return (
-    <div className="my-6">
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-5583540622875378"
-        data-ad-slot="7458772554"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
+    <div className="my-6 w-full flex justify-center">
+      <div style={{ maxWidth: '728px', width: '100%' }}>
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client="ca-pub-5583540622875378"
+          data-ad-slot="7458772554"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </div>
     </div>
   )
 }
