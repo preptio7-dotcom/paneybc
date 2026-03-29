@@ -4,28 +4,35 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { shouldLoadAdsForContext } from '@/lib/ad-access'
 import { useSystemSettings } from '@/hooks/use-system-settings'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export function Adsense() {
     const pathname = usePathname()
     const { user } = useAuth()
     const { settings, loading } = useSystemSettings()
-
-    if (loading || !settings) return null
-    const showAd = shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)
+    const [shouldShowAd, setShouldShowAd] = useState(false)
 
     useEffect(() => {
-        if (showAd) {
-            try {
-                // @ts-ignore
-                ; (window.adsbygoogle = window.adsbygoogle || []).push({})
-            } catch (err) {
-                console.error('AdSense push error:', err)
-            }
+        // Skip if data is still loading or not available
+        if (loading || !settings) {
+            setShouldShowAd(false)
+            return
         }
-    }, [pathname, showAd])
+        
+        const showAd = shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)
+        setShouldShowAd(showAd)
+        
+        if (!showAd) return
 
-    if (!showAd) return null
+        try {
+            // @ts-ignore
+            ; (window.adsbygoogle = window.adsbygoogle || []).push({})
+        } catch (err) {
+            console.error('AdSense push error:', err)
+        }
+    }, [pathname, loading, settings, user])
+
+    if (!shouldShowAd) return null
 
     return (
         <div className="max-w-7xl mx-auto px-4 my-8 overflow-hidden text-center" style={{ minHeight: '100px' }}>
