@@ -457,7 +457,7 @@ export default function AdminSubscriptionsPage() {
                 </div>
               ) : (
                 <img
-                  src={selectedRequest.paymentProofUrl}
+                  src={`/api/proxy/r2-image?url=${encodeURIComponent(selectedRequest.paymentProofUrl)}`}
                   alt="Payment proof"
                   className="max-w-full h-auto rounded-lg max-h-[70vh] object-contain"
                   onError={(e) => {
