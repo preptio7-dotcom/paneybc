@@ -1,14 +1,16 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+import { shouldLoadAdsForContext } from '@/lib/ad-access'
 import Script from 'next/script'
 import { useEffect } from 'react'
 
 export function Adsense() {
     const pathname = usePathname()
+    const { user } = useAuth()
 
-    // Only show on home page and blog pages
-    const showAd = pathname === '/' || pathname.startsWith('/blog')
+    const showAd = shouldLoadAdsForContext(pathname || '/', user)
 
     useEffect(() => {
         if (showAd) {
@@ -25,6 +27,13 @@ export function Adsense() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 my-8 overflow-hidden text-center" style={{ minHeight: '100px' }}>
+            <Script
+                id="adsense-loader"
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378"
+                crossOrigin="anonymous"
+                strategy="afterInteractive"
+            />
             <ins
                 className="adsbygoogle"
                 style={{ display: 'block', margin: '0 auto', width: '100%', minWidth: '250px', minHeight: '90px' }}

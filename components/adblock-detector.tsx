@@ -1,12 +1,18 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { ShieldAlert, RefreshCw } from 'lucide-react'
 
 export function AdBlockDetector() {
+    const pathname = usePathname()
     const [adBlockDetected, setAdBlockDetected] = useState(false)
 
+    // Only run on the home page or blog paths
+    const isAllowedPath = pathname === '/' || pathname === '/blog' || pathname.startsWith('/blog/')
+
     useEffect(() => {
+        if (!isAllowedPath) return
         const checkAdBlock = () => {
             let isBlocked = false
 
@@ -64,7 +70,7 @@ export function AdBlockDetector() {
         }
     }, [])
 
-    if (!adBlockDetected) return null
+    if (!isAllowedPath || !adBlockDetected) return null
 
     return (
         <>

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -29,7 +30,10 @@ const contactSchema = z.object({
 type ContactFormData = z.infer<typeof contactSchema>
 
 export function ContactPopup() {
+    const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
+
+    if (pathname !== '/') return null
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const {

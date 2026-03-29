@@ -2,6 +2,9 @@
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Script from 'next/script'
+import { useAuth } from '@/lib/auth-context'
+import { shouldLoadAdsForContext } from '@/lib/ad-access'
+import { usePathname } from 'next/navigation'
 
 type Question = {
     id: string
@@ -27,18 +30,33 @@ const SUBJECT_COLORS: Record<string, string> = {
 }
 
 function AdSenseSlot() {
+    const pathname = usePathname()
+    const { user } = useAuth()
+    const showAd = shouldLoadAdsForContext(pathname || '/', user)
+
     useEffect(() => {
-        try {
-            if (typeof window !== 'undefined') {
-                ; ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
+        if (showAd) {
+            try {
+                if (typeof window !== 'undefined') {
+                    ; ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
+                }
+            } catch (e) {
+                console.error(e)
             }
-        } catch (e) {
-            console.error(e)
         }
-    }, [])
+    }, [showAd])
+
+    if (!showAd) return null
 
     return (
         <div className="w-full my-10 flex justify-center overflow-hidden min-h-[90px] bg-slate-50 border border-slate-200 rounded-xl items-center text-slate-400 text-sm shadow-inner relative">
+            <Script
+                id="adsense-loader-practice"
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378"
+                crossOrigin="anonymous"
+                strategy="afterInteractive"
+            />
             <span className="absolute z-0 opacity-50 text-xs tracking-widest font-semibold uppercase">Advertisement</span>
             <ins
                 className="adsbygoogle relative z-10"
@@ -65,12 +83,6 @@ export function PracticeClient({ initialQuestions }: { initialQuestions: Questio
 
     return (
         <div>
-            <Script
-                id="adsbygoogle-script"
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378"
-                crossOrigin="anonymous"
-            />
 
             {/* Subject Filter Tabs */}
             <div className="sticky top-20 z-40 bg-slate-50/90 backdrop-blur-md py-4 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">

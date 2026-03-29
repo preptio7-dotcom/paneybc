@@ -1,4 +1,4 @@
-﻿export const runtime = 'nodejs'
+export const runtime = 'nodejs'
 
 import { prisma } from '@/lib/prisma'
 import bcryptjs from 'bcryptjs'
@@ -73,11 +73,14 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findFirst({
       where: {
         resetPasswordToken: hashedToken,
-        resetPasswordExpires: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        resetPasswordExpires: true,
       },
     })
-
-    if (!user) {
+    
+    if (!user || (user.resetPasswordExpires && user.resetPasswordExpires.getTime() < Date.now())) {
       return NextResponse.json({ error: 'Invalid or expired reset token' }, { status: 400 })
     }
 

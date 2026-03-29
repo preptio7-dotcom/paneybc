@@ -1,4 +1,4 @@
-﻿export const runtime = 'nodejs'
+export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -68,10 +68,14 @@ export async function POST(req: NextRequest) {
         email: normalizedEmail,
         code: normalizedCode,
         purpose: 'signup',
-        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        expiresAt: true,
       },
     })
-    if (!otp) {
+    
+    if (!otp || otp.expiresAt.getTime() < Date.now()) {
       await logSecurityEvent({
         ipAddress,
         activityType: 'failed_login',

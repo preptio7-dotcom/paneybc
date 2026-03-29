@@ -38,8 +38,20 @@ export function isResultRoute(pathname: string) {
 }
 
 export function getRouteAdRestrictionReason(pathname: string): string | null {
+  // ONLY allow the specific paths mentioned by the user
+  const isHomePage = pathname === '/'
+  const isBlogPage = pathname === '/blog' || pathname.startsWith('/blog/')
+  
+  if (isHomePage || isBlogPage) {
+    return null // Eligible
+  }
+
+  // Block everything else
   if (pathname.startsWith('/admin') || pathname.startsWith('/sKy9108-3~620_admin')) {
     return 'admin-area'
+  }
+  if (pathname.startsWith('/dashboard')) {
+    return 'dashboard-area'
   }
   if (isAuthRoute(pathname)) {
     return 'auth-page'
@@ -50,7 +62,8 @@ export function getRouteAdRestrictionReason(pathname: string): string | null {
   if (isResultRoute(pathname)) {
     return 'results-page'
   }
-  return null
+  
+  return 'restricted-path'
 }
 
 export function isRouteBlockedForAds(pathname: string) {

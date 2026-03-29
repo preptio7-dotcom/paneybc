@@ -97,19 +97,23 @@ export function InstituteAnalyticsChart() {
                 </div>
             </div>
 
-            <div className="h-[380px] w-full mt-4">
+            <div className="h-[430px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                         data={data}
-                        margin={{ top: 20, right: 30, bottom: 20, left: 0 }}
+                        margin={{ top: 20, right: 30, bottom: 85, left: 10 }}
                     >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis
                             dataKey="institute"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
-                            dy={15}
+                            tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }}
+                            interval={0}
+                            angle={-35}
+                            textAnchor="end"
+                            height={80}
+                            dy={10}
                         />
                         {/* Left Axis for Student Count */}
                         <YAxis

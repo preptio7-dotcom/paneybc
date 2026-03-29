@@ -128,11 +128,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378"
-          crossOrigin="anonymous"
-        />
         <link rel="dns-prefetch" href="https://api.dicebear.com" />
         <link rel="dns-prefetch" href="https://api.multiavatar.com" />
         <link rel="dns-prefetch" href="https://models.readyplayer.me" />

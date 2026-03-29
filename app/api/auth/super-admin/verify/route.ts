@@ -70,8 +70,18 @@ export async function POST(req: NextRequest) {
         const normalizedCode = sanitizePlainText(code, 16)
 
         // 1. Find OTP
-        const otp = await prisma.otp.findFirst({ where: { email: normalizedEmail, code: normalizedCode } })
-        if (!otp) {
+        const otp = await prisma.otp.findFirst({
+            where: {
+                email: normalizedEmail,
+                code: normalizedCode,
+            },
+            select: {
+                id: true,
+                expiresAt: true,
+            }
+        })
+        
+        if (!otp || otp.expiresAt.getTime() < Date.now()) {
             await logSecurityEvent({
                 ipAddress,
                 activityType: 'failed_login',

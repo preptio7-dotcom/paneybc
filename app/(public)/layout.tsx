@@ -8,11 +8,6 @@ export default function PublicLayout({
 }) {
   return (
     <>
-      <Script
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378"
-        strategy="afterInteractive"
-        crossOrigin="anonymous"
-      />
       <AdBlockDetector />
       {children}
     </>
