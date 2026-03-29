@@ -26,14 +26,30 @@ export function Adsense() {
           showAdsToAmbassador: false,
         }
         
+        // Debug logging
+        if ((pathname === '/' || pathname?.includes('/blog')) && process.env.NODE_ENV === 'development') {
+            console.log('[Adsense Debug]', {
+                pathname,
+                loading,
+                globalEnabled: config.globalEnabled,
+                userRole: user?.role,
+                studentRole: user?.studentRole,
+                adsFreeUntil: user?.adsFreeUntil,
+                userExists: !!user,
+            })
+        }
+        
         if (!loading) {
             showAd = shouldLoadAdsForContext(pathname || '/', user, config)
+            if ((pathname === '/' || pathname?.includes('/blog')) && process.env.NODE_ENV === 'development') {
+                console.log('[Adsense Debug] shouldShowAd:', showAd)
+            }
         }
         
         setShouldShowAd(showAd)
         
         // Push ad to AdSense if enabled
-        if (showAd && settings) {
+        if (showAd) {
             try {
                 // @ts-ignore
                 ; (window.adsbygoogle = window.adsbygoogle || []).push({})
@@ -42,9 +58,6 @@ export function Adsense() {
             }
         }
     }, [pathname, loading, settings, user])
-
-    // Show ad placeholder even while loading
-    const showPlaceholder = !shouldShowAd
 
     return (
         <div className="max-w-7xl mx-auto px-4 my-8 overflow-hidden text-center" style={{ minHeight: '100px' }}>

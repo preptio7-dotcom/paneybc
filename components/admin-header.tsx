@@ -90,6 +90,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Monetization',
     items: [
       { label: 'Ads', href: '/admin/ads', icon: BarChart2 },
+      { label: 'Ads Diagnostic', href: '/admin/ads-diagnostic', icon: Settings },
     ],
   },
   {
