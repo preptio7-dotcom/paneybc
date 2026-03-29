@@ -63,12 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' })
         if (response.ok) {
           const data = await response.json()
-          setUser(data.user)
+          setUser(data?.user || null)
         } else {
           setUser(null)
         }
       } catch (error) {
         console.error('Auth check failed:', error)
+        setUser(null)
       } finally {
         setLoading(false)
       }
