@@ -17,9 +17,19 @@ export function AdsLoader() {
   const { user } = useAuth()
   const { settings, loading } = useSystemSettings()
   
+  // Fallback config if settings not loaded yet
+  const config = settings?.adSenseConfig || {
+    globalEnabled: true,
+    allowedPaths: ['/', '/blog', '/blog/*'],
+    blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
+    showAdsToUnpaid: true,
+    showAdsToPaid: false,
+    showAdsToAmbassador: false,
+  }
+  
   // Load script by default - let ad context logic handle visibility
   // Only skip if we explicitly know settings are loaded and ads are disabled
-  if (!loading && settings && !shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)) {
+  if (!loading && !shouldLoadAdsForContext(pathname || '/', user, config)) {
     return null
   }
 

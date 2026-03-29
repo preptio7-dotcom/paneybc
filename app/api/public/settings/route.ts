@@ -229,11 +229,35 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     const fallbackBetaFeatures = extractBetaFeatureSettings({})
+    const fallbackAdSenseConfig = {
+      globalEnabled: true,
+      allowedPaths: ['/', '/blog', '/blog/*'],
+      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
+      showAdsToUnpaid: true,
+      showAdsToPaid: false,
+      showAdsToAmbassador: false,
+    }
+    const fallbackAdContent = {
+      dashboard: {
+        headline: 'Level up your CA prep with expert-led notes',
+        body: 'Get concise, exam-focused summaries and practice packs tailored for CA students.',
+        cta: 'Explore resources',
+        href: '#',
+      },
+      results: {
+        headline: 'Boost your score with targeted mock reviews',
+        body: 'Short, focused revision plans built for CA students - improve accuracy before your next exam.',
+        cta: 'See plans',
+        href: '#',
+      },
+    }
     return NextResponse.json(
       {
         adsEnabled: true,
         welcomeMessageTemplate: 'Welcome back, {{name}}!',
         activeAvatarPackId: null,
+        adContent: fallbackAdContent,
+        adSenseConfig: fallbackAdSenseConfig,
         testSettings: {
           fullBookTimeMinutes: 120,
           chapterTestDefaultMinutes: 30,

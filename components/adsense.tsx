@@ -15,8 +15,19 @@ export function Adsense() {
     useEffect(() => {
         // Determine if ads should be shown
         let showAd = false
-        if (settings && !loading) {
-            showAd = shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)
+        
+        // Fallback config if settings not loaded yet
+        const config = settings?.adSenseConfig || {
+          globalEnabled: true,
+          allowedPaths: ['/', '/blog', '/blog/*'],
+          blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
+          showAdsToUnpaid: true,
+          showAdsToPaid: false,
+          showAdsToAmbassador: false,
+        }
+        
+        if (!loading) {
+            showAd = shouldLoadAdsForContext(pathname || '/', user, config)
         }
         
         setShouldShowAd(showAd)
