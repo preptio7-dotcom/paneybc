@@ -108,6 +108,7 @@ import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 import { DeferredGtag } from "@/components/deferred-gtag"
 import { WelcomePopup } from "@/components/welcome-popup"
 
+import { AdsLoader } from "@/components/ads-loader"
 import Script from 'next/script'
 
 export default function RootLayout({
@@ -143,6 +144,7 @@ export default function RootLayout({
         <TrustedTypesBootstrap />
         <DeferredGtag />
         <AuthProvider>
+          <AdsLoader />
           <PWARegistration />
           <PWAInstallPrompt />
           <Suspense fallback={null}>

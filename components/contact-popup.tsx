@@ -32,8 +32,6 @@ type ContactFormData = z.infer<typeof contactSchema>
 export function ContactPopup() {
     const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
-
-    if (pathname !== '/') return null
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const {
@@ -72,6 +70,8 @@ export function ContactPopup() {
             setIsSubmitting(false)
         }
     }
+
+    if (pathname !== '/') return null
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

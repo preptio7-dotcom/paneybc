@@ -106,6 +106,45 @@ export function getAdEligibilityInfo(pathname: string, user: AdAccessUser): AdEl
   }
 }
 
-export function shouldLoadAdsForContext(pathname: string, user: AdAccessUser) {
-  return getAdEligibilityInfo(pathname, user).eligible
+export type AdSenseConfig = {
+    globalEnabled: boolean
+    allowedPaths: string[]
+    blockedPaths: string[]
+    showAdsToUnpaid: boolean
+    showAdsToPaid: boolean
+    showAdsToAmbassador: boolean
+}
+
+function matchPathPattern(pathname: string, pattern: string): boolean {
+    const regex = new RegExp('^' + pattern.split('*').join('.*') + '$', 'i')
+    return regex.test(pathname)
+}
+
+export function shouldLoadAdsForContext(
+    pathname: string,
+    user: AdAccessUser,
+    config: AdSenseConfig | null = null
+) {
+    // If no config, fallback to default logic
+    if (!config) {
+        return getAdEligibilityInfo(pathname, user).eligible
+    }
+
+    if (!config.globalEnabled) return false
+
+    // Check user role first
+    if (user?.role === 'admin' || user?.role === 'super_admin') return false
+
+    const studentRole = user?.studentRole || 'unpaid'
+    if (studentRole === 'paid' && !config.showAdsToPaid) return false
+    if (studentRole === 'ambassador' && !config.showAdsToAmbassador) return false
+    if (studentRole === 'unpaid' && !config.showAdsToUnpaid) return false
+    if (studentRole === 'user' && !config.showAdsToUnpaid) return false
+
+    // Then check paths
+    const isBlocked = config.blockedPaths.some(pattern => matchPathPattern(pathname, pattern))
+    if (isBlocked) return false
+
+    const isAllowed = config.allowedPaths.some(pattern => matchPathPattern(pathname, pattern))
+    return isAllowed
 }

@@ -218,6 +218,7 @@ model User {
   referralCode         String?  @unique
   referralLink         String?
   popupDismissed       Boolean  @default(false)
+  adminPermissions     Json?    @map("admin_permissions")
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -551,6 +552,7 @@ model SystemSettings {
   adsEnabled             Boolean  @default(true)
   welcomeMessageTemplate String   @default("Welcome back, {{name}}!")
   adContent              Json?
+  adSenseConfig          Json?
   testSettings           Json?
   activeAvatarPackId     String?  @map("active_avatar_pack_id")
   toggledBy              String?

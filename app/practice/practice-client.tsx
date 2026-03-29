@@ -1,7 +1,6 @@
 'use client'
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import Script from 'next/script'
 import { useAuth } from '@/lib/auth-context'
 import { shouldLoadAdsForContext } from '@/lib/ad-access'
 import { usePathname } from 'next/navigation'
@@ -50,13 +49,6 @@ function AdSenseSlot() {
 
     return (
         <div className="w-full my-10 flex justify-center overflow-hidden min-h-[90px] bg-slate-50 border border-slate-200 rounded-xl items-center text-slate-400 text-sm shadow-inner relative">
-            <Script
-                id="adsense-loader-practice"
-                async
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5583540622875378"
-                crossOrigin="anonymous"
-                strategy="afterInteractive"
-            />
             <span className="absolute z-0 opacity-50 text-xs tracking-widest font-semibold uppercase">Advertisement</span>
             <ins
                 className="adsbygoogle relative z-10"

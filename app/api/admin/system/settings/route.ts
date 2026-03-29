@@ -12,6 +12,7 @@ import {
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { extractBetaFeatureSettings } from '@/lib/beta-features'
 import { createAdminAuditLog } from '@/lib/admin-audit'
+import { hasPermission } from '@/lib/admin-permissions'
 import {
   extractHomepageHeroMotionSettings,
   extractHomepageThemeSettings,
@@ -21,22 +22,36 @@ import {
   invalidateStreakSettingsCache,
 } from '@/lib/streak-settings'
 
-function isAuthorized(request: NextRequest) {
+async function getAuthorizedUser(request: NextRequest) {
   const hasSuperAdminSession = request.headers.get('cookie')?.includes('super_admin_session')
-  if (hasSuperAdminSession) return true
-  try {
-    const decoded = getCurrentUser(request)
-    return Boolean(decoded && (decoded.role === 'admin' || decoded.role === 'super_admin'))
-  } catch (error) {
-    return false
+  const decoded = getCurrentUser(request)
+  
+  if (hasSuperAdminSession) {
+    return { id: 'super-admin', role: 'super_admin', adminPermissions: { canManageAds: true } }
   }
+
+  if (decoded && (decoded.role === 'admin' || decoded.role === 'super_admin')) {
+    // Fetch fresh user from DB to check current permissions
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, role: true, adminPermissions: true }
+    })
+    return user
+  }
+  
+  return null
 }
 
 export async function GET(request: NextRequest) {
   // Admin-only, low traffic — no caching needed, always serve live data
   try {
-    if (!isAuthorized(request)) {
+    const admin = await getAuthorizedUser(request)
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!hasPermission(admin.role, admin.adminPermissions, 'canManageAds')) {
+      return NextResponse.json({ error: 'Forbidden: No Ads access' }, { status: 403 })
     }
 
     let settings = await prisma.systemSettings.findFirst()
@@ -118,11 +133,27 @@ export async function GET(request: NextRequest) {
       homepageFeatureShowcase: { visibility: normalizedBetaFeatures.homepageFeatureShowcase },
     }
 
+    const savedAdSenseConfig =
+      settings.adSenseConfig && typeof settings.adSenseConfig === 'object' && !Array.isArray(settings.adSenseConfig)
+        ? (settings.adSenseConfig as Record<string, any>)
+        : {}
+
+    const adSenseConfig = {
+      globalEnabled: settings.adsEnabled ?? true,
+      allowedPaths: ['/', '/blog', '/blog/*'],
+      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*'],
+      showAdsToUnpaid: true,
+      showAdsToPaid: false,
+      showAdsToAmbassador: false,
+      ...savedAdSenseConfig,
+    }
+
     return NextResponse.json({
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
       activeAvatarPackId: settings.activeAvatarPackId || null,
       adContent,
+      adSenseConfig,
       testSettings: normalizedTestSettings,
     })
   } catch (error) {
@@ -132,10 +163,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!isAuthorized(request)) {
+    const admin = await getAuthorizedUser(request)
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const admin = getCurrentUser(request)
+
+    if (!hasPermission(admin.role, admin.adminPermissions, 'canManageAds')) {
+      return NextResponse.json({ error: 'Forbidden: No Ads access' }, { status: 403 })
+    }
 
     const payload = await request.json()
     let settings = await prisma.systemSettings.findFirst()
@@ -186,13 +221,33 @@ export async function POST(request: NextRequest) {
       ...savedTestSettings,
     }
 
+    const savedAdSenseConfig =
+      settings.adSenseConfig && typeof settings.adSenseConfig === 'object' && !Array.isArray(settings.adSenseConfig)
+        ? (settings.adSenseConfig as Record<string, any>)
+        : {}
+
+    const adSenseConfig = {
+      globalEnabled: settings.adsEnabled ?? true,
+      allowedPaths: ['/', '/blog', '/blog/*'],
+      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*'],
+      showAdsToUnpaid: true,
+      showAdsToPaid: false,
+      showAdsToAmbassador: false,
+      ...savedAdSenseConfig,
+    }
+
     const beforeSnapshot = {
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
       activeAvatarPackId: settings.activeAvatarPackId || null,
       adContent: currentAdContent,
+      adSenseConfig,
       testSettings: currentTestSettings,
     }
+
+    const updatedAdSenseConfig = payload.adSenseConfig
+      ? { ...adSenseConfig, ...payload.adSenseConfig }
+      : adSenseConfig
 
     const updatedAdContent = {
       ...currentAdContent,
@@ -248,6 +303,7 @@ export async function POST(request: NextRequest) {
         ...(typeof payload.activeAvatarPackId === 'string' || payload.activeAvatarPackId === null
           ? { activeAvatarPackId: payload.activeAvatarPackId || null } : {}),
         adContent: updatedAdContent,
+        adSenseConfig: updatedAdSenseConfig,
         testSettings: updatedTestSettings,
       },
     })

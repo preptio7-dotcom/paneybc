@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const hash = await bcryptjs.hash(password, 10)
+    const adminPermissions = body.adminPermissions || { canManageAds: false }
 
     const user = await prisma.user.create({
       data: {
@@ -49,12 +50,14 @@ export async function POST(request: NextRequest) {
         email,
         password: hash,
         role: 'admin',
+        adminPermissions,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        adminPermissions: true,
         createdAt: true,
       },
     })

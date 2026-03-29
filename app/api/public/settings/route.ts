@@ -195,12 +195,28 @@ export async function GET(request: NextRequest) {
       homepageFeatureShowcase: { visibility: betaFeatures.homepageFeatureShowcase },
     }
 
+    const savedAdSenseConfig =
+      settings.adSenseConfig && typeof settings.adSenseConfig === 'object' && !Array.isArray(settings.adSenseConfig)
+        ? (settings.adSenseConfig as Record<string, any>)
+        : {}
+
+    const adSenseConfig = {
+      globalEnabled: settings.adsEnabled ?? true,
+      allowedPaths: ['/', '/blog', '/blog/*'],
+      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*'],
+      showAdsToUnpaid: true,
+      showAdsToPaid: false,
+      showAdsToAmbassador: false,
+      ...savedAdSenseConfig,
+    }
+
     return NextResponse.json(
       {
         adsEnabled: settings.adsEnabled ?? false,
         welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
         activeAvatarPackId: settings.activeAvatarPackId || null,
         adContent,
+        adSenseConfig,
         testSettings: normalizedTestSettings,
       },
       {

@@ -8,11 +8,11 @@ import { toast } from 'sonner'
 
 export default function CreateAdminPage() {
   const [isLoading, setIsLoading] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', adsAccess: false })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +31,7 @@ export default function CreateAdminPage() {
           name: form.name.trim(),
           email: form.email.trim(),
           password: form.password,
+          adminPermissions: { canManageAds: form.adsAccess },
         }),
       })
 
@@ -40,7 +41,7 @@ export default function CreateAdminPage() {
       }
 
       toast.success('Admin account created successfully.')
-      setForm({ name: '', email: '', password: '' })
+      setForm({ name: '', email: '', password: '', adsAccess: false })
     } catch (error: any) {
       toast.error(error.message || 'Failed to create admin')
     } finally {
@@ -98,10 +99,25 @@ export default function CreateAdminPage() {
               <p className="text-xs text-gray-500">Admins can change their password after logging in.</p>
             </div>
 
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  id="adsAccess"
+                  name="adsAccess"
+                  type="checkbox"
+                  checked={form.adsAccess}
+                  onChange={(e) => setForm(prev => ({ ...prev, adsAccess: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-primary-green focus:ring-primary-green"
+                />
+                <label htmlFor="adsAccess" className="text-sm font-medium text-gray-300">Grant Ads & AdSense Access</label>
+              </div>
+              <p className="text-xs text-gray-500 ml-6">Allows this admin to configure site-wide ads and Google AdSense units.</p>
+            </div>
+
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-primary-green hover:bg-primary-green/90 text-gray-950 font-bold"
+              className="bg-primary-green hover:bg-primary-green/90 text-gray-950 font-bold w-full"
             >
               {isLoading ? 'Creating...' : 'Create Admin'}
             </Button>
