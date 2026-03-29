@@ -1,12 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import { Navigation } from '@/components/navigation'
-import { HomepageContent } from '@/components/homepage-content'
-import { Adsense } from '@/components/adsense'
-import { LogoutToast } from '@/components/logout-toast'
+import { HomeWrapper } from '@/components/home-wrapper'
+import dynamicImport from 'next/dynamic'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import type { Metadata } from 'next'
 
 const LogoutToast = dynamicImport(
   () => import('@/components/logout-toast').then((module) => module.LogoutToast),
@@ -70,7 +69,7 @@ export async function generateMetadata() {
     alternates: {
       canonical: 'https://www.preptio.com',
     },
-  } as Metadata
+  }
 }
 
 export default function Home() {
@@ -213,12 +212,18 @@ export default function Home() {
   return (
     <main className="w-full">
       <Navigation />
-      <LogoutToast />
-      <HomepageContent />
-      <Adsense />
-      <div className="sr-only">
-        <Link href="/practice">Free Practice MCQs</Link>
-      </div>
+      <HomeWrapper>
+        <Suspense fallback={null}>
+          <LogoutToast />
+        </Suspense>
+        <HomepageContent />
+        <Suspense fallback={null}>
+          <Adsense />
+        </Suspense>
+        <div className="sr-only">
+          <Link href="/practice">Free Practice MCQs</Link>
+        </div>
+      </HomeWrapper>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
