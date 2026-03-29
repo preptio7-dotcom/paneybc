@@ -2,6 +2,7 @@ type AdAccessUser =
   | {
       role?: 'student' | 'admin' | 'super_admin' | string
       studentRole?: 'user' | 'unpaid' | 'paid' | 'ambassador' | string
+      adsFreeUntil?: Date | string | null
     }
   | null
   | undefined
@@ -73,6 +74,17 @@ export function isRouteBlockedForAds(pathname: string) {
 export function getUserAdRestrictionReason(user: AdAccessUser): string | null {
   if (!user) return null
   if (user.role === 'admin' || user.role === 'super_admin') return 'admin-role'
+  
+  // Check if user has active subscription
+  if (user.adsFreeUntil) {
+    const adsFreeUntilDate = typeof user.adsFreeUntil === 'string' 
+      ? new Date(user.adsFreeUntil)
+      : user.adsFreeUntil
+    if (adsFreeUntilDate > new Date()) {
+      return 'paid-subscription'
+    }
+  }
+  
   const studentRole = user.studentRole || 'unpaid'
   if (studentRole === 'unpaid') return null
   if (studentRole === 'paid') return 'paid-role'
@@ -134,6 +146,16 @@ export function shouldLoadAdsForContext(
 
     // Check user role first
     if (user?.role === 'admin' || user?.role === 'super_admin') return false
+
+    // Check if user has active subscription
+    if (user?.adsFreeUntil) {
+      const adsFreeUntilDate = typeof user.adsFreeUntil === 'string' 
+        ? new Date(user.adsFreeUntil)
+        : user.adsFreeUntil
+      if (adsFreeUntilDate > new Date()) {
+        return false // User has active subscription, no ads
+      }
+    }
 
     const studentRole = user?.studentRole || 'unpaid'
     if (studentRole === 'paid' && !config.showAdsToPaid) return false

@@ -185,6 +185,23 @@ enum InstituteSuggestionStatus {
   rejected
 }
 
+enum SubscriptionPlan {
+  one_month
+  lifetime
+}
+
+enum SubscriptionRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PaymentMethodType {
+  nayapay
+  easypaisa
+  bank_account
+}
+
 model User {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -219,9 +236,11 @@ model User {
   referralLink         String?
   popupDismissed       Boolean  @default(false)
   adminPermissions     Json?    @map("admin_permissions")
+  adsFreeUntil         DateTime? @map("ads_free_until")
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
+  subscriptionRequests SubscriptionRequest[] @relation("UserSubscriptions")
   financialStatementAttempts FinancialStatementAttempt[]
   userFsProgress            UserFsProgress?
   financialStatementReports FinancialStatementReport[]
@@ -554,11 +573,13 @@ model SystemSettings {
   adContent              Json?
   adSenseConfig          Json?
   testSettings           Json?
+  subscriptionSettings   Json? @map("subscription_settings")
   activeAvatarPackId     String?  @map("active_avatar_pack_id")
   toggledBy              String?
   updatedAt              DateTime @updatedAt
 
   activeAvatarPack       AvatarPack? @relation(fields: [activeAvatarPackId], references: [id])
+  paymentMethods         PaymentMethod[]
 }
 
 model InstituteSuggestion {
@@ -1037,4 +1058,46 @@ model StudentTag {
   @@unique([studentId, tag])
   @@index([studentId])
   @@map("student_tags")
+}
+
+model SubscriptionRequest {
+  id                   String                      @id @default(cuid())
+  userId               String                      @map("user_id")
+  plan                 SubscriptionPlan
+  paymentProofUrl      String                      @map("payment_proof_url")
+  paymentMethod        String                      @map("payment_method")
+  status               SubscriptionRequestStatus   @default(pending)
+  rejectionReason      String?                     @map("rejection_reason")
+  approvedBy           String?                     @map("approved_by")
+  approvedAt           DateTime?                   @map("approved_at")
+  adsFreeUntil         DateTime?                   @map("ads_free_until")
+  createdAt            DateTime                    @default(now()) @map("created_at")
+  updatedAt            DateTime                    @updatedAt @map("updated_at")
+
+  user                 User                        @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@map("subscription_requests")
+}
+
+model PaymentMethod {
+  id                   String                @id @default(cuid())
+  type                 PaymentMethodType
+  isActive             Boolean               @default(true) @map("is_active")
+  displayName          String                @map("display_name")
+  accountTitle         String?               @map("account_title")
+  accountNumberOrId    String?               @map("account_number_or_id")
+  additionalInfo       Json?                 @map("additional_info")
+  displayOrder         Int                   @default(0) @map("display_order")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+
+  systemSettingsId     String?               @map("system_settings_id")
+  systemSettings       SystemSettings?       @relation(fields: [systemSettingsId], references: [id], onDelete: SetNull)
+
+  @@index([type, isActive])
+  @@index([displayOrder])
+  @@map("payment_methods")
 }

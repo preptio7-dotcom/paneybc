@@ -107,6 +107,7 @@ import { TrustedTypesBootstrap } from "@/components/trusted-types-bootstrap"
 import { GlobalRuntimeMonitor } from "@/components/global-runtime-monitor"
 import { DeferredGtag } from "@/components/deferred-gtag"
 import { WelcomePopup } from "@/components/welcome-popup"
+import { SubscriptionPopup } from "@/components/subscription-popup"
 
 import { AdsLoader } from "@/components/ads-loader"
 import Script from 'next/script'
@@ -154,6 +155,7 @@ export default function RootLayout({
           {children}
           <ContactPopup />
           <WelcomePopup />
+          <SubscriptionPopup />
 
 
         </AuthProvider>
