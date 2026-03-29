@@ -1,20 +1,21 @@
 import { useAuth } from '@/lib/auth-context'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 /**
- * Hook to periodically refresh subscription status from the server
- * and update the auth context
+ * Hook to track and refresh subscription status from the server
+ * Auto-refreshes when page becomes visible (tab focus)
  */
 export function useSubscriptionStatus() {
   const { user } = useAuth()
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const refreshStatus = async () => {
+  const refreshStatus = useCallback(async () => {
     try {
       setIsLoading(true)
       const response = await fetch('/api/subscription/status', {
         method: 'POST',
+        cache: 'no-store',
       })
 
       if (response.ok) {
@@ -27,26 +28,35 @@ export function useSubscriptionStatus() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  // Auto-refresh when user data changes or page becomes visible
+  // Set initial state from user data
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setIsSubscribed(false)
+      return
+    }
 
     const userData = user as any
     const adsFreeUntil = userData?.adsFreeUntil
-    setIsSubscribed(adsFreeUntil && new Date(adsFreeUntil) > new Date())
+    const hasSubscription = adsFreeUntil && new Date(adsFreeUntil) > new Date()
+    setIsSubscribed(hasSubscription)
+  }, [user])
 
-    // Refresh when page becomes visible (tab focus)
+  // Auto-refresh when page becomes visible (tab focus)
+  useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         refreshStatus()
       }
     }
 
+    // Also refresh on mount to get fresh data
+    refreshStatus()
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [user])
+  }, [refreshStatus])
 
   return { isSubscribed, refreshStatus, isLoading }
 }

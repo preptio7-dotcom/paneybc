@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { useSubscriptionStatus } from '@/hooks/use-subscription-status'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,7 @@ type SubscriptionFormData = {
 // Inner component that uses useSearchParams
 function BuySubscriptionContent() {
   const { user, loading } = useAuth()
+  const { isSubscribed, refreshStatus } = useSubscriptionStatus()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -44,7 +46,6 @@ function BuySubscriptionContent() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodInfo[]>([])
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<PaymentMethodInfo | null>(null)
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
   const [formData, setFormData] = useState<SubscriptionFormData>({
     plan: 'one_month',
     paymentMethodId: '',
@@ -89,20 +90,22 @@ function BuySubscriptionContent() {
     if (!loading && (!user || user.role !== 'student')) {
       router.push('/auth/login')
     }
-    
-    // Check if user has active subscription
-    const userData = user as any
-    if (userData && userData.adsFreeUntil) {
-      const adsFreeUntilDate = new Date(userData.adsFreeUntil)
-      if (adsFreeUntilDate > new Date()) {
-        setHasActiveSubscription(true)
-        toast({
-          title: '✅ You Already Have an Active Subscription!',
-          description: 'Ads are disabled on your account. Enjoy!',
-        })
-      }
+  }, [user, loading, router])
+
+  // Refresh subscription status when page is visited
+  useEffect(() => {
+    refreshStatus()
+  }, [refreshStatus])
+
+  // Show notification when subscription is active
+  useEffect(() => {
+    if (isSubscribed) {
+      toast({
+        title: '✅ You Already Have an Active Subscription!',
+        description: 'Ads are disabled on your account. Enjoy!',
+      })
     }
-  }, [user, loading, router, toast])
+  }, [isSubscribed, toast])
 
   const handlePaymentMethodChange = (methodId: string) => {
     const method = paymentMethods.find(m => m.id === methodId)
@@ -230,16 +233,16 @@ function BuySubscriptionContent() {
     <main className="min-h-screen bg-background-light py-6 md:py-12">
       <div className="w-full max-w-2xl mx-auto px-4">
         {/* Active Subscription */}
-        {hasActiveSubscription && (
+        {isSubscribed && (
           <ActiveSubscriptionUI
             adsFreeUntil={(user as any).adsFreeUntil}
             plan={formData.plan}
-            onCancel={() => setHasActiveSubscription(false)}
+            onCancel={() => refreshStatus()}
           />
         )}
 
         {/* Only show form if no active subscription */}
-        {!hasActiveSubscription && (
+        {!isSubscribed && (
           <>
             {/* Header */}
             <div className="mb-6 md:mb-8">
