@@ -17,11 +17,11 @@ export function AdsLoader() {
   const { user } = useAuth()
   const { settings, loading } = useSystemSettings()
   
-  if (loading || !settings) return null
-
-  const shouldLoadAdSense = shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)
-
-  if (!shouldLoadAdSense) return null
+  // Load script by default - let ad context logic handle visibility
+  // Only skip if we explicitly know settings are loaded and ads are disabled
+  if (!loading && settings && !shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)) {
+    return null
+  }
 
   return (
     <Script

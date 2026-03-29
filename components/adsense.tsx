@@ -13,32 +13,33 @@ export function Adsense() {
     const [shouldShowAd, setShouldShowAd] = useState(false)
 
     useEffect(() => {
-        // Skip if data is still loading or not available
-        if (loading || !settings) {
-            setShouldShowAd(false)
-            return
+        // Determine if ads should be shown
+        let showAd = false
+        if (settings && !loading) {
+            showAd = shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)
         }
         
-        const showAd = shouldLoadAdsForContext(pathname || '/', user, settings.adSenseConfig)
         setShouldShowAd(showAd)
         
-        if (!showAd) return
-
-        try {
-            // @ts-ignore
-            ; (window.adsbygoogle = window.adsbygoogle || []).push({})
-        } catch (err) {
-            console.error('AdSense push error:', err)
+        // Push ad to AdSense if enabled
+        if (showAd && settings) {
+            try {
+                // @ts-ignore
+                ; (window.adsbygoogle = window.adsbygoogle || []).push({})
+            } catch (err) {
+                console.error('AdSense push error:', err)
+            }
         }
     }, [pathname, loading, settings, user])
 
-    if (!shouldShowAd) return null
+    // Show ad placeholder even while loading
+    const showPlaceholder = !shouldShowAd
 
     return (
         <div className="max-w-7xl mx-auto px-4 my-8 overflow-hidden text-center" style={{ minHeight: '100px' }}>
             <ins
                 className="adsbygoogle"
-                style={{ display: 'block', margin: '0 auto', width: '100%', minWidth: '250px', minHeight: '90px' }}
+                style={{ display: shouldShowAd ? 'block' : 'none', margin: '0 auto', width: '100%', minWidth: '250px', minHeight: '90px' }}
                 data-ad-client="ca-pub-5583540622875378"
                 data-ad-slot="7458772554"
                 data-ad-format="auto"

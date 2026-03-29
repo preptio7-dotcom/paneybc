@@ -203,7 +203,7 @@ export async function GET(request: NextRequest) {
     const adSenseConfig = {
       globalEnabled: settings.adsEnabled ?? true,
       allowedPaths: ['/', '/blog', '/blog/*'],
-      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*'],
+      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/buy-subscription', '/register'],
       showAdsToUnpaid: true,
       showAdsToPaid: false,
       showAdsToAmbassador: false,
