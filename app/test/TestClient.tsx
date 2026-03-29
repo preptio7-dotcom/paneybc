@@ -57,6 +57,25 @@ export default function TestPage() {
 
   const startTimeRef = useRef<number>(Date.now())
 
+  // ✅ FIX: This useEffect is now above ALL early returns
+  // Previously it was placed after the `if (!user) return` block, causing React error #310
+  useEffect(() => {
+    if (!user || isLoading || isSubmitting || questions.length === 0) return
+
+    const interval = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          handleSubmitTest()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [user, isLoading, isSubmitting, questions.length])
+
   useEffect(() => {
     if (authLoading || !user) {
       setIsLoading(false)
@@ -130,6 +149,7 @@ export default function TestPage() {
     }
   }, [authLoading, user, authToastShown, toast])
 
+  // Early returns AFTER all hooks
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background-light flex items-center justify-center">
@@ -155,32 +175,52 @@ export default function TestPage() {
     )
   }
 
-  useEffect(() => {
-    if (isLoading || isSubmitting || questions.length === 0) return
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background-light flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary-green" size={40} />
+      </div>
+    )
+  }
 
-    const interval = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          handleSubmitTest()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+  if (subjects.length === 0) {
+    return (
+      <div className="min-h-screen bg-background-light flex items-center justify-center px-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <p className="text-text-dark font-semibold">No subjects available.</p>
+            <p className="text-text-light text-sm">Please contact an admin to add subjects.</p>
+            <Button onClick={() => router.push('/')}>Back to Home</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
-    return () => clearInterval(interval)
-  }, [isLoading, isSubmitting, questions.length])
-
-  const answeredQuestions = useMemo(() => {
-    const answered = new Set<number>()
-    answers.forEach((answer, index) => {
-      if (answer && answer.length > 0) {
-        answered.add(index + 1)
-      }
-    })
-    return answered
-  }, [answers])
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background-light flex items-center justify-center px-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <p className="text-text-dark font-semibold">No questions found for this subject.</p>
+            <p className="text-text-light text-sm">Try another subject to start a test.</p>
+            <div className="flex flex-col gap-2">
+              {subjects.map((subject, idx) => (
+                <Button
+                  key={subject._id ?? subject.code ?? `${subject.name ?? 'subject'}-${idx}`}
+                  variant={subject.code === selectedSubject ? 'default' : 'outline'}
+                  onClick={() => setSelectedSubject(subject.code)}
+                  className="text-left whitespace-normal break-words h-auto py-2 leading-snug"
+                >
+                  {subject.name}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const handleAnswerSelect = (answerId: string) => {
     const selectedIndex = Number(answerId)
@@ -266,52 +306,15 @@ export default function TestPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background-light flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary-green" size={40} />
-      </div>
-    )
-  }
-
-  if (subjects.length === 0) {
-    return (
-      <div className="min-h-screen bg-background-light flex items-center justify-center px-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center space-y-4">
-            <p className="text-text-dark font-semibold">No subjects available.</p>
-            <p className="text-text-light text-sm">Please contact an admin to add subjects.</p>
-            <Button onClick={() => router.push('/')}>Back to Home</Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (questions.length === 0) {
-    return (
-      <div className="min-h-screen bg-background-light flex items-center justify-center px-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center space-y-4">
-            <p className="text-text-dark font-semibold">No questions found for this subject.</p>
-            <p className="text-text-light text-sm">Try another subject to start a test.</p>
-            <div className="flex flex-col gap-2">
-              {subjects.map((subject, idx) => (
-                <Button
-                  key={subject._id ?? subject.code ?? `${subject.name ?? 'subject'}-${idx}`}
-                  variant={subject.code === selectedSubject ? 'default' : 'outline'}
-                  onClick={() => setSelectedSubject(subject.code)}
-                  className="text-left whitespace-normal break-words h-auto py-2 leading-snug"
-                >
-                  {subject.name}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const answeredQuestions = useMemo(() => {
+    const answered = new Set<number>()
+    answers.forEach((answer, index) => {
+      if (answer && answer.length > 0) {
+        answered.add(index + 1)
+      }
+    })
+    return answered
+  }, [answers])
 
   const current = questions[currentQuestion - 1]
   const questionOptions = buildQuestionOptionItems(current.options, current.optionImageUrls).map((option) => ({
