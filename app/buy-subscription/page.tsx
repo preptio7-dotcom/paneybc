@@ -90,8 +90,9 @@ function BuySubscriptionContent() {
     }
     
     // Check if user has active subscription
-    if (user && user.adsFreeUntil) {
-      const adsFreeUntilDate = new Date(user.adsFreeUntil)
+    const userData = user as any
+    if (userData && userData.adsFreeUntil) {
+      const adsFreeUntilDate = new Date(userData.adsFreeUntil)
       if (adsFreeUntilDate > new Date()) {
         setHasActiveSubscription(true)
         toast({
