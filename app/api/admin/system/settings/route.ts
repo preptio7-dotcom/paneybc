@@ -27,16 +27,33 @@ async function getAuthorizedUser(request: NextRequest) {
   const decoded = getCurrentUser(request)
   
   if (hasSuperAdminSession) {
-    return { id: 'super-admin', role: 'super_admin', adminPermissions: { canManageAds: true } }
+    return { 
+      userId: 'super-admin', 
+      email: 'super-admin@preptio.com',
+      role: 'super_admin' as any, 
+      adminPermissions: { canManageAds: true },
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 86400
+    }
   }
 
   if (decoded && (decoded.role === 'admin' || decoded.role === 'super_admin')) {
     // Fetch fresh user from DB to check current permissions
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, role: true, adminPermissions: true }
+    const user = await (prisma.user as any).findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, email: true, role: true, adminPermissions: true }
     })
-    return user
+    
+    if (user) {
+      return {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        adminPermissions: user.adminPermissions,
+        iat: decoded.iat,
+        exp: decoded.exp
+      }
+    }
   }
   
   return null
@@ -303,7 +320,7 @@ export async function POST(request: NextRequest) {
         ...(typeof payload.activeAvatarPackId === 'string' || payload.activeAvatarPackId === null
           ? { activeAvatarPackId: payload.activeAvatarPackId || null } : {}),
         adContent: updatedAdContent,
-        adSenseConfig: updatedAdSenseConfig,
+        adSenseConfig: updatedAdSenseConfig as any,
         testSettings: updatedTestSettings,
       },
     })
