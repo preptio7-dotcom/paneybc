@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     // Check if user already has a pending request
     const existingRequest = await prisma.subscriptionRequest.findFirst({
       where: {
-        userId: decoded.id,
+        userId: decoded.userId,
         status: 'pending',
       },
     })
