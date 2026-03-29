@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { hasPermission } from '@/lib/admin-permissions'
 import { createAdminAuditLog } from '@/lib/admin-audit'
+import { sendSubscriptionApprovedEmail, sendSubscriptionRejectedEmail } from '@/lib/email-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -129,6 +130,21 @@ export async function POST(request: NextRequest) {
         where: { id: subscriptionRequest.userId },
         data: { adsFreeUntil } as any,
       })
+
+      // Send approval email notification
+      await sendSubscriptionApprovedEmail(
+        subscriptionRequest.user.email,
+        subscriptionRequest.user.name,
+        subscriptionRequest.plan
+      )
+    } else if (action === 'reject') {
+      // Send rejection email notification
+      await sendSubscriptionRejectedEmail(
+        subscriptionRequest.user.email,
+        subscriptionRequest.user.name,
+        subscriptionRequest.plan,
+        rejectionReason
+      )
     }
 
     // Log audit
