@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { hasPermission } from '@/lib/admin-permissions'
 
 export async function PATCH(
   request: NextRequest,
@@ -12,8 +13,18 @@ export async function PATCH(
     const { id } = await params
     const decoded = getCurrentUser(request)
 
-    if (!decoded || decoded.role !== 'super_admin') {
+    if (!decoded || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Fetch fresh user from DB to check current permissions
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, role: true, adminPermissions: true }
+    })
+
+    if (!user || !hasPermission(user.role, user.adminPermissions, 'canManagePayments')) {
+      return NextResponse.json({ error: 'Forbidden: No Payment access' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -48,8 +59,18 @@ export async function PATCH(
       { status: 500 }
     )
   }
-}
+}(decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
+    // Fetch fresh user from DB to check current permissions
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, role: true, adminPermissions: true }
+    })
+
+    if (!user || !hasPermission(user.role, user.adminPermissions, 'canManagePayments')) {
+      return NextResponse.json({ error: 'Forbidden: No Payment access' }, { status: 403
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

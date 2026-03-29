@@ -61,8 +61,18 @@ export async function POST(request: NextRequest) {
   try {
     const decoded = getCurrentUser(request)
 
-    if (!decoded || decoded.role === 'student') {
+    if (!decoded || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Fetch fresh user from DB to check current permissions
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, role: true, adminPermissions: true }
+    })
+
+    if (!user || !hasPermission(user.role, user.adminPermissions, 'canManagePayments')) {
+      return NextResponse.json({ error: 'Forbidden: No Payment access' }, { status: 403 })
     }
 
     const body = await request.json()

@@ -8,6 +8,7 @@
 
 export type AdminPermissions = {
   canManageAds: boolean
+  canManagePayments: boolean
   // Add more granular permissions here in the future:
   // canManageUsers: boolean
   // canManageBlog: boolean
@@ -16,6 +17,7 @@ export type AdminPermissions = {
 
 export const DEFAULT_ADMIN_PERMISSIONS: AdminPermissions = {
   canManageAds: false, // admins do NOT get ads access by default
+  canManagePayments: false, // admins do NOT get payments access by default
 }
 
 export function getAdminPermissions(
@@ -26,6 +28,7 @@ export function getAdminPermissions(
   if (role === 'super_admin') {
     return {
       canManageAds: true,
+      canManagePayments: true,
     }
   }
 
