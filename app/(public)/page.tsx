@@ -215,9 +215,7 @@ export default function Home() {
         <LogoutToast />
       </Suspense>
       <HomepageContent />
-      <Suspense fallback={null}>
-        <Adsense />
-      </Suspense>
+      <Adsense />
       <div className="sr-only">
         <Link href="/practice">Free Practice MCQs</Link>
       </div>
