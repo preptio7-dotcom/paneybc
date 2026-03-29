@@ -14,7 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 type UserRow = {
   id: string
@@ -284,21 +285,14 @@ export default function SuperAdminUsersPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="canManagePayments"
-                checked={permissions.canManagePayments}
-                onCheckedChange={(checked) =>
-                  setPermissions((prev) => ({ ...prev, canManagePayments: Boolean(checked) }))
-                }
-                className="border-gray-600"
-              />
+              <Switch checked={permissions.canManagePayments} onCheckedChange={(checked) => setPermissions((prev) => ({ ...prev, canManagePayments: Boolean(checked) }))} />
               <label htmlFor="canManagePayments" className="text-white cursor-pointer">
                 <div className="font-medium">Manage Payments</div>
                 <div className="text-xs text-gray-400">Can add/edit/delete payment methods and approve subscriptions</div>
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
+              <Switch
                 id="canManageAds"
                 checked={permissions.canManageAds}
                 onCheckedChange={(checked) =>
@@ -326,3 +320,5 @@ export default function SuperAdminUsersPage() {
     </div>
   )
 }
+
+
