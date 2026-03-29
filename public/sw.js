@@ -43,16 +43,20 @@ self.addEventListener('fetch', (event) => {
     // Network first for API calls
     if (url.pathname.startsWith('/api/')) {
         event.respondWith(
-            fetch(request).then((response) => {
-                if (!response.ok) throw new Error('API response not ok')
-                const clonedResponse = response.clone()
-                caches.open(RUNTIME_CACHE).then((cache) => {
-                    cache.put(request, clonedResponse)
+            fetch(request)
+                .then((response) => {
+                    // Always cache and return the response, even if not ok
+                    // (401, 404, etc. are valid API responses that clients need to handle)
+                    const clonedResponse = response.clone()
+                    caches.open(RUNTIME_CACHE).then((cache) => {
+                        cache.put(request, clonedResponse)
+                    })
+                    return response
                 })
-                return response
-            }).catch(() => {
-                return caches.match(request)
-            })
+                .catch(() => {
+                    // Only use cache as fallback on actual network errors
+                    return caches.match(request)
+                })
         )
         return
     }
@@ -60,16 +64,19 @@ self.addEventListener('fetch', (event) => {
     // For HTML pages, always fetch fresh to see latest updates
     if (request.mode === 'navigate' || request.destination === 'document') {
         event.respondWith(
-            fetch(request, { cache: 'reload' }).then((response) => {
-                if (!response.ok) throw new Error('Network response not ok')
-                const clonedResponse = response.clone()
-                caches.open(RUNTIME_CACHE).then((cache) => {
-                    cache.put(request, clonedResponse)
+            fetch(request, { cache: 'reload' })
+                .then((response) => {
+                    // Return all responses including errors
+                    const clonedResponse = response.clone()
+                    caches.open(RUNTIME_CACHE).then((cache) => {
+                        cache.put(request, clonedResponse)
+                    })
+                    return response
                 })
-                return response
-            }).catch(() => {
-                return caches.match(request)
-            })
+                .catch(() => {
+                    // On network error, try to return cached version
+                    return caches.match(request)
+                })
         )
         return
     }
@@ -78,7 +85,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(request).then((response) => {
             return response || fetch(request).then((response) => {
-                if (!response.ok) throw new Error('Network response not ok')
+                // Cache all responses, even error responses
                 const clonedResponse = response.clone()
                 caches.open(RUNTIME_CACHE).then((cache) => {
                     cache.put(request, clonedResponse)
