@@ -155,8 +155,97 @@ export default function AdminAdsPage() {
   }
 
   const handleToggleGlobal = async (value: boolean) => {
-    setAdsEnabled(value)
-    setAdSenseConfig((prev: any) => ({ ...prev, globalEnabled: value }))
+    try {
+      setAdSenseConfig((prev: any) => ({ ...prev, globalEnabled: value }))
+      // Auto-save to database immediately
+      const response = await fetch('/api/admin/system/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adsEnabled,
+          adSenseConfig: {
+            ...adSenseConfig,
+            globalEnabled: value,
+          },
+          adContent: {
+            dashboard: dashboardAd,
+            results: resultsAd,
+          },
+        }),
+      })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save')
+      }
+      toast({
+        title: 'Saved',
+        description: 'Toggle updated successfully.',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save toggle.',
+        variant: 'destructive',
+      })
+      // Revert on error
+      loadSettings()
+    }
+  }
+
+  const loadSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/system/settings')
+      if (!response.ok) return
+      const data = await response.json()
+      setAdsEnabled(Boolean(data.adsEnabled))
+      const config = data.adSenseConfig || {
+        globalEnabled: true,
+        allowedPaths: ['/', '/blog', '/blog/*'],
+        blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
+        showAdsToUnpaid: true,
+        showAdsToPaid: false,
+        showAdsToAmbassador: false,
+      }
+      setAdSenseConfig(config)
+    } catch {
+      // keep existing values
+    }
+  }
+
+  const handleToggleUserRole = async (roleKey: string, value: boolean) => {
+    try {
+      const updatedConfig = { ...adSenseConfig, [roleKey]: value }
+      setAdSenseConfig(updatedConfig)
+      // Auto-save to database immediately
+      const response = await fetch('/api/admin/system/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adsEnabled,
+          adSenseConfig: updatedConfig,
+          adContent: {
+            dashboard: dashboardAd,
+            results: resultsAd,
+          },
+        }),
+      })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save')
+      }
+      toast({
+        title: 'Saved',
+        description: 'User role visibility updated successfully.',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save.',
+        variant: 'destructive',
+      })
+      // Revert on error
+      loadSettings()
+    }
   }
 
   return (
@@ -200,7 +289,7 @@ export default function AdminAdsPage() {
                         <div className="flex items-center space-x-2">
                             <Switch 
                                 checked={adSenseConfig.showAdsToUnpaid} 
-                                onCheckedChange={(val) => setAdSenseConfig((prev: any) => ({ ...prev, showAdsToUnpaid: val }))} 
+                                onCheckedChange={(val) => handleToggleUserRole('showAdsToUnpaid', val)} 
                                 disabled={isLoading}
                             />
                             <Label>Unpaid Students</Label>
@@ -208,7 +297,7 @@ export default function AdminAdsPage() {
                         <div className="flex items-center space-x-2">
                             <Switch 
                                 checked={adSenseConfig.showAdsToPaid} 
-                                onCheckedChange={(val) => setAdSenseConfig((prev: any) => ({ ...prev, showAdsToPaid: val }))} 
+                                onCheckedChange={(val) => handleToggleUserRole('showAdsToPaid', val)} 
                                 disabled={isLoading}
                             />
                             <Label>Paid Students</Label>
@@ -216,7 +305,7 @@ export default function AdminAdsPage() {
                         <div className="flex items-center space-x-2">
                             <Switch 
                                 checked={adSenseConfig.showAdsToAmbassador} 
-                                onCheckedChange={(val) => setAdSenseConfig((prev: any) => ({ ...prev, showAdsToAmbassador: val }))} 
+                                onCheckedChange={(val) => handleToggleUserRole('showAdsToAmbassador', val)} 
                                 disabled={isLoading}
                             />
                             <Label>Ambassadors</Label>
@@ -266,7 +355,42 @@ export default function AdminAdsPage() {
                   <Label className="font-bold">Show Sponsored Section</Label>
                   <p className="text-sm text-text-light">Toggle house ads (notes, plans etc).</p>
                 </div>
-                <Switch checked={adsEnabled} onCheckedChange={setAdsEnabled} disabled={isLoading || isSaving} />
+                <Switch 
+                  checked={adsEnabled === true} 
+                  onCheckedChange={async (val) => {
+                    setAdsEnabled(val)
+                    try {
+                      const response = await fetch('/api/admin/system/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          adsEnabled: val,
+                          adSenseConfig,
+                          adContent: {
+                            dashboard: dashboardAd,
+                            results: resultsAd,
+                          },
+                        }),
+                      })
+                      if (!response.ok) {
+                        const data = await response.json()
+                        throw new Error(data.error || 'Failed to save')
+                      }
+                      toast({
+                        title: 'Saved',
+                        description: 'Sponsored section toggled successfully.',
+                      })
+                    } catch (error: any) {
+                      toast({
+                        title: 'Error',
+                        description: error.message || 'Failed to save toggle.',
+                        variant: 'destructive',
+                      })
+                      setAdsEnabled(!val)
+                    }
+                  }} 
+                  disabled={isLoading || isSaving} 
+                />
               </div>
 
               <div className="space-y-2 pt-2">
