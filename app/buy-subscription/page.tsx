@@ -35,7 +35,6 @@ type SubscriptionFormData = {
 export default function BuySubscriptionPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -49,13 +48,15 @@ export default function BuySubscriptionPage() {
     paymentDetails: '',
   })
 
-  // Read plan from search params when component mounts
+  // Read plan from search params when component mounts (client-only)
   useEffect(() => {
+    // useSearchParams is only called inside an effect to avoid SSR issues
+    const searchParams = useSearchParams()
     const planParam = searchParams.get('plan')
     if (planParam === 'one_month' || planParam === 'lifetime') {
       setFormData(prev => ({ ...prev, plan: planParam }))
     }
-  }, [searchParams])
+  }, [])
 
   // Fetch payment methods
   useEffect(() => {
