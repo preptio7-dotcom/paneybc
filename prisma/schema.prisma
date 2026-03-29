@@ -1071,6 +1071,7 @@ model SubscriptionRequest {
   approvedBy           String?                     @map("approved_by")
   approvedAt           DateTime?                   @map("approved_at")
   adsFreeUntil         DateTime?                   @map("ads_free_until")
+  additionalInfo       Json?                       @map("additional_info")
   createdAt            DateTime                    @default(now()) @map("created_at")
   updatedAt            DateTime                    @updatedAt @map("updated_at")
 

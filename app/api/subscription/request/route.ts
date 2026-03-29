@@ -3,9 +3,6 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -36,6 +33,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payment proof is required' }, { status: 400 })
     }
 
+    // Validate file size (max 5MB)
+    if (paymentProofFile.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 })
+    }
+
     // Verify payment method exists
     const paymentMethod = await prisma.paymentMethod.findUnique({
       where: { id: paymentMethodId },
@@ -44,24 +46,6 @@ export async function POST(request: NextRequest) {
     if (!paymentMethod || !paymentMethod.isActive) {
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 })
     }
-
-    // Save uploaded file
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'payment-proofs')
-
-    // Create directories if they don't exist
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
-
-    // Generate unique filename
-    const fileExtension = paymentProofFile.name.split('.').pop()
-    const uniqueFilename = `${crypto.randomBytes(16).toString('hex')}-${Date.now()}.${fileExtension}`
-    const filePath = join(uploadsDir, uniqueFilename)
-    const publicUrl = `/uploads/payment-proofs/${uniqueFilename}`
-
-    // Write file to disk
-    const bytes = await paymentProofFile.arrayBuffer()
-    await writeFile(filePath, Buffer.from(bytes))
 
     // Check if user already has a pending request
     const existingRequest = await prisma.subscriptionRequest.findFirst({
@@ -78,14 +62,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create subscription request
-    const subscriptionRequest = await prisma.subscriptionRequest.create({
+    // Read file as buffer
+    const bytes = await paymentProofFile.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    
+    // Convert to base64 for storage
+    const fileBase64 = buffer.toString('base64')
+    const fileExtension = paymentProofFile.name.split('.').pop() || 'bin'
+    const fileName = paymentProofFile.name
+    
+    // Generate unique proof ID
+    const proofId = crypto.randomBytes(16).toString('hex')
+    const proofUrl = `/api/subscription/payment-proof/${proofId}`
+
+    // Create subscription request with file data
+    const subscriptionRequest = await (prisma.subscriptionRequest.create as any)({
       data: {
         userId: decoded.userId,
         plan: plan as 'one_month' | 'lifetime',
-        paymentProofUrl: publicUrl,
+        paymentProofUrl: proofUrl,
         paymentMethod: paymentMethod.displayName,
-        status: 'pending' as any,
+        status: 'pending',
+        // Store file metadata for later retrieval
+        additionalInfo: {
+          proofId,
+          fileName,
+          fileExtension,
+          fileSize: paymentProofFile.size,
+          fileBase64,
+          uploadedAt: new Date().toISOString(),
+        },
       },
     })
 
@@ -96,14 +102,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('Error creating subscription request:', error)
-    
-    // Handle file system errors with generic message
-    if (error.code === 'ENOENT' || error.code === 'EACCES' || error.code === 'EISDIR') {
-      return NextResponse.json(
-        { error: 'Failed to process your payment proof. Please try again.' },
-        { status: 500 }
-      )
-    }
     
     // Return generic error message to user (don't expose internal paths)
     return NextResponse.json(
