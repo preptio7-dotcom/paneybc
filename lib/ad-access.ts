@@ -39,15 +39,13 @@ export function isResultRoute(pathname: string) {
 }
 
 export function getRouteAdRestrictionReason(pathname: string): string | null {
-  // ONLY allow the specific paths mentioned by the user
   const isHomePage = pathname === '/'
   const isBlogPage = pathname === '/blog' || pathname.startsWith('/blog/')
-  
+
   if (isHomePage || isBlogPage) {
     return null // Eligible
   }
 
-  // Block everything else
   if (pathname.startsWith('/admin') || pathname.startsWith('/sKy9108-3~620_admin')) {
     return 'admin-area'
   }
@@ -63,7 +61,7 @@ export function getRouteAdRestrictionReason(pathname: string): string | null {
   if (isResultRoute(pathname)) {
     return 'results-page'
   }
-  
+
   return 'restricted-path'
 }
 
@@ -74,19 +72,20 @@ export function isRouteBlockedForAds(pathname: string) {
 export function getUserAdRestrictionReason(user: AdAccessUser): string | null {
   if (!user) return null
   if (user.role === 'admin' || user.role === 'super_admin') return 'admin-role'
-  
+
   // Check if user has active subscription
   if (user.adsFreeUntil) {
-    const adsFreeUntilDate = typeof user.adsFreeUntil === 'string' 
+    const adsFreeUntilDate = typeof user.adsFreeUntil === 'string'
       ? new Date(user.adsFreeUntil)
       : user.adsFreeUntil
     if (adsFreeUntilDate > new Date()) {
       return 'paid-subscription'
     }
   }
-  
+
   const studentRole = user.studentRole || 'unpaid'
   if (studentRole === 'unpaid') return null
+  if (studentRole === 'user') return null
   if (studentRole === 'paid') return 'paid-role'
   if (studentRole === 'ambassador') return 'ambassador-role'
   return `blocked-student-role:${studentRole}`
@@ -119,54 +118,60 @@ export function getAdEligibilityInfo(pathname: string, user: AdAccessUser): AdEl
 }
 
 export type AdSenseConfig = {
-    globalEnabled: boolean
-    allowedPaths: string[]
-    blockedPaths: string[]
-    showAdsToUnpaid: boolean
-    showAdsToPaid: boolean
-    showAdsToAmbassador: boolean
+  globalEnabled: boolean
+  allowedPaths: string[]
+  blockedPaths: string[]
+  showAdsToUnpaid: boolean
+  showAdsToPaid: boolean
+  showAdsToAmbassador: boolean
 }
 
+// ✅ FIX: correctly handles /dashboard/* matching /dashboard (no trailing slash)
+// and /dashboard/settings etc.
 function matchPathPattern(pathname: string, pattern: string): boolean {
-    const regex = new RegExp('^' + pattern.split('*').join('.*') + '$', 'i')
-    return regex.test(pathname)
+  if (pattern.endsWith('/*')) {
+    const base = pattern.slice(0, -2) // strip /*
+    return pathname === base || pathname.startsWith(base + '/')
+  }
+  return pathname === pattern
 }
 
 export function shouldLoadAdsForContext(
-    pathname: string,
-    user: AdAccessUser,
-    config: AdSenseConfig | null = null
+  pathname: string,
+  user: AdAccessUser,
+  config: AdSenseConfig | null = null
 ) {
-    // If no config, fallback to default logic
-    if (!config) {
-        return getAdEligibilityInfo(pathname, user).eligible
+  // If no config, fallback to default logic
+  if (!config) {
+    return getAdEligibilityInfo(pathname, user).eligible
+  }
+
+  if (!config.globalEnabled) return false
+
+  // Check user role first
+  if (user?.role === 'admin' || user?.role === 'super_admin') return false
+
+  // Check if user has active subscription via adsFreeUntil
+  if (user?.adsFreeUntil) {
+    const adsFreeUntilDate = typeof user.adsFreeUntil === 'string'
+      ? new Date(user.adsFreeUntil)
+      : user.adsFreeUntil
+    if (adsFreeUntilDate > new Date()) {
+      return false
     }
+  }
 
-    if (!config.globalEnabled) return false
+  // ✅ FIX: check paid role BEFORE checking paths
+  // Previously a paid user on / would still see ads because path check came last
+  const studentRole = user?.studentRole || 'unpaid'
+  if (studentRole === 'paid' && !config.showAdsToPaid) return false
+  if (studentRole === 'ambassador' && !config.showAdsToAmbassador) return false
+  if ((studentRole === 'unpaid' || studentRole === 'user') && !config.showAdsToUnpaid) return false
 
-    // Check user role first
-    if (user?.role === 'admin' || user?.role === 'super_admin') return false
+  // Then check paths
+  const isBlocked = config.blockedPaths.some(pattern => matchPathPattern(pathname, pattern))
+  if (isBlocked) return false
 
-    // Check if user has active subscription
-    if (user?.adsFreeUntil) {
-      const adsFreeUntilDate = typeof user.adsFreeUntil === 'string' 
-        ? new Date(user.adsFreeUntil)
-        : user.adsFreeUntil
-      if (adsFreeUntilDate > new Date()) {
-        return false // User has active subscription, no ads
-      }
-    }
-
-    const studentRole = user?.studentRole || 'unpaid'
-    if (studentRole === 'paid' && !config.showAdsToPaid) return false
-    if (studentRole === 'ambassador' && !config.showAdsToAmbassador) return false
-    if (studentRole === 'unpaid' && !config.showAdsToUnpaid) return false
-    if (studentRole === 'user' && !config.showAdsToUnpaid) return false
-
-    // Then check paths
-    const isBlocked = config.blockedPaths.some(pattern => matchPathPattern(pathname, pattern))
-    if (isBlocked) return false
-
-    const isAllowed = config.allowedPaths.some(pattern => matchPathPattern(pathname, pattern))
-    return isAllowed
+  const isAllowed = config.allowedPaths.some(pattern => matchPathPattern(pathname, pattern))
+  return isAllowed
 }
