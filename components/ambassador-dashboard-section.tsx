@@ -28,9 +28,34 @@ function timeAgo(dateString: string) {
 
 export function AmbassadorDashboardSection() {
   const { user } = useAuth()
+
+  // ✅ FIX: All hooks moved above the early return
+  // Previously useState and useEffect were after `if (!ambassador) return null`
+  // which caused React error #310 (invalid hook call)
   const [copiedLink, setCopiedLink] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
+  const [referralsData, setReferralsData] = useState<ReferralData | null>(null)
+  const [loadingReferrals, setLoadingReferrals] = useState(true)
 
+  useEffect(() => {
+    if (user?.studentRole !== 'ambassador') return // guard inside effect
+    async function fetchReferrals() {
+      try {
+        const res = await fetch('/api/ambassador/referral-signups')
+        if (res.ok) {
+          const data = await res.json()
+          setReferralsData(data)
+        }
+      } catch (error) {
+        console.error('Failed to load referrals', error)
+      } finally {
+        setLoadingReferrals(false)
+      }
+    }
+    fetchReferrals()
+  }, [user?.studentRole])
+
+  // ✅ Early return AFTER all hooks
   if (user?.studentRole !== 'ambassador') {
     return null
   }
@@ -52,26 +77,6 @@ export function AmbassadorDashboardSection() {
       console.error('Failed to copy text: ', err)
     }
   }
-
-  const [referralsData, setReferralsData] = useState<ReferralData | null>(null)
-  const [loadingReferrals, setLoadingReferrals] = useState(true)
-
-  useEffect(() => {
-    async function fetchReferrals() {
-      try {
-        const res = await fetch('/api/ambassador/referral-signups')
-        if (res.ok) {
-          const data = await res.json()
-          setReferralsData(data)
-        }
-      } catch (error) {
-        console.error('Failed to load referrals', error)
-      } finally {
-        setLoadingReferrals(false)
-      }
-    }
-    fetchReferrals()
-  }, [])
 
   return (
     <div className="space-y-6">
