@@ -11,9 +11,6 @@ export function Adsense() {
     const { user, loading: authLoading } = useAuth()
     const { settings, loading } = useSystemSettings()
 
-    // Don't render anything while loading
-    if (authLoading || loading) return null
-
     const config = settings?.adSenseConfig || {
         globalEnabled: true,
         allowedPaths: ['/', '/blog', '/blog/*'],
@@ -24,21 +21,26 @@ export function Adsense() {
     }
 
     const shouldShowAd = shouldLoadAdsForContext(pathname || '/', user, config)
-    
-    if (!shouldShowAd) return null
 
-    // Inject ad into the rendered slot
+    // ✅ FIX: useEffect is now above ALL early returns
+    // Previously it was after `if (authLoading || loading) return null`
+    // and `if (!shouldShowAd) return null` — causing React error #310
     useEffect(() => {
+        if (authLoading || loading || !shouldShowAd) return
         try {
             // @ts-ignore
             ;(window.adsbygoogle = window.adsbygoogle || []).push({})
         } catch (err) {
             console.error('AdSense push error:', err)
         }
-    }, [shouldShowAd])
+    }, [shouldShowAd, authLoading, loading])
+
+    // Early returns AFTER all hooks
+    if (authLoading || loading) return null
+    if (!shouldShowAd) return null
 
     return (
-        <div 
+        <div
             className="mx-auto px-4 my-8 w-full overflow-hidden text-center"
             style={{ maxWidth: '728px' }}
         >
