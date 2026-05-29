@@ -82,7 +82,8 @@ export async function GET(request: NextRequest) {
         .map((item) => item.trim())
         .filter(Boolean)
     )
-    const latestLimit = Math.max(1, Math.min(12, Number(searchParams.get('latest') || 0)))
+    const latestParam = Number(searchParams.get('latest') || 0)
+    const latestLimit = latestParam > 0 ? Math.min(12, latestParam) : 0
     const now = new Date()
 
     const where: any = {
