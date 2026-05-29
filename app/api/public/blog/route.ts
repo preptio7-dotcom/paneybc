@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     const search = sanitizeText(searchParams.get('search') || '', 120)
     const categorySlug = sanitizeText(searchParams.get('category') || '', 120)
     const page = Math.max(1, Number(searchParams.get('page') || 1))
-    const pageSize = Math.min(24, Math.max(1, Number(searchParams.get('pageSize') || 9)))
+    const pageSize = Math.min(100, Math.max(1, Number(searchParams.get('pageSize') || 9)))
     const tags = normalizeTags(
       String(searchParams.get('tag') || searchParams.get('tags') || '')
         .split(',')
