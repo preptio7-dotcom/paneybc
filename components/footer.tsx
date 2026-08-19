@@ -126,8 +126,8 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-[13px]">
           <p>&copy; {currentYear} <span className="text-primary-green">Preptio</span> All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <p>Designed and Developed by <Link href="https://forgeweb.dev" target="_blank" rel="noopener noreferrer" className="text-primary-green hover:underline">ForgeWeb</Link></p>
+          <div className="flex flex-col items-center gap-1">
+           <p>Designed and Developed by <Link href="https://forgeweb.dev" target="_blank" rel="noopener noreferrer" className="text-primary-green hover:underline">ForgeWeb</Link></p>
             <p>Designed for Excellence.</p>
           </div>
         </div>
