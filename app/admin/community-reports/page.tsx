@@ -112,7 +112,7 @@ export default function AdminCommunityReportsPage() {
       const res = await fetch(`/api/admin/community/reports/${reportId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ id: reportId, status: newStatus }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -140,7 +140,7 @@ export default function AdminCommunityReportsPage() {
       const res = await fetch(`/api/admin/community/reports/${reportId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_content' }),
+        body: JSON.stringify({ id: reportId, action: 'delete_content' }),
       })
       const data = await res.json()
       if (!res.ok) {

@@ -4,13 +4,16 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } | Promise<{ id: string }> }
 ) {
   const admin = requireAdminUser(request)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const reportId = params.id
+    const resolvedParams = await Promise.resolve(params)
+    const body = await request.json().catch(() => ({}))
+    const reportId = resolvedParams?.id || body?.id
+
     if (!reportId) {
       return NextResponse.json({ error: 'Report ID is required' }, { status: 400 })
     }
@@ -23,7 +26,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
-    const body = await request.json()
     const { status, action } = body
 
     let newStatus = report.status
