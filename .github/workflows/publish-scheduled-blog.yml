@@ -1,0 +1,45 @@
+name: Publish Scheduled Blog Posts
+
+on:
+  schedule:
+    # GitHub Actions cron minimum granularity is 5 minutes.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: publish-scheduled-blog
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger publish-scheduled endpoint
+        env:
+          BASE_URL: ${{ secrets.PREPTIO_BASE_URL }}
+          CRON_SECRET: ${{ secrets.PUBLISH_CRON_SECRET }}
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing required secrets: PREPTIO_BASE_URL and/or PUBLISH_CRON_SECRET"
+            exit 1
+          fi
+
+          BASE_URL="${BASE_URL%/}"
+          URL="$BASE_URL/api/cron/publish-scheduled"
+
+          echo "Triggering: $URL"
+          response=$(curl -sS -w "\n%{http_code}" \
+            -X GET \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$URL")
+
+          body=$(echo "$response" | sed '$d')
+          status=$(echo "$response" | tail -n1)
+
+          echo "HTTP Status: $status"
+          echo "Response: $body"
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "Scheduled publish trigger failed."
+            exit 1
+          fi

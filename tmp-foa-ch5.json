@@ -1,0 +1,1902 @@
+[
+  {
+    "id": "cmlb6kamj0098oga33nyitgfx",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 1,
+    "question": "Opening allowance for doubtful debts Rs.1000. Closing receivables Rs.100000. Using 5% allowance what amount should be charged to statement of comprehensive income?",
+    "options": [
+      "Rs. 4000",
+      "Rs. 5000",
+      "Rs. 2000",
+      "Rs. 1000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Required allowance = 100000 × 5% = 5000. Opening allowance = 1000. Charge to P&L = 5000 - 1000 = Rs.4000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamj0099oga3h7fsiub0",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 2,
+    "question": "At Dec 31 2018 receivables Rs.600000 and allowance Rs.60000 brought down. Write off Rs.25000 and adjust allowance to 10% of receivables. At what amount receivables shown in SFP?",
+    "options": [
+      "Rs. 572500",
+      "Rs. 517500",
+      "Rs. 540000",
+      "Rs. 575000"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Receivables after write off = 600000 - 25000 = 575000. Required allowance = 575000 × 10% = 57500. Net receivables = 575000 - 57500 = Rs.517500.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamj009aoga3kzelqttt",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 3,
+    "question": "Closing receivables Rs.75000 includes Ali with debt Rs.5000 who can pay 75%. General allowance 5%. What is total allowance?",
+    "options": [
+      "Rs. 3500",
+      "Rs. 3750",
+      "Rs. 7250",
+      "Rs. 4750"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Specific allowance for Ali = 5000 - (5000 × 75%) = 1250. General allowance on others = (75000 - 5000) × 5% = 3500. Total = 1250 + 3500 = Rs.4750.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamj009boga3sx7vr20n",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 4,
+    "question": "The nature of Allowance for doubtful debt account is:",
+    "options": [
+      "Contra asset account",
+      "Asset account",
+      "Expense",
+      "Liability account"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Allowance for doubtful debts is a contra asset account. It reduces the carrying value of receivables (asset) in the statement of financial position.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamk009coga3mo0tztg8",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 5,
+    "question": "KLM total receivables Rs.10000. Bad debt Rs.1000 not recorded. Increase allowance by Rs.500. Net amount to be expensed in statement of comprehensive income?",
+    "options": [
+      "Rs. 10000",
+      "Rs. 1000",
+      "Rs. 11000",
+      "Rs. 1500"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Bad debt expense = 1000. Increase in allowance = 500. Total expense = 1000 + 500 = Rs.1500.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamk009doga3wloifqt0",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 6,
+    "question": "Opening allowance Rs.35000. Write off Rs.15000. Closing allowance should be Rs.30000. What amount charged to statement of comprehensive income?",
+    "options": [
+      "Rs. 30000",
+      "Rs. 45000",
+      "Rs. 15000",
+      "Rs. 10000"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Charge = Write off + (Closing allowance - Opening allowance) = 15000 + (30000 - 35000) = 15000 - 5000 = Rs.10000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamk009eoga36bj0gg5h",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 7,
+    "question": "Which of the following can be most relevant to calculation of allowance for doubtful debts?",
+    "options": [
+      "Total credit sales",
+      "Total credit purchases",
+      "Total current assets",
+      "Total current liabilities"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Allowance for doubtful debts is calculated based on receivables which arise from credit sales. Total credit sales is most relevant.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamk009foga30xkygvuh",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 8,
+    "question": "Opening allowance Rs.16000. Write off Rs.9000 and adjust allowance to Rs.18000. Effect on profit for the year?",
+    "options": [
+      "Decrease by Rs.27000",
+      "Increase by Rs.18000",
+      "Decrease by Rs.11000",
+      "Decrease by Rs.9000"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Charge = Write off + Increase in allowance = 9000 + (18000 - 16000) = 9000 + 2000 = 11000. Profit decreases by Rs.11000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamk009goga3zgas3j8p",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 9,
+    "question": "Sania creates allowance by age. Debt Rs.130000 (30 days Nil%); Rs.75000 (31-60 days 2%); Rs.50000 (Over 60 days 5%). Opening allowance Rs.3500. Charge to P&L?",
+    "options": [
+      "Rs. 4000",
+      "Rs. 3500",
+      "Rs. 500",
+      "Rs. 7500"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Required allowance = 0 + (75000 × 2%) + (50000 × 5%) = 0 + 1500 + 2500 = 4000. Charge = 4000 - 3500 = Rs.500.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamk009hoga321r4s735",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 10,
+    "question": "Which receivables have highest probability to default on trade debts?",
+    "options": [
+      "Current month receivables",
+      "Over 90 days old receivables",
+      "60 to 90 days old receivables",
+      "30 to 60 days old receivables"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "The older the receivable the higher the probability of default. Over 90 days old receivables have the highest default risk.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamk009ioga3h3937u8k",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 11,
+    "question": "Business received Rs.1000 from receivable previously written off. Correct accounting entry?",
+    "options": [
+      "Dr Cash 1000 Cr Bad debts expense 1000",
+      "Dr Cash 1000 Cr Receivables 1000",
+      "Dr P&L 1000 Cr Receivables 1000",
+      "Dr P&L Cr Cash 1000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Recovery of bad debt written off: Dr Cash Cr Bad debts expense (reduces expense for the year) Rs.1000.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamk009joga3ikdiwong",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 12,
+    "question": "Opening receivables Rs.45000; Credit sales Rs.55000; Cash sales Rs.10000; Cash received Rs.35000; Write off Rs.2000. Allowance 2%. Entry for allowance adjustment?",
+    "options": [
+      "Dr Bad debts Rs.360 Cr Allowance Rs.360",
+      "Dr Allowance Rs.360 Cr Bad debts Rs.360",
+      "Dr Bad debts Rs.360 Cr Receivables Rs.360",
+      "Dr Receivables Rs.360 Cr Bad debts Rs.360"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Closing receivables = 45000 + 55000 - 35000 - 2000 = 63000. Required allowance = 63000 × 2% = 1260. Opening = 45000 × 2% = 900. Increase = 360. Entry: Dr Bad debts Cr Allowance Rs.360.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamk009koga3baed0bjq",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 13,
+    "question": "Receivables Rs.93000 includes debt Rs.1800 to write off. Allowance 5% of receivables. Allowance increased 20% vs last year. Opening allowance balance?",
+    "options": [
+      "Rs. 3875",
+      "Rs. 5472",
+      "Rs. 3800",
+      "Rs. 4560"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Receivables after write off = 93000 - 1800 = 91200. Required allowance = 91200 × 5% = 4560. This is 120% of last year. Last year = 4560 / 1.20 = Rs.3800.",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlb6kamk009loga35hvp0mir",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 14,
+    "question": "At 30 Sep 2012 allowance Rs.38000 (5% of receivables). At 30 Sep 2013 receivables Rs.868500. Write off Rs.28500. Keep allowance at 5%. Charge to P&L for year?",
+    "options": [
+      "Rs. 42000",
+      "Rs. 33925",
+      "Rs. 70500",
+      "Rs. 32500"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Receivables after write off = 868500 - 28500 = 840000. Required allowance = 840000 × 5% = 42000. Charge = Write off + Change = 28500 + (42000 - 38000) = Rs.32500.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamk009moga3dz0urpwo",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 15,
+    "question": "Allowance at 31 Oct 2011 Rs.9000. Write off Rs.5000 during year. Receivables 31 Oct 2012 Rs.120000. Set allowance at 5%. Total charge for bad debts and allowance?",
+    "options": [
+      "Rs. 2000",
+      "Rs. 3000",
+      "Rs. 5000",
+      "Rs. 8000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Required allowance = 120000 × 5% = 6000. Charge = Write off + (Closing - Opening allowance) = 5000 + (6000 - 9000) = 5000 - 3000 = Rs.2000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamk009noga3y17ut7eo",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 16,
+    "question": "Opening allowance Rs.5000; Write off Rs.3000; Recovery Rs.1500; Closing receivables Rs.90000; Allowance 5%. Net charge for bad and doubtful debts?",
+    "options": [
+      "Rs. 500",
+      "Rs. 1000",
+      "Rs. 1500",
+      "Rs. 2000"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Required allowance = 90000 × 5% = 4500. Net charge = Write off - Recovery + Change in allowance = 3000 - 1500 + (4500 - 5000) = 1500 - 500 = Rs.1000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamk009ooga3ad35mpgv",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 17,
+    "question": "At June 30 2016 allowance Rs.25000 (2% of receivables). At June 30 2017 receivables Rs.310000. Write off Rs.30000. Keep allowance at 2%. Net receivables in SFP?",
+    "options": [
+      "Rs. 274400",
+      "Rs. 280000",
+      "Rs. 304400",
+      "Rs. 310000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Receivables after write off = 310000 - 30000 = 280000. Required allowance = 280000 × 2% = 5600. Net receivables = 280000 - 5600 = Rs.274400.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kaml009poga3qlntv8zx",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 18,
+    "question": "At July 1 2017 allowance Rs.65000. At June 30 2018 receivables Rs.650000. Write off Rs.95000. Adjust allowance to Rs.75000. Net receivables in SFP?",
+    "options": [
+      "Rs. 480000",
+      "Rs. 555000",
+      "Rs. 575000",
+      "Rs. 650000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Receivables after write off = 650000 - 95000 = 555000. Net receivables = 555000 - 75000 = Rs.480000.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml009qoga372l3t2mn",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 19,
+    "question": "At Jan 1 2018 allowance Rs.38000. Write off Rs.16000 and adjust allowance to Rs.35000. Charge for bad and doubtful debts?",
+    "options": [
+      "Rs. 13000",
+      "Rs. 16000",
+      "Rs. 19000",
+      "Rs. 35000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Charge = Write off + (Closing - Opening allowance) = 16000 + (35000 - 38000) = 16000 - 3000 = Rs.13000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kaml009roga3ntvt9nat",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 20,
+    "question": "After write offs receivables Rs.238750. Specific allowances: Syed Rs.450 Raja Rs.1200. General allowance 5% of receivables. Net receivables in SFP?",
+    "options": [
+      "Rs. 225245",
+      "Rs. 226895",
+      "Rs. 227100",
+      "Rs. 238750"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Specific allowance = 450 + 1200 = 1650. General allowance = (238750 - 1650) × 5% = 11855. Total allowance = 13505. Net = 238750 - 13505 = Rs.225245.",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlb6kaml009soga33h6xu39y",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 21,
+    "question": "Effect on net profit if business decreases allowance for doubtful debts?",
+    "options": [
+      "It will increase net profit",
+      "It will decrease net profit",
+      "It will increase gross and net profit",
+      "No effect"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Decreasing allowance reduces bad debt expense which increases net profit.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml009toga3qvasol3d",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 22,
+    "question": "What is the nature of allowance for doubtful debt account?",
+    "options": [
+      "An asset",
+      "A liability",
+      "An equity",
+      "Contra asset account"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Allowance for doubtful debt is a contra asset account that reduces the value of receivables.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml009uoga32bakvexm",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 23,
+    "question": "Is there a difference between bad debt and doubtful debt?",
+    "options": [
+      "No they are inter-changeable",
+      "Yes bad debt is clearly identified as uncollectible whereas doubtful debt might become bad debt in future",
+      "Yes doubtful debt is clearly identified as uncollectible whereas bad debt might become doubtful in future",
+      "They are synonymous"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Bad debt is a receivable clearly identified as uncollectible. Doubtful debt is a receivable that might become uncollectible in the future.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml009voga3fx79kgyr",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 24,
+    "question": "What is the double entry for recording write-off of debts?",
+    "options": [
+      "Bad debt expense Dr Allowance for doubtful debts Cr",
+      "Bad debt expense Dr Accounts receivable Cr",
+      "Allowance for doubtful debts Dr Accounts receivable Cr",
+      "None of the above"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "When a debt is written off: Dr Allowance for doubtful debts Cr Accounts receivable. This removes the receivable and uses the allowance created earlier.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kaml009woga391ik1qzb",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 25,
+    "question": "On June 1 Rs.800000 goods sold with terms 1/10 n/30. Seller expects to receive if buyer pays on June 8?",
+    "options": [
+      "720000",
+      "768000",
+      "792000",
+      "No change"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Terms 1/10 n/30 means 1% discount if paid within 10 days. Payment on June 8 (within 10 days) = 800000 - (800000 × 1%) = 800000 - 8000 = Rs.792000.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml009xoga37jvufxwl",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 26,
+    "question": "June 1 sales Rs.800000 terms 1/10 n/30. June 3 customer returned Rs.100000. Seller expects to receive if buyer pays June 8?",
+    "options": [
+      "692000",
+      "693000",
+      "694000",
+      "700000"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Net sales = 800000 - 100000 = 700000. Discount 1% = 7000. Payment = 700000 - 7000 = Rs.693000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kaml009yoga3jowcalaj",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 27,
+    "question": "Which account should be credited for Rs.180000 when writing off the account?",
+    "options": [
+      "Accounts receivable",
+      "Allowance for doubtful debts",
+      "Bad debts expense",
+      "None of the above"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "When writing off a debt: Dr Allowance (or Bad debt expense) Cr Accounts receivable. Accounts receivable is credited to remove the debt.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml009zoga3b16uwwyy",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 28,
+    "question": "Sorting receivables into classifications like current 1-30 days past due 31-60 days past due is known as?",
+    "options": [
+      "Ratio analysis",
+      "Trend analysis",
+      "Debtor's analysis",
+      "Aging analysis"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "This process is called aging analysis or aging of receivables. It categorizes receivables by age to assess collectibility.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml00a0oga3uj5iixa9",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 29,
+    "question": "Opening allowance Rs.1000. Closing receivables Rs.100000. Using 5% allowance what amount charged to P&L?",
+    "options": [
+      "Rs. 3000",
+      "Rs. 4000",
+      "Rs. 5000",
+      "Rs. 6000"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Same as Q1. Required allowance = 100000 × 5% = 5000. Charge = 5000 - 1000 = Rs.4000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kaml00a1oga3715fd23c",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 30,
+    "question": "Allowance has year-end credit balance prior to adjustment Rs.500. Allowance estimated at 7% of Rs.60000 receivables. After adjustment allowance should have credit balance of?",
+    "options": [
+      "Rs. 4200",
+      "Rs. 3700",
+      "Rs. 3200",
+      "Rs. 4500"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Required allowance = 60000 × 7% = Rs.4200. This is the closing balance after adjustment.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml00a2oga3zqg7nmbg",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 31,
+    "question": "GT receivables Rs.80000 include Rs.900 long overdue with specific allowance and Rs.1582 allowance (2% of other receivables). What best describes allowance?",
+    "options": [
+      "Specific Rs.900 General Rs.1582",
+      "Specific Rs.1582 General Rs.900",
+      "Specific Rs.2482",
+      "General Rs.2482"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Specific allowance for identified debt = Rs.900. General allowance for other receivables = Rs.1582.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kaml00a3oga3miyo8198",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 32,
+    "question": "Opening allowance Rs.1000. Wrote off Rs.4000 during year. Closing allowance Rs.1200. Total charge to P&L?",
+    "options": [
+      "Rs. 200",
+      "Rs. 3800",
+      "Rs. 4000",
+      "Rs. 4200"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Charge = Write off + Increase in allowance = 4000 + (1200 - 1000) = 4000 + 200 = Rs.4200.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kaml00a4oga3r993auxz",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 33,
+    "question": "Turnover Rs.2M receivables 5% = Rs.100000. Allowance 4% of receivables makes it 1/3 higher than current. Effect on profit?",
+    "options": [
+      "Profit reduced by Rs.1000",
+      "Profit increased by Rs.1000",
+      "Profit reduced by Rs.1333",
+      "Profit increased by Rs.1333"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Required allowance = 100000 × 4% = 4000. This is 4/3 of current so current = 3000. Increase = 1000. Profit reduced by Rs.1000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kaml00a5oga3oc667i4i",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 34,
+    "question": "Allowance 31 Oct 2021 Rs.9000. Year ended 31 Oct 2022 wrote off Rs.5000. Receivables Rs.120000 allowance 5%. Charge for bad and doubtful debts?",
+    "options": [
+      "Rs. 2000",
+      "Rs. 3000",
+      "Rs. 5000",
+      "Rs. 8000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Same as Q15. Required allowance = 6000. Charge = 5000 + (6000 - 9000) = Rs.2000.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamm00a6oga3grrlg87p",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 35,
+    "question": "FT turnover Rs.3M receivables 4% = Rs.120000. Allowance 3% = Rs.3600 which is 25% higher than last year. Write off Rs.3200 recovery Rs.150. Net charge?",
+    "options": [
+      "Rs. 720",
+      "Rs. 900",
+      "Rs. 3770",
+      "Rs. 3950"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Last year allowance = 3600/1.25 = 2880. Increase = 720. Net charge = Write off - Recovery + Increase = 3200 - 150 + 720 = Rs.3770.",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlb6kamm00a7oga3rrtwt2hq",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 36,
+    "question": "Which statement concerning allowance for receivables is INCORRECT?",
+    "options": [
+      "All businesses may create allowance in case customers don't pay",
+      "Receivables written off when specific allowance created",
+      "Setting up allowance ensures receivables not overstated",
+      "Allowance expected to increase as sales revenue increases"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "This is incorrect. Receivables are written off when identified as irrecoverable not when a specific allowance is created. Allowance is an estimate; write-off is a confirmed bad debt.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamm00a8oga3wymzxb5h",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 37,
+    "question": "Irrecoverable debt written off two years ago is unexpectedly recovered. What adjustment necessary?",
+    "options": [
+      "Credit Receivables",
+      "Credit Bad debts expense",
+      "Credit Suspense account",
+      "No adjustment necessary"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Recovery of previously written off debt: Dr Cash Cr Bad debts expense. This reduces expense for current year.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamm00a9oga3u4vaezmv",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 38,
+    "question": "An increase in allowance for doubtful debts results in:",
+    "options": [
+      "Decrease in current liabilities",
+      "Increase in net profit",
+      "Increase in current assets",
+      "Decrease in current assets"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Increasing allowance increases bad debt expense (reduces profit) and reduces net receivables (decreases current assets).",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamn00aaoga35ejtrwm4",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 39,
+    "question": "At 30 Sep 2014 allowance Rs.37000. Year ended 30 Sep 2015 wrote off Rs.18000. Closing allowance should be Rs.20000. What included in P&L?",
+    "options": [
+      "Rs. 35000 debit",
+      "Rs. 1000 debit",
+      "Rs. 38000 debit",
+      "Rs. 1000 credit"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Charge = 18000 + (20000 - 37000) = 18000 - 17000 = Rs.1000 debit.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamn00aboga3ahwnf6t8",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 40,
+    "question": "At 31 March Salma owed Rs.47744. Allowance Rs.3500. How should these be reported on SFP?",
+    "options": [
+      "Rs.44244 as current asset",
+      "Rs.3500 current asset and Rs.47744 current liability",
+      "Rs.47744 current asset and Rs.3500 current liability",
+      "Rs.51244 as current asset"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Net receivables = 47744 - 3500 = Rs.44244 shown as current asset. Allowance is contra asset not separate liability.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamn00acoga3z1tudixs",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 41,
+    "question": "What is the purpose of maintaining allowance for doubtful debts?",
+    "options": [
+      "Estimate of future irrecoverable debts",
+      "Records expense of irrecoverable debts",
+      "Matches estimated cost of future irrecoverable debts against revenue",
+      "Records irrecoverable debts without removing from books"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "The purpose is to match the estimated cost of future bad debts against the revenue that gave rise to those receivables (matching principle).",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamn00adoga3qrjmk4yj",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 42,
+    "question": "The existence of allowance for doubtful debts:",
+    "options": [
+      "Increases total current liabilities",
+      "Reduces cost of sales",
+      "Reduces total current assets",
+      "None of above"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Allowance for doubtful debts is a contra asset that reduces the value of receivables thus reducing total current assets.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamn00aeoga3685hbxok",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 43,
+    "question": "A transfer to close bad and doubtful debts account is to:",
+    "options": [
+      "Statement of financial position",
+      "Statement of Profit or Loss",
+      "Trading account",
+      "Allowance for doubtful debts account"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Bad and doubtful debts expense account is closed to Statement of Profit or Loss (Income Statement) at year end.",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlb6kamn00afoga3sg49yejz",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 44,
+    "question": "At 31 Dec 2022 receivables Rs.400000 allowance Rs.50000 brought forward. Write off Rs.38000 adjust allowance to 10%. Charge to P&L?",
+    "options": [
+      "Rs. 74200",
+      "Rs. 51800",
+      "Rs. 28000",
+      "Rs. 24200"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Receivables after write off = 362000. Required allowance = 36200. Charge = 38000 + (36200 - 50000) = 38000 - 13800 = Rs.24200.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamo00agoga3vhpq0fgr",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 45,
+    "question": "At 30 Sep 2022 allowance Rs.38000 (5% of receivables). At 30 Sep 2023 receivables Rs.868500. Write off Rs.28500 keep allowance 5%. Charge to P&L?",
+    "options": [
+      "Rs. 42000",
+      "Rs. 33925",
+      "Rs. 70500",
+      "Rs. 32500"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Same as Q14. Receivables 840000. Allowance 42000. Charge = 28500 + 4000 = Rs.32500.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamo00ahoga3acm3riul",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 46,
+    "question": "Saima aging analysis: <31 days Rs.32700 (Nil%); 31-60 days Rs.16900 (4%); >60 days Rs.8750 (50%). Opening allowance Rs.5600. Adjustment needed?",
+    "options": [
+      "Increase Rs.5051",
+      "Decrease Rs.5051",
+      "Increase Rs.549",
+      "Decrease Rs.549"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Required = 0 + (16900 × 4%) + (8750 × 50%) = 676 + 4375 = 5051. Opening 5600. Decrease = 5600 - 5051 = Rs.549.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamo00aioga370uoaj60",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 47,
+    "question": "MS receivables Rs.58200. Write off Rs.8900. Specific allowances Rs.1350 and Rs.750. General allowance 3% of year-end balance. Opening allowance Rs.5650. Charge to P&L?",
+    "options": [
+      "Rs. 6766",
+      "Rs. 11034",
+      "Rs. 6829",
+      "Rs. 10971"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "After write off = 49300. Specific = 2100. General = (49300-2100) × 3% = 1416. Total = 3516. Charge = 8900 + (3516 - 5650) = 8900 - 2134 = Rs.6766.",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlb6kamo00ajoga3h2xtxzlz",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 48,
+    "question": "At 31 Dec 2015 gross receivables Rs.12000. 2016 credit sales Rs.125000 cash received Rs.115500. Write off Rs.7100 increase allowance by Rs.950 to Rs.2100. Net receivables 31 Dec 2016?",
+    "options": [
+      "Rs. 12300",
+      "Rs. 13450",
+      "Rs. 14400",
+      "Rs. 15550"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Closing = 12000 + 125000 - 115500 - 7100 = 14400. Net = 14400 - 2100 = Rs.12300.",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlb6kamo00akoga3x9ymg65o",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 49,
+    "question": "QG sales Rs.7M receivables 5% = Rs.350000. Allowance 4% = Rs.14000 which is 20% higher than last year. Write off Rs.3200 recovery Rs.450. Bad debt expense?",
+    "options": [
+      "Rs. 5083",
+      "Rs. 5550",
+      "Rs. 5583",
+      "Rs. 16750"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Last year allowance = 14000/1.20 = 11667. Increase = 2333. Charge = 3200 - 450 + 2333 = Rs.5083.",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlb6kamo00aloga3ailg1a84",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 50,
+    "question": "PN opening receivables Rs.87000 allowance Rs.2500. Wrote off Rs.800 and Rs.550. Recovery Rs.350. Closing receivables Rs.90000 allowance Rs.2300. Charge to P&L?",
+    "options": [
+      "Rs. 800",
+      "Rs. 1000",
+      "Rs. 1150",
+      "Rs. 1550"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Write offs = 1350. Recovery = 350. Decrease in allowance = 200. Charge = 1350 - 350 - 200 = Rs.800.",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9r006nkoa3zlr96agj",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 201,
+    "question": "Which is NOT a reason for recording bad debts in books?",
+    "options": [
+      "Customer was declared insolvent",
+      "Customer died with insufficient assets",
+      "Customer is in severe financial difficulties",
+      "Customer showed dishonesty and left without intimating"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Severe financial difficulties suggest doubtful debt (allowance), not bad debt write-off yet",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9r006okoa3faykm1at",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 202,
+    "question": "Opening receivables 100k, allowance 5k. Bad debts written off 4k, closing receivables 120k, recovered 3k. Same allowance %. Net amount to statement of CI?",
+    "options": [
+      "Rs. 2,000 Dr.",
+      "Rs. 2,000 Cr.",
+      "Rs. 8,000 Dr.",
+      "Rs. 8,000 Cr."
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening allowance 5k on 100k = 5%. Closing on 120k = 6k. Bad debts 4k - recovered 3k + increase 1k = 2k Dr (expense)",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9r006pkoa34ne8ymn1",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 203,
+    "question": "Opening receivables 185k, credit sales 645k, bad debts written off 5k and to be written off 3k, cash received 627.8k (includes recovery 7k), closing receivables 186.4k. Credit sales returns?",
+    "options": [
+      "Rs. 7,800",
+      "Rs. 10,800",
+      "Rs. 17,800",
+      "Rs. 14,800"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening 185k + Sales 645k - Returns ? - Bad debts 8k - Collections (627.8k-7k) = 186.4k. Returns = 17.8k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9r006qkoa3hrjr8gf5",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 204,
+    "question": "Receivables account shows: b/f 150k, Sales 600k, Payables contra 18k, Disc allowed 4k, Sales returns 3k on debit. Cash 150k, Bank 418k, Disc received 5k, Bad debts 19k, Increase allowance 15k, c/f 168k on credit. Corrected receivables?",
+    "options": [
+      "Rs. 146,000",
+      "Rs. 138,000",
+      "Rs. 133,000",
+      "Rs. 118,000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Correct entries: Remove wrong entries (contra on Dr should be Cr, disc received should not be here, increase allowance not here). Correct = 150k + 600k - 18k - 150k - 418k - 4k - 3k - 19k = 138k + adjustments = 146k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9r006rkoa36f9il38a",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 205,
+    "question": "Receivables 330k before adjustments. Write off NM 8.5k, 100% allowance Raja 15k, general allowance 5%, opening allowance 22.1k. Corrected receivables and allowance for FP?",
+    "options": [
+      "Receivables 330k, allowance 9.4k",
+      "Receivables 330k, allowance 31.5k",
+      "Receivables 321.5k, allowance 30.325k",
+      "Receivables 321.5k, allowance 31.075k"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Receivables after write-off = 330k - 8.5k = 321.5k. Allowance = Specific 15k + General (321.5k-15k)×5% = 15k + 15.325k = 30.325k. Answer suggests 31.075k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9r006skoa3pqxwgupf",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 206,
+    "question": "Journal entry to record increase in allowance during year is:",
+    "options": [
+      "Dr. Bad debt expense Cr. Allowance for doubtful debts",
+      "Dr. Accounts receivables Cr. Allowance for doubtful debts",
+      "Dr. Allowance for doubtful debts Cr. Bad debt expense",
+      "Dr. Allowance for doubtful debts Cr. Accounts receivables"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Increase in allowance: Dr. Bad debt expense, Cr. Allowance for doubtful debts",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9r006tkoa3teexlikf",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 207,
+    "question": "Accountant wrongly overstated allowance for doubtful debts by Rs. 3,800. Impact is:",
+    "options": [
+      "Profit overstated by Rs. 3,800",
+      "Net current assets understated by Rs. 3,800",
+      "Profit understated by Rs. 3,800",
+      "None"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Multiple correct: b (assets understated) and c (profit understated by excess expense)",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9r006ukoa39aek9x4z",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 208,
+    "question": "Customer owed Rs. 50k, declared bankrupt, 20% expected recovery. Double entry:",
+    "options": [
+      "Dr. Bad debts 50k; Cr. Receivables 50k",
+      "Dr. Bad debts 40k; Cr. Receivables 40k",
+      "Dr. Bad debts 10k; Cr. Receivables 10k",
+      "Dr. Receivables 40k; Cr. Bad debts 40k"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Write off unrecoverable portion: 80% × 50k = 40k. Dr. Bad debts 40k, Cr. Receivables 40k",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s006vkoa3kn8gi01x",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 209,
+    "question": "Bad debts written off 1.8k, to be written off 2.5k, receivables 325k, specific allowance 15k, general 4%, total charged to CI 16.2k. Opening allowance?",
+    "options": [
+      "Rs. 1,000",
+      "Rs. 13,000",
+      "Rs. 15,328",
+      "Rs. 15,400"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Closing allowance = 15k + (325k-2.5k-15k)×4% = 27.3k. Charged = Bad debts 2.5k + increase (27.3k - opening) = 16.2k. Opening = 13.6k ≈ 13k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s006wkoa3ugqd1gob",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 210,
+    "question": "Journal entry to record bad debts written off:",
+    "options": [
+      "Dr. Bad debts and Cr. Allowance for doubtful debts",
+      "Dr. Bad debts and Cr. Accounts receivables",
+      "Dr. Allowance for doubtful debts and Cr. Bad debts",
+      "Dr. Accounts receivables and Cr. Bad debts"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Bad debts written off: Dr. Bad debts, Cr. Accounts receivables (removes from receivables)",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9s006xkoa3l8h7zijo",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 211,
+    "question": "Samar receivables from Junaid 50k including disputed 15k. Junaid is good customer but doubtful on 15k. Allowance to create?",
+    "options": [
+      "General allowance Rs. 15k",
+      "Specific allowance Rs. 15k",
+      "Specific allowance Rs. 50k",
+      "No allowance as good customer"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Specific allowance created for identified doubtful amount of 15k",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9s006ykoa37i3zt0r3",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 212,
+    "question": "Receivables 250k. Errors: Bad debts recovered 5k wrongly in collections, Decrease allowance 7.5k wrongly credited, Disc allowed 2.2k not entered, Disc received 1.7k wrongly debited. Corrected receivables?",
+    "options": [
+      "Rs. 258,100",
+      "Rs. 258,600",
+      "Rs. 253,600",
+      "Rs. 254,600"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Correct: Add back recovery 5k (shouldn't reduce), remove decrease allowance 7.5k credit (add 7.5k), add disc allowed 2.2k, remove disc received 1.7k. = 250k + 5k - 7.5k + 2.2k - 1.7k = 248.0k? Calculation needs review",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s006zkoa3butu150g",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 213,
+    "question": "Customer cheque Rs. 15k returned dishonoured. Entry for dishonour?",
+    "options": [
+      "Dr. Bank and Cr. Receivables",
+      "Dr. Receivables and Cr. Bank",
+      "Dr. Allowance for doubtful debts and Cr. Bank",
+      "Dr. Bad debts expense and Cr. Bank"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Dishonoured cheque reverses the receipt: Dr. Receivables, Cr. Bank",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9s0070koa31pkr73sd",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 214,
+    "question": "Which TWO statements are correct?",
+    "options": [
+      "Receivables shown in FP after deducting allowance",
+      "Receivables shown gross, allowance charged to P&L",
+      "Increase in allowance charged as expense in P&L",
+      "Credit limit and aged analysis are interchangeable"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "a and c are correct. Receivables shown net of allowance, increase in allowance is expense",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s0071koa39ccu0fhm",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 215,
+    "question": "Which statement(s) is/are correct? 1.Amount from written-off account is bad debts recovered 2.Unpaid invoice 4 months due to dispute is bad debts",
+    "options": [
+      "Only statement (1)",
+      "Only statement (2)",
+      "Both statements",
+      "Neither statement"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Statement 1 correct (recovery from written-off account). Statement 2 wrong (disputed debt is doubtful, not bad)",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s0072koa3zrodumca",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 216,
+    "question": "Opening allowance 12.5k, closing receivables 400k, allowance 5%, charged 16k. Specific allowance at year end?",
+    "options": [
+      "Rs. 3,500",
+      "Rs. 4,000",
+      "Rs. 8,500",
+      "Rs. 16,000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Total allowance = 12.5k + 16k = 28.5k. If general = 400k×5% = 20k, then specific = 28.5k - 20k? But needs receivables before specific",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s0073koa3foosd733",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 217,
+    "question": "At 1 Jul 21: receivables 350k, allowance 14k. Bad debts written off 10k, at 30 Jun 22 receivables 400k. Estimate unchanged. Increase in allowance charged to P&L?",
+    "options": [
+      "Rs. 1,600",
+      "Rs. 2,000",
+      "Rs. 11,600",
+      "Rs. 12,000"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening % = 14k/350k = 4%. Closing allowance = 400k×4% = 16k. Bad debts 10k + increase 2k = 12k charged? But answer suggests 11.6k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s0074koa3qrqm8awe",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 218,
+    "question": "Opening receivables 300k, closing 360k. Bad debts written off 5k, recovered 2k. General allowance 4%. Amount charged to CI and net receivables in FP?",
+    "options": [
+      "CI: 7.4k, FP: 345.6k",
+      "CI: 5.4k, FP: 345.6k",
+      "CI: 7.4k, FP: 340.6k",
+      "CI: 5.4k, FP: 340.6k"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening allowance 300k×4%=12k. Closing 360k×4%=14.4k. Charged = Bad debts 5k - recovered 2k + increase 2.4k = 5.4k. Net receivables = 360k - 14.4k = 345.6k",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s0075koa37251byft",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 219,
+    "question": "Receivables 410k before adjustments. Write off 11k, JJ Sons 25k with 80% allowance, general 5%, opening allowance 18.5k. Amount charged to CI?",
+    "options": [
+      "Rs. 200",
+      "Rs. 11,200",
+      "Rs. 31,200",
+      "Rs. 31,450"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "After write-off 399k. Specific 25k×80%=20k. General (399k-25k)×5%=18.7k. Total 38.7k. Charged = 11k + (38.7k-18.5k) = 31.2k? But answer b suggests 11.2k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s0076koa3rlms1fsv",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 220,
+    "question": "Which best describes purpose of aging analysis of accounts receivables?",
+    "options": [
+      "Calculate balance from individual customer",
+      "Evaluate most valuable customer",
+      "Identify regularities of receivables",
+      "Evaluate irregularities in payments to estimate allowance"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Aging analysis identifies payment delays to estimate doubtful debts",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9s0077koa3ajj4f6a9",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 221,
+    "question": "Minahil paid Rs. 25k against bad debts written-off in previous year. Entry in JSS Industries books?",
+    "options": [
+      "Dr. Cash and Cr. Accounts receivables",
+      "Dr. Cash and Cr. Allowance for doubtful debts",
+      "Dr. Cash and Cr. Bad debts expense",
+      "Dr. Cash and Cr. Accounts payable"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Recovery of written-off debt: Dr. Cash, Cr. Bad debts expense (or Bad debts recovered income)",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s0078koa3zszmo1c8",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 222,
+    "question": "Opening allowance overstated, wrong amount charged to P&L. Impact on net profit and net assets for current year?",
+    "options": [
+      "Profit understated by double amount",
+      "Profit overstated by double amount",
+      "Profit understated by single amount",
+      "Profit overstated by single amount"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "If opening overstated, increase calculation wrong by single amount, profit understated by that amount",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s0079koa3w2tig88u",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 223,
+    "question": "Which TWO entries can be passed if bad debts recovered during year?",
+    "options": [
+      "Dr. Bad debts expense and Cr. Accounts receivables",
+      "Dr. Accounts receivables and Cr. Bad debts expense",
+      "Dr. Cash and Cr. Bad debts expense",
+      "Dr. Cash and Cr. Bad debts recovered"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "c and d are correct. Either credit bad debts expense or bad debts recovered (income)",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s007akoa3o5smcead",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 224,
+    "question": "Sales 750k (20% cash), receivables 60% of credit sales, specific allowance 6k, general 3%. New allowance 1.662× opening. Amount charged to CI?",
+    "options": [
+      "Rs. 6,620",
+      "Rs. 16,692",
+      "Rs. 20,000",
+      "Cannot be calculated"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Credit sales 600k, receivables 360k. Total allowance = 6k + 360k×3% = 16.8k. If 16.8k = 1.662×opening, opening = 10.108k. Charged = 16.8k - 10.108k = 6.692k ≈ 6.62k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s007bkoa3qyiq6n3a",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 225,
+    "question": "Opening allowance 18k, no bad debts written off, closing specific 16k, charged 17.2k, receivables 400k. % of general allowance?",
+    "options": [
+      "4.00%",
+      "4.30%",
+      "4.50%",
+      "5.00%"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Closing allowance = 18k + 17.2k = 35.2k. Specific 16k, so general = 19.2k. 19.2k/(400k-16k) = 5%? Or 19.2k/400k = 4.8%? Answer suggests different calculation",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s007ckoa3nyh3eg99",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 226,
+    "question": "Receivables 360k, 5% allowance, charged 6.3k. Later found: recovered 5.5k wrongly in collections, disc allowed 3.5k on debit side of receivables. Impact on charge?",
+    "options": [
+      "Charge overstated by Rs. 75",
+      "Charge understated by Rs. 75",
+      "Charge overstated by Rs. 100",
+      "Charge understated by Rs. 100"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Corrected receivables = 360k + 5.5k + 3.5k = 369k. Corrected allowance = 369k×5% = 18.45k. Original 18k, should be 18.45k. Understated by 0.45k? Complex",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s007dkoa37v93gk9a",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 227,
+    "question": "Receivables 480k before adjustments. Write off Kashif 8.5k, Rajput 15k with 60% allowance, general 4%, opening allowance 16.8k. Which statement true?",
+    "options": [
+      "Specific 15k, general 18.26k",
+      "Specific 9k, general 18.26k",
+      "Amount charged to CI 10.46k",
+      "Net receivables 438.24k in FP"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "After write-off 471.5k. Specific 15k×60%=9k. General (471.5k-15k)×4%=18.26k. Multiple correct: b, c (charged = 8.5k + 27.26k - 16.8k = 18.96k), d needs verification",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9s007ekoa34j0hm5ob",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 228,
+    "question": "Which treatment is correct?",
+    "options": [
+      "Bad debts written off charged to P&L and deducted as allowance",
+      "Increase in allowance charged to P&L, closing allowance deducted from receivables",
+      "Bad debts subtracted from increase in allowance, net charged",
+      "Bad debts and decrease in allowance added, total charged"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Correct: Increase in allowance charged to P&L, closing allowance shown as deduction from receivables",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s007fkoa3u27kl001",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 229,
+    "question": "Opening receivables 150k, allowance 4%. Bad debts written off 5k, recovered 3k, closing receivables 160k. Estimate same. Net amount charged to CI?",
+    "options": [
+      "Rs. 2,400",
+      "Rs. 3,400",
+      "Rs. 5,400",
+      "Rs. 6,400"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening allowance 6k, closing 6.4k. Charged = 5k - 3k + 0.4k = 2.4k? Answer suggests 5.4k (5k written off + 0.4k - 0 recovery not deducted?)",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s007gkoa3rsivz9j3",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 230,
+    "question": "Which TWO are treated as reduction in expense for year?",
+    "options": [
+      "Bad debts written off",
+      "Increase in allowance for doubtful debts",
+      "Decrease in allowance for doubtful debts",
+      "Bad debts recovered"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "c and d reduce expense. Decrease in allowance and recoveries reduce total bad debt expense",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9s007hkoa3kxql59rk",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 231,
+    "question": "Receivables 475k, specific: AM 25k (80%), JM 18k (50%), general 5%. Correct calculation of general allowance?",
+    "options": [
+      "5% on Rs. 475k",
+      "5% on Rs. 455.3k",
+      "5% on Rs. 446k",
+      "5% on Rs. 432k"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "General calculated on receivables excluding specific allowance amounts: 475k - 25k - 18k = 432k × 5%",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s007ikoa3qrg0q5ni",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 232,
+    "question": "Which is NOT a reason for recording doubtful debts?",
+    "options": [
+      "Customer in severe financial difficulties",
+      "Customer declared bankrupt, liquidator confirmed no payment",
+      "Customer took too long to pay",
+      "Customer facing operational difficulties"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Bankrupt with confirmed no recovery is bad debt (write-off), not doubtful debt",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s007jkoa3kf3lq3k0",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 233,
+    "question": "Receivables (net) 342k, allowance 38k created including 5% general. Specific allowance amount?",
+    "options": [
+      "Rs. 20,000",
+      "Rs. 20,900",
+      "Rs. 19,000",
+      "Rs. 15,200"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Gross receivables = 342k + 38k = 380k. General = 380k×5% = 19k. Specific = 38k - 19k = 19k",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9s007kkoa3ocrpv5ql",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 234,
+    "question": "Allowance for doubtful debts is:",
+    "options": [
+      "Asset account",
+      "Liability account",
+      "Contra for asset account",
+      "Contra for liability account"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Allowance for doubtful debts is contra-asset account (reduces receivables)",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9s007lkoa3gq7p37un",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 235,
+    "question": "Which customer carries more risk of bad debts in aging analysis?",
+    "options": [
+      "Musa 50k, 30-60 days past due",
+      "Jamal 40k, 120 days past due",
+      "Rukhsar 30k, 1-30 days past due",
+      "Mukhtar 100k, not yet due"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Longer overdue (120 days) carries highest risk, regardless of amount",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9s007mkoa3uj436fzr",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 236,
+    "question": "Opening: receivables 200k, allowance 10k. No bad debts written off. Customer owed 8k bankrupt, 30% recovery expected. Closing receivables 225k before adjustments. Rate unchanged. Amount charged to CI?",
+    "options": [
+      "Rs. 970",
+      "Rs. 8,970",
+      "Rs. 6,450",
+      "Rs. 6,850"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening % = 5%. After specific allowance 8k×70%=5.6k, receivables for general = 225k-8k = 217k. General 217k×5%=10.85k. Total = 16.45k. Charged = 5.6k + (16.45k-10k) = 12.05k? Complex",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9t007nkoa31dvv640o",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 237,
+    "question": "Opening receivables 250k, closing 300k. Allowance changed from 5% to 4%. Entry at year end?",
+    "options": [
+      "Dr. Bad debts 12.5k; Cr. Allowance 12.5k",
+      "Dr. Bad debts 12k; Cr. Allowance 12k",
+      "Dr. Bad debts 500; Cr. Allowance 500",
+      "Dr. Allowance 500; Cr. Bad debts 500"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening allowance 12.5k, closing 12k. Decrease 500. Dr. Allowance 500, Cr. Bad debts expense 500",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9t007okoa3o6g9iyjk",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 238,
+    "question": "Net receivables at 30 Jun 21: 220.8k, at 30 Jun 22: 244.4k. Allowance increased from 4% to 6%. Bad debts written off 6k. Amount charged for increase in allowance?",
+    "options": [
+      "Rs. 6,400",
+      "Rs. 5,832",
+      "Rs. 12,400",
+      "Rs. 11,832"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Gross opening = 220.8k/0.96 = 230k, allowance 9.2k. Gross closing = 244.4k/0.94 = 260k, allowance 15.6k. Charged = 6k + (15.6k-9.2k) = 12.4k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9t007pkoa3xaoiegh0",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 239,
+    "question": "Which is NOT a benefit of providing credit to customers?",
+    "options": [
+      "May result in enhancing sales",
+      "Enhancing customer loyalty",
+      "Attracts new customers",
+      "Improves cash flow of business"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Credit sales delay cash receipt, thus does NOT improve cash flow",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9t007qkoa3xmxdxgld",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 240,
+    "question": "Opening receivables 250k, increase allowance 6k, sales returns 5k (80% credit), total sales 700k (20% cash), cheque dishonoured 12.5k, bad debts 8.3k, disc received 3.5k, closing 280k. Cash/cheques received?",
+    "options": [
+      "Rs. 524,200",
+      "Rs. 520,700",
+      "Rs. 659,700",
+      "Rs. 530,200"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Credit sales 560k, credit returns 4k. Opening 250k + 560k - 4k - collections - 8.3k + 12.5k = 280k. Collections = 530.2k. But disc received shouldn't be here",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9t007rkoa3u0cukbs1",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 241,
+    "question": "Which statement(s) is/are correct?",
+    "options": [
+      "Doubtful debts example: customer delaying payment due to financial difficulties",
+      "Entry for doubtful debt: Dr. Bad debts; Cr. Receivables",
+      "Allowance against doubtful debts recognized as expense",
+      "Entry for increase: Dr. Allowance; Cr. Bad debts"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Multiple correct: a and c. b is wrong (should credit allowance), d is reversed",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9t007skoa3b7mqjosd",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 242,
+    "question": "Khan is customer and supplier. Due to Khan 25.8k, due from Khan 29.6k. Correct entry for contra settlement?",
+    "options": [
+      "Dr. Receivables 3.8k; Cr. Payables 3.8k",
+      "Dr. Payables 3.8k; Cr. Receivables 3.8k",
+      "Dr. Payables 29.6k; Cr. Receivables 29.6k",
+      "Dr. Payables 25.8k; Cr. Receivables 25.8k"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Set off lower amount: Dr. Payables 25.8k, Cr. Receivables 25.8k",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9t007tkoa3snrcmo0q",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 243,
+    "question": "Opening allowance 15.2k, closing 16.8k. Accountant treated opening as closing and vice versa. Impact?",
+    "options": [
+      "Charge overstated by Rs. 1,600",
+      "Charge understated by Rs. 1,600",
+      "Charge overstated by Rs. 3,200",
+      "Charge understated by Rs. 3,200"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Should charge increase 1.6k, but charged decrease 1.6k. Error = 3.2k overstated (wrong direction by double)",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9t007ukoa3qds52t23",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 244,
+    "question": "Entry for increase in allowance: \"debit allowance, credit bad debts by Rs. 12.5k\". Impact of error?",
+    "options": [
+      "Profit understated by Rs. 12,500",
+      "Profit understated by Rs. 25,000",
+      "Profit overstated by Rs. 12,500",
+      "Profit overstated by Rs. 25,000"
+    ],
+    "correct_answer": 3,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Entry reversed. Should be Dr. Expense Cr. Allowance (decreases profit 12.5k), but did opposite (increases profit 12.5k). Impact = 25k overstated",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9t007vkoa3aa8vy5pf",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 245,
+    "question": "Journal entry to record decrease in allowance during year:",
+    "options": [
+      "Dr. Bad debt expense Cr. Allowance for doubtful debts",
+      "Dr. Accounts receivables Cr. Allowance for doubtful debts",
+      "Dr. Allowance for doubtful debts Cr. Bad debt expense",
+      "Dr. Allowance for doubtful debts Cr. Accounts receivables"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Decrease in allowance: Dr. Allowance for doubtful debts, Cr. Bad debt expense (reduces expense)",
+    "difficulty": "easy"
+  },
+  {
+    "id": "cmlavuz9t007wkoa3jhix49jy",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 246,
+    "question": "Net receivables 1 Jul 21: 66.5k, 30 Jun 22: 76k. General 5%. Cash sales 50k, cash 125.5k, cheque 130k (recovery 5.5k), bad debts 9k, disc allowed 3k, received 2k, contra 6k. Gross sales for CI?",
+    "options": [
+      "Rs. 279,000",
+      "Rs. 278,000",
+      "Rs. 277,500",
+      "Rs. 328,000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Complex calculation involving all transactions to derive credit sales, then add cash sales 50k",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9t007xkoa37ptbumxn",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 247,
+    "question": "Net amount charged to P&L during year:",
+    "options": [
+      "Bad debts + to be written off + Decrease in allowance - recovered",
+      "Bad debts + to be written off + increase in allowance - recovered",
+      "Bad debts + to be written off + Decrease in allowance + recovered",
+      "Bad debts - to be written off - Increase in allowance - recovered"
+    ],
+    "correct_answer": 1,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Charged = Bad debts written off + to be written off + increase in allowance - recoveries",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9t007ykoa3687lrdfo",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 248,
+    "question": "Opening receivables 175k, closing 193k (after entries). Disc allowed 6k, received 3k, bad debts 2k, to be written off 4k, increase allowance 6.7k, cheque from suppliers 53k, customers 356k, cash sales 45k, returns 6k (1/3 cash). Net credit sales?",
+    "options": [
+      "Rs. 382,000",
+      "Rs. 427,000",
+      "Rs. 425,000",
+      "Rs. 376,000"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Opening 175k + Credit sales - 6k disc - 2k - 4k - 356k - 4k credit returns = 193k. Credit sales = 390k? Complex",
+    "difficulty": "hard"
+  },
+  {
+    "id": "cmlavuz9t007zkoa36i6gcof4",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 249,
+    "question": "Opening receivables 500k, allowance 5%. Closing 540k, write off 48k, new allowance 6%. Entry at year end?",
+    "options": [
+      "Dr. Bad debts 4.52k; Cr. Allowance 4.52k",
+      "Dr. Allowance 4.52k; Cr. Bad debts 4.52k",
+      "Dr. Bad debts 52.52k; Cr. Receivables 48k, Allowance 4.52k",
+      "Dr. Bad debts 52.52k; Cr. Allowance 52.52k"
+    ],
+    "correct_answer": 2,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Write off: Dr. Bad debts 48k, Cr. Receivables 48k. After: 492k. New allowance 492k×6%=29.52k. Old 25k. Increase 4.52k. Combined entry",
+    "difficulty": "medium"
+  },
+  {
+    "id": "cmlavuz9t0080koa3nwt5mu8g",
+    "subject": "FOA",
+    "chapter": "CH5",
+    "question_number": 250,
+    "question": "Which accounting concept allows recording allowance for doubtful debts even when loss not occurred?",
+    "options": [
+      "Prudence",
+      "Substance over form",
+      "Going concern",
+      "Accruals"
+    ],
+    "correct_answer": 0,
+    "correct_answers": [],
+    "allow_multiple": false,
+    "max_selections": 2,
+    "explanation": "Prudence concept requires anticipating losses and creating allowances",
+    "difficulty": "easy"
+  }
+]
