@@ -17,6 +17,14 @@ import {
 import { toast } from 'sonner'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth-context'
 import { renderCommunityMarkdown } from '@/lib/community-markdown'
 
@@ -697,29 +705,50 @@ export default function CommunityClient() {
     }
   }
 
-  async function report(targetType: 'thread' | 'comment', targetId: string) {
+  // Report modal state
+  const [reportModalOpen, setReportModalOpen] = useState(false)
+  const [reportTarget, setReportTarget] = useState<{ targetType: 'thread' | 'comment'; targetId: string } | null>(null)
+  const [reportReason, setReportReason] = useState('')
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false)
+
+  function openReportModal(targetType: 'thread' | 'comment', targetId: string) {
     if (!user) {
       toast.warning('Please log in to report.')
       return
     }
+    setReportTarget({ targetType, targetId })
+    setReportReason('')
+    setReportModalOpen(true)
+  }
 
-    const reason = window.prompt('Why are you reporting this?')
-    if (!reason) return
+  async function submitReport() {
+    if (!reportTarget || !reportReason.trim()) return
 
+    setIsSubmittingReport(true)
     try {
       const response = await fetch('/api/community/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetType, targetId, reason }),
+        body: JSON.stringify({
+          targetType: reportTarget.targetType,
+          targetId: reportTarget.targetId,
+          reason: reportReason.trim(),
+        }),
       })
 
+      const data = await response.json()
       if (response.ok) {
         toast.success('Report sent to moderators.')
+        setReportModalOpen(false)
+        setReportReason('')
+        setReportTarget(null)
       } else {
-        toast.error('Unable to send report.')
+        toast.error(data.error || 'Unable to send report.')
       }
     } catch {
       toast.error('Failed to send report.')
+    } finally {
+      setIsSubmittingReport(false)
     }
   }
 
@@ -912,7 +941,7 @@ export default function CommunityClient() {
                       {/* Report Pill */}
                       <button
                         type="button"
-                        onClick={() => void report('thread', selected.id)}
+                        onClick={() => openReportModal('thread', selected.id)}
                         className="flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200/80 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/70 hover:text-slate-800 transition-colors ml-auto"
                       >
                         <ShieldAlert className="w-4 h-4 text-slate-500" />
@@ -987,7 +1016,7 @@ export default function CommunityClient() {
                                 threadAuthorId={selected.author.id}
                                 allComments={comments}
                                 onVote={(id, val) => void vote('comment', id, val)}
-                                onReport={(id) => void report('comment', id)}
+                                onReport={(id) => openReportModal('comment', id)}
                                 userVotes={userVotes}
                                 activeReplyId={activeReplyId}
                                 setActiveReplyId={setActiveReplyId}
@@ -1118,7 +1147,7 @@ export default function CommunityClient() {
                                 variant="ghost"
                                 size="sm"
                                 type="button"
-                                onClick={() => void report('thread', thread.id)}
+                                onClick={() => openReportModal('thread', thread.id)}
                               >
                                 <ShieldAlert className="w-3.5 h-3.5" /> Report
                               </Button>
@@ -1274,7 +1303,7 @@ export default function CommunityClient() {
                                           threadAuthorId={thread.author.id}
                                           allComments={threadCommentList}
                                           onVote={(id, val) => void vote('comment', id, val)}
-                                          onReport={(id) => void report('comment', id)}
+                                          onReport={(id) => openReportModal('comment', id)}
                                           userVotes={userVotes}
                                           activeReplyId={activeReplyId}
                                           setActiveReplyId={setActiveReplyId}
@@ -1441,6 +1470,59 @@ export default function CommunityClient() {
           </div>
         </div>
       </main>
+
+      {/* Custom Preptio Report Modal */}
+      <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl p-6 shadow-xl border border-slate-200">
+          <DialogHeader>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex-shrink-0">
+                <ShieldAlert className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-slate-900">
+                  Report {reportTarget?.targetType === 'thread' ? 'Discussion' : 'Comment'}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 mt-0.5">
+                  Help keep Preptio safe and friendly. Please state why you are reporting this.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-2">
+            <label className="block text-xs font-semibold text-slate-700">
+              Reason for report <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              className="w-full min-h-[110px] rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green focus:bg-white focus:border-transparent transition-all placeholder:text-slate-400 resize-y"
+              placeholder="Provide details about why this content is inappropriate (e.g. spam, harassment, offensive language)..."
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <DialogFooter className="mt-5 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReportModalOpen(false)}
+              disabled={isSubmittingReport}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!reportReason.trim() || isSubmittingReport}
+              onClick={() => void submitReport()}
+              className="bg-primary-green text-white hover:bg-emerald-600 font-semibold"
+            >
+              {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
