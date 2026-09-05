@@ -98,7 +98,7 @@ function CommentNode({
       {/* Curved elbow connector branching from parent's vertical line into this child's avatar */}
       {isChild && (
         <div
-          className="absolute -left-5 sm:-left-6 top-0 w-5 sm:w-6 h-[15px] border-b-2 border-l-2 border-slate-200 rounded-bl-xl pointer-events-none"
+          className="absolute -left-3 sm:-left-6 top-0 w-3 sm:w-6 h-[15px] border-b-2 border-l-2 border-slate-200 rounded-bl-xl pointer-events-none"
           aria-hidden="true"
         />
       )}
@@ -321,7 +321,7 @@ function CommentNode({
 
               {/* Child Replies */}
               {childComments.length > 0 && (
-                <div className="mt-3 space-y-3 pl-4 sm:pl-6 relative">
+                <div className="mt-3 space-y-3 pl-3 sm:pl-6 relative">
                   {childComments.map((child) => (
                     <CommentNode
                       key={child.id}
@@ -727,17 +727,17 @@ export default function CommunityClient() {
     <>
       <Navigation />
       <main className="min-h-screen bg-background-light pb-16">
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+        <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
           {/* Header Banner */}
           <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-primary-green">
+              <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-primary-green">
                 Preptio Community
               </p>
-              <h1 className="mt-1 text-3xl md:text-4xl font-bold text-text-dark">
+              <h1 className="mt-1 text-2xl sm:text-3xl md:text-4xl font-bold text-text-dark">
                 {selected ? selected.category.name : 'Study together. Get exam-ready.'}
               </h1>
-              <p className="mt-1 max-w-2xl text-text-light text-sm md:text-base">
+              <p className="mt-1 max-w-2xl text-text-light text-xs sm:text-base">
                 {selected
                   ? selected.category.description || 'Discuss CA Foundation topics with fellow students across Pakistan.'
                   : 'Ask questions, compare approaches, and learn with CA Foundation students across Pakistan.'}
@@ -746,9 +746,9 @@ export default function CommunityClient() {
 
             {/* Filter controls only shown on feed */}
             {!selected && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <select
-                  className="h-10 rounded-md border border-border bg-white px-3 text-sm"
+                  className="h-10 flex-1 sm:flex-none rounded-md border border-border bg-white px-3 text-xs sm:text-sm min-w-[100px]"
                   value={sort}
                   onChange={(event) => setSort(event.target.value)}
                 >
@@ -757,7 +757,7 @@ export default function CommunityClient() {
                   <option value="top">Top</option>
                 </select>
                 <select
-                  className="h-10 rounded-md border border-border bg-white px-3 text-sm"
+                  className="h-10 flex-1 sm:flex-none rounded-md border border-border bg-white px-3 text-xs sm:text-sm min-w-[130px]"
                   value={category}
                   onChange={(event) => setCategory(event.target.value)}
                 >
@@ -1013,11 +1013,11 @@ export default function CommunityClient() {
                     return (
                       <article
                         key={thread.id}
-                        className="rounded-xl border border-border bg-white p-5 shadow-sm hover:border-slate-300 transition-colors"
+                        className="rounded-xl border border-border bg-white p-3.5 sm:p-5 shadow-sm hover:border-slate-300 transition-colors overflow-hidden"
                       >
-                        <div className="flex gap-4">
+                        <div className="flex gap-2.5 sm:gap-4">
                           {/* Left votes counter */}
-                          <div className="flex w-12 flex-col items-center text-sm pt-1">
+                          <div className="flex w-9 sm:w-12 flex-col items-center text-xs sm:text-sm pt-1 flex-shrink-0">
                             <button
                               type="button"
                               aria-label="Upvote thread"
