@@ -57,8 +57,6 @@ export async function POST(request: NextRequest) {
   try {
     const actor = requireAdminUser(request)
     if (!actor) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (actor.role !== 'super_admin')
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const body = await request.json()
     const name = (body.name as string)?.trim()

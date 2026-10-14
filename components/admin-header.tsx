@@ -96,6 +96,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Platform',
     items: [
+      { label: 'Organizations', href: '/admin/organizations', icon: Building2 },
       { label: 'Demo Settings', href: '/admin/demo-settings', icon: Settings },
       { label: 'Institutes', href: '/admin/institutes', icon: Building2 },
       { label: 'Beta', href: '/admin/beta-features', icon: FlaskConical },
@@ -129,6 +130,7 @@ const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin\/referrals$/, title: 'Ambassador Referrals' },
   { match: /^\/admin\/subscriptions$/, title: 'Subscription Requests' },
   { match: /^\/admin\/payment-methods$/, title: 'Payment Methods' },
+  { match: /^\/admin\/organizations$/, title: 'Organizations' },
 ]
 
 function isActiveRoute(pathname: string, href: string) {

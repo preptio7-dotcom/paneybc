@@ -30,8 +30,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const actor = requireAdminUser(request)
     if (!actor) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (actor.role !== 'super_admin')
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { id } = await params
 
