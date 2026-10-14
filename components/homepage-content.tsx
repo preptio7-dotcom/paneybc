@@ -22,11 +22,11 @@ const HomeAdBanner = dynamic(
 )
 const FeaturesSection = dynamic(
   () => import('@/components/features-section').then((module) => module.FeaturesSection),
-  { ssr: false, loading: () => null }
+  { loading: () => null }
 )
 const HowItWorksSection = dynamic(
   () => import('@/components/how-it-works-section').then((module) => module.HowItWorksSection),
-  { ssr: false, loading: () => null }
+  { loading: () => null }
 )
 const HomeFeatureShowcaseSection = dynamic(
   () =>
@@ -37,11 +37,11 @@ const HomeFeatureShowcaseSection = dynamic(
 )
 const StatsSection = dynamic(
   () => import('@/components/stats-section').then((module) => module.StatsSection),
-  { ssr: false, loading: () => null }
+  { loading: () => null }
 )
 const CTABanner = dynamic(
   () => import('@/components/cta-banner').then((module) => module.CTABanner),
-  { ssr: false, loading: () => null }
+  { loading: () => null }
 )
 const HomeFeedbackSection = dynamic(
   () => import('@/components/home-feedback-section').then((module) => module.HomeFeedbackSection),
@@ -53,10 +53,9 @@ const HomeBlogSection = dynamic(
 )
 const HomeFaqSection = dynamic(
   () => import('@/components/home-faq-section').then((module) => module.HomeFaqSection),
-  { ssr: false, loading: () => null }
+  { loading: () => null }
 )
 const Footer = dynamic(() => import('@/components/footer').then((module) => module.Footer), {
-  ssr: false,
   loading: () => null,
 })
 

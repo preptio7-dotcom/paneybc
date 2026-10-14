@@ -172,8 +172,16 @@ export function Navigation() {
     >
       <div className="max-w-7xl mx-auto w-full px-6 flex items-center justify-between gap-6">
         {/* Logo */}
-        <Link href="/" className="font-heading font-bold text-xl text-primary-green">
-          Preptio
+        <Link href="/" className="flex items-center gap-2.5 font-heading font-bold text-xl text-primary-green tracking-tight hover:opacity-95 transition-opacity">
+          <Image
+            src="/web-app-manifest-192x192.png"
+            alt="Preptio logo"
+            width={32}
+            height={32}
+            className="rounded-lg shadow-sm"
+            priority
+          />
+          <span>Preptio</span>
         </Link>
 
         {/* Desktop Menu */}
@@ -303,16 +311,16 @@ export function Navigation() {
               <PremiumBadge />
               <Link
                 href={user.role === 'admin' ? '/admin' : '/dashboard'}
-                className="text-text-dark hover:text-primary-green font-medium transition-colors"
+                className="text-text-dark hover:text-primary-green font-medium text-sm transition-colors"
               >
                 {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
               </Link>
               {user.org && (user.org.role === 'admin' || user.org.role === 'owner') && (
                 <Link
                   href="/org"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors shadow-xs"
                 >
-                  <span>🏛️</span>
+                  <span className="text-sm">🏛️</span>
                   <span>{user.org.name} Portal</span>
                 </Link>
               )}
