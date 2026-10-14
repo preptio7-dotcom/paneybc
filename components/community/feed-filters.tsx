@@ -1,0 +1,18 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { Search } from 'lucide-react'
+import { postLabels, postTypes } from '@/lib/community-options'
+
+export type FeedFilters = { q: string; type: string; status: string; view: string; range: string }
+export const defaultFilters: FeedFilters = { q: '', type: '', status: '', view: 'all', range: 'all' }
+export function FeedSearch({ filters, sort, onChange, authenticated, requireAuth }: { filters: FeedFilters; sort: string; onChange: (next: FeedFilters) => void; authenticated: boolean; requireAuth: () => void }) {
+  const [query, setQuery] = useState(filters.q)
+  useEffect(() => setQuery(filters.q), [filters.q])
+  const active = filters.q || filters.type || filters.status || filters.view !== 'all' || filters.range !== 'all'
+  return <section aria-label="Find discussions" className="mb-3 space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
+    <div className="flex flex-wrap gap-1" role="group" aria-label="Your discussions">{[{ value: 'all', label: 'All discussions' }, { value: 'saved', label: 'Saved posts' }, { value: 'following', label: 'Following' }].map(view => <button key={view.value} className={`community-action ${filters.view === view.value ? 'bg-emerald-50 text-emerald-800' : ''}`} aria-pressed={filters.view === view.value} onClick={() => { if (view.value !== 'all' && !authenticated) requireAuth(); else onChange({ ...filters, view: view.value }) }}>{view.label}</button>)}</div>
+    <form role="search" className="flex gap-2" onSubmit={e => { e.preventDefault(); onChange({ ...filters, q: query.trim() }) }}><label className="min-w-0 flex-1"><span className="sr-only">Search discussions</span><input type="search" className="community-input" placeholder="Search questions, explanations, and resources" maxLength={120} value={query} onChange={e => setQuery(e.target.value)} /></label><button type="submit" className="community-primary" aria-label="Search community"><Search size={17} /><span className="hidden sm:inline">Search</span></button></form>
+    <div className="flex flex-wrap gap-2"><label className="min-w-32 flex-1"><span className="sr-only">Filter by post label</span><select className="community-input !py-2 text-xs" value={filters.type} onChange={e => onChange({ ...filters, type: e.target.value, ...(e.target.value && e.target.value !== 'question' ? { status: '' } : {}) })}><option value="">All post labels</option>{postTypes.map(type => <option key={type} value={type}>{postLabels[type]}</option>)}</select></label><label className="min-w-32 flex-1"><span className="sr-only">Question status</span><select className="community-input !py-2 text-xs" value={filters.status} onChange={e => onChange({ ...filters, status: e.target.value, ...(e.target.value ? { type: 'question' } : {}) })}><option value="">Any status</option><option value="unanswered">Needs an answer</option><option value="solved">Solved questions</option></select></label>{sort === 'top' && <label className="min-w-32 flex-1"><span className="sr-only">Top posts time range</span><select className="community-input !py-2 text-xs" value={filters.range} onChange={e => onChange({ ...filters, range: e.target.value })}><option value="all">All time</option><option value="day">Past 24 hours</option><option value="week">Past week</option><option value="month">Past month</option></select></label>}{active && <button className="community-action" onClick={() => onChange(defaultFilters)}>Clear filters</button>}</div>
+    {filters.status === 'unanswered' && <p className="text-xs text-slate-500">Questions not yet marked solved by their author.</p>}
+  </section>
+}

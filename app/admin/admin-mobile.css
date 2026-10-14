@@ -1,0 +1,118 @@
+.admin-shell {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.admin-shell * {
+  min-width: 0;
+}
+
+body.admin-route {
+  overflow-x: hidden;
+}
+
+@media (max-width: 1023px) {
+  .admin-shell .overflow-x-auto {
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+
+  .admin-shell .overflow-x-auto::after,
+  .admin-shell [data-slot='table-container']::after,
+  .admin-shell .admin-table-scroll::after {
+    content: '';
+    pointer-events: none;
+    position: sticky;
+    right: 0;
+    top: 0;
+    float: right;
+    height: 100%;
+    width: 18px;
+    background: linear-gradient(to left, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0));
+  }
+
+  .admin-shell [data-slot='table-container'],
+  .admin-shell .admin-table-scroll {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+  }
+
+  .admin-shell [data-slot='table'],
+  .admin-shell .overflow-x-auto table {
+    min-width: 600px;
+    font-size: 13px;
+  }
+
+  .admin-shell [data-slot='table-head'],
+  .admin-shell [data-slot='table-cell'],
+  .admin-shell .overflow-x-auto th,
+  .admin-shell .overflow-x-auto td {
+    padding: 10px 12px;
+  }
+
+  .admin-shell [data-slot='button'],
+  .admin-shell button {
+    min-height: 44px;
+  }
+
+  .admin-shell .admin-editor-toolbar button {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  .admin-shell [data-slot='input'],
+  .admin-shell [data-slot='textarea'],
+  .admin-shell [data-slot='select-trigger'],
+  .admin-shell select {
+    min-height: 44px;
+    width: 100%;
+    font-size: 16px;
+  }
+
+  .admin-shell .admin-kpi-value {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .admin-shell .admin-kpi-label {
+    font-size: 12px;
+  }
+
+  .admin-shell .admin-chart-height {
+    height: 200px;
+  }
+
+  .admin-shell .admin-donut-wrap {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 200px;
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .admin-route [role='dialog'],
+  .admin-route [role='alertdialog'] {
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    max-height: 90vh !important;
+    margin: 16px !important;
+    overflow-y: auto !important;
+  }
+
+  .admin-route [role='dialog'] [class*='sm:flex-row'],
+  .admin-route [role='alertdialog'] [class*='sm:flex-row'] {
+    flex-direction: column !important;
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
+  .admin-route [role='dialog'] [class*='sm:flex-row'] > *,
+  .admin-route [role='alertdialog'] [class*='sm:flex-row'] > * {
+    width: 100%;
+  }
+}

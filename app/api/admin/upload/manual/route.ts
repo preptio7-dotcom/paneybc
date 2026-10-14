@@ -1,0 +1,150 @@
+export const runtime = 'nodejs'
+import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { invalidateCache } from '@/lib/cache'
+import { NextResponse } from 'next/server'
+
+type ManualQuestion = {
+  questionNumber: number
+  chapter?: string
+  question: string
+  options: string[]
+  optionImageUrls?: string[]
+  correctIndex: number
+  explanation: string
+  difficulty?: string
+  imageUrl?: string
+}
+
+export async function POST(request: Request) {
+  try {
+    const user = getCurrentUser(request as any)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const subject = String(body.subject || '').trim()
+    const questions = Array.isArray(body.questions) ? body.questions : []
+
+    if (!subject) {
+      return NextResponse.json({ error: 'Subject is required' }, { status: 400 })
+    }
+    if (!questions.length) {
+      return NextResponse.json(
+        { error: 'At least one question is required' },
+        { status: 400 }
+      )
+    }
+
+    const uploadRecord = await prisma.upload.create({
+      data: {
+        filename: 'manual_table_input',
+        subject,
+        status: 'processing',
+      },
+    })
+
+    const payload = questions.map((row: ManualQuestion) => {
+      const correctIndex = Number(row.correctIndex)
+      const difficulty = String(row.difficulty || 'medium').toLowerCase().trim()
+      const optionImageUrls = Array.isArray(row.optionImageUrls)
+        ? row.optionImageUrls.slice(0, 4).map((url) => String(url || '').trim())
+        : []
+      while (optionImageUrls.length < 4) optionImageUrls.push('')
+
+      return {
+        subject,
+        chapter: row.chapter ? String(row.chapter).trim() : undefined,
+        questionNumber: Number(row.questionNumber),
+        question: String(row.question || '').trim(),
+        options: (row.options || []).map((opt) => String(opt || '').trim()),
+        optionImageUrls,
+        correctAnswer: Math.max(0, Math.min(3, correctIndex - 1)),
+        explanation:
+          String(row.explanation || 'No explanation provided').trim() ||
+          'No explanation provided',
+        difficulty: ['easy', 'medium', 'hard'].includes(difficulty)
+          ? difficulty
+          : 'medium',
+        imageUrl: row.imageUrl ? String(row.imageUrl).trim() : null,
+        uploadId: uploadRecord.id,
+      }
+    })
+
+    const invalid = payload.find((q: (typeof payload)[number]) => {
+      return (
+        !q.question ||
+        q.options.length !== 4 ||
+        q.options.some((opt: string) => !opt) ||
+        q.optionImageUrls.length !== 4 ||
+        Number.isNaN(q.questionNumber)
+      )
+    })
+
+    if (invalid) {
+      await prisma.upload.update({
+        where: { id: uploadRecord.id },
+        data: { status: 'failed', error: 'Invalid rows detected' },
+      })
+      return NextResponse.json(
+        { error: 'Some rows are missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    let inserted: { count: number }
+    let warnings: string[] = []
+
+    try {
+      inserted = await prisma.question.createMany({ data: payload })
+    } catch (insertError: any) {
+      const errorMessage = String(insertError?.message || '')
+      const missingOptionImageColumn =
+        errorMessage.includes('optionImageUrls') &&
+        errorMessage.toLowerCase().includes('does not exist')
+
+      if (!missingOptionImageColumn) {
+        throw insertError
+      }
+
+      const legacyPayload = payload.map((row) => {
+        const { optionImageUrls: _optionImageUrls, ...legacyRow } = row
+        return legacyRow
+      })
+
+      inserted = await prisma.question.createMany({ data: legacyPayload })
+      warnings = [
+        'Question upload succeeded, but option image URLs were not saved because the database migration is pending.',
+      ]
+    }
+
+    await prisma.upload.update({
+      where: { id: uploadRecord.id },
+      data: { status: 'completed', count: inserted.count },
+    })
+
+    // ── Cache invalidation ──────────────────────────────────────────────────
+    // Bulk questions just added — could be hundreds of new questions
+    // across multiple chapters — clear everything question-related
+    invalidateCache('questions:pool:')           // chapter pools now stale
+    invalidateCache('questions:page:')           // paginated results now stale
+    invalidateCache('subjects:chapter-counts:')  // counts increased
+    invalidateCache('mock:config:')              // canStart may have flipped to true
+
+    return NextResponse.json({
+      message: 'Questions uploaded successfully',
+      count: inserted.count,
+      warnings,
+    })
+  } catch (error: any) {
+    console.error('Manual upload error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Server error' },
+      { status: 500 }
+    )
+  }
+}
