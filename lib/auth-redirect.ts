@@ -18,8 +18,13 @@ export function safeReturnTo(value: string | null | undefined): string | null {
   }
 }
 
-export function authDestination(search: string, role?: string) {
-  return safeReturnTo(new URLSearchParams(search).get('returnTo')) || (role === 'admin' ? '/admin' : '/dashboard')
+export function authDestination(search: string, role?: string, orgRole?: string | null) {
+  const returnTo = safeReturnTo(new URLSearchParams(search).get('returnTo'))
+  if (returnTo) return returnTo
+
+  if (role === 'admin' || role === 'super_admin') return '/admin'
+  if (orgRole === 'admin' || orgRole === 'owner') return '/org'
+  return '/dashboard'
 }
 
 export function authHref(kind: 'login' | 'signup', destination?: string | null) {

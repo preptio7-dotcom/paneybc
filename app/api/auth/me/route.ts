@@ -31,6 +31,17 @@ export async function GET(request: NextRequest) {
 
     const resolvedAvatar = await resolveAvatarForUser(user)
 
+    // Check if user is an organization admin/owner
+    const orgMembership = await prisma.organizationMembership.findFirst({
+      where: {
+        userId: user.id,
+        org: { isActive: true },
+      },
+      include: {
+        org: { select: { id: true, name: true, slug: true } },
+      },
+    })
+
     return NextResponse.json(
       {
         message: 'User retrieved successfully',
@@ -45,6 +56,14 @@ export async function GET(request: NextRequest) {
           popupDismissed: user.popupDismissed,
           referralCode: user.referralCode,
           referralLink: user.referralLink,
+          org: orgMembership
+            ? {
+                id: orgMembership.org.id,
+                name: orgMembership.org.name,
+                slug: orgMembership.org.slug,
+                role: orgMembership.role,
+              }
+            : null,
         },
       },
       { status: 200 }

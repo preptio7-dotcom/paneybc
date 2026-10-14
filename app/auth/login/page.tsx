@@ -25,7 +25,7 @@ export default function LoginPage() {
     if (loading) return
     if (!user) return
     // Use a hard redirect to avoid client router getting stuck on auth pages.
-    window.location.replace(authDestination(window.location.search, user.role))
+    window.location.replace(authDestination(window.location.search, user.role, user.org?.role))
   }, [loading, user])
 
 
