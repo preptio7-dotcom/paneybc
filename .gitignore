@@ -25,3 +25,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.vercel
+.env*
+
+# Local community verification outputs
+/community-*.log
+/tsconfig.community-check.json
+/test-results/
+/playwright-report/
+/artifacts/community/

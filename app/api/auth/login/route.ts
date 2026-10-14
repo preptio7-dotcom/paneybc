@@ -22,6 +22,7 @@ import {
 } from '@/lib/login-security'
 import { sendSecurityAlertEmail } from '@/lib/email'
 import { resolveAvatarForUser } from '@/lib/avatar-pack-service'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
 const LOGIN_ENDPOINT = '/api/auth/login'
 
@@ -239,7 +240,7 @@ export async function POST(request: NextRequest) {
 
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
+      getJwtSecret(),
       {
         expiresIn: '7d',
       }

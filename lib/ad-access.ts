@@ -117,7 +117,7 @@ export function getAdEligibilityInfo(pathname: string, user: AdAccessUser): AdEl
   }
 }
 
-export type AdSenseConfig = {
+export type AdConfig = {
   globalEnabled: boolean
   allowedPaths: string[]
   blockedPaths: string[]
@@ -139,7 +139,7 @@ function matchPathPattern(pathname: string, pattern: string): boolean {
 export function shouldLoadAdsForContext(
   pathname: string,
   user: AdAccessUser,
-  config: AdSenseConfig | null = null
+  config: AdConfig | null = null
 ) {
   // If no config, fallback to default logic
   if (!config) {

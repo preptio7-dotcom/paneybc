@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
 export interface DecodedToken {
   userId: string
@@ -11,7 +12,7 @@ export interface DecodedToken {
 
 export function verifyToken(token: string): DecodedToken | null {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
+    const decoded = jwt.verify(token, getJwtSecret())
     return decoded as DecodedToken
   } catch (error) {
     return null

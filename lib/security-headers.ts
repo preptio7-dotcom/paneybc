@@ -5,17 +5,10 @@ const BASE_SCRIPT_SOURCES = [
   "'self'",
   "'unsafe-inline'",
   "'unsafe-eval'",
-  'https://pagead2.googlesyndication.com',
-  'https://adservice.google.com',
   'https://www.googletagservices.com',
   'https://www.googletagmanager.com',
   'https://www.google-analytics.com',
   'https://region1.google-analytics.com',
-  'https://ep2.adtrafficquality.google',
-  'https://*.googlesyndication.com',
-  'https://*.doubleclick.net',
-  'https://googleads.g.doubleclick.net',
-  'https://tpc.googlesyndication.com',
   'https://va.vercel-scripts.com',
   'https://cdn.jsdelivr.net',
   'https://cdnjs.cloudflare.com',
@@ -24,7 +17,6 @@ const BASE_SCRIPT_SOURCES = [
   'https://models.readyplayer.me',
   'https://www.clarity.ms',
   'https://scripts.clarity.ms',
-  'https://fundingchoicesmessages.google.com',
 ]
 
 const BASE_CONNECT_SOURCES = [
@@ -32,15 +24,8 @@ const BASE_CONNECT_SOURCES = [
   'https://api.dicebear.com',
   'https://api.multiavatar.com',
   'https://models.readyplayer.me',
-  'https://pagead2.googlesyndication.com',
-  'https://adservice.google.com',
-  'https://googleads.g.doubleclick.net',
-  'https://ep1.adtrafficquality.google',
-  'https://ep2.adtrafficquality.google',
   'https://www.google-analytics.com',
   'https://region1.google-analytics.com',
-  'https://*.googlesyndication.com',
-  'https://*.doubleclick.net',
   'https://vitals.vercel-insights.com',
   'https://www.clarity.ms',
   'https://*.clarity.ms',
@@ -50,22 +35,13 @@ const BASE_CONNECT_SOURCES = [
 
 const BASE_FRAME_SOURCES = [
   "'self'",
-  'https://googleads.g.doubleclick.net',
-  'https://tpc.googlesyndication.com',
-  'https://ep2.adtrafficquality.google',
   'https://www.google.com',
-  'https://*.googlesyndication.com',
-  'https://*.doubleclick.net',
-  'https://fundingchoicesmessages.google.com',
 ]
 
 const BASE_IMG_SOURCES = [
   "'self'",
   'data:',
   'blob:',
-  'https://pagead2.googlesyndication.com',
-  'https://*.googlesyndication.com',
-  'https://*.doubleclick.net',
   'https://www.google-analytics.com',
   // keep existing broad https image support for remote assets
   'https:',
@@ -112,8 +88,6 @@ export function applySecurityHeaders(
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
-  // AdSense cross-origin resources are blocked under `require-corp`.
-  // Use unsafe-none so guest pages can render ad scripts/frames correctly.
   response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none')
   response.headers.set('Cross-Origin-Resource-Policy', 'same-site')
   response.headers.set('Content-Security-Policy', csp)

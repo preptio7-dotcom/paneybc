@@ -7,6 +7,7 @@ import { detectSuspiciousInput, sanitizeEmail, sanitizePlainText } from '@/lib/s
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 import { getIpAccess, getRequestIpAddress, logSecurityEvent, maybeAutoBlockIp } from '@/lib/ip-security'
 import { resolveAvatarForUser } from '@/lib/avatar-pack-service'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
 const MAX_OTP_ATTEMPTS = 3
 const ADMIN_VERIFY_ENDPOINT = '/api/auth/admin/verify'
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
 
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
+      getJwtSecret(),
       { expiresIn: '7d' }
     )
 

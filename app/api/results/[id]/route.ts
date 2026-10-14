@@ -1,5 +1,6 @@
 export const runtime = 'nodejs'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 const indexToOptionText = (options: string[] | undefined, index: number) => {
@@ -26,12 +27,19 @@ const formatTimeSpent = (seconds: number) => {
 
 export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
+    const currentUser = getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = context.params
     if (!id) {
       return NextResponse.json({ error: 'Invalid result ID' }, { status: 400 })
     }
 
-    const result = await prisma.testResult.findUnique({ where: { id } })
+    const result = await prisma.testResult.findFirst({
+      where: { id, userId: currentUser.userId },
+    })
     if (!result) {
       return NextResponse.json({ error: 'Result not found' }, { status: 404 })
     }

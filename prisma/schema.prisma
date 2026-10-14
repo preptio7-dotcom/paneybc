@@ -203,6 +203,48 @@ enum PaymentMethodType {
   bank_account
 }
 
+enum OrgRole {
+  owner
+  admin
+  member
+}
+
+enum OrgPlanTier {
+  starter
+  professional
+  enterprise
+}
+
+enum CommunityVoteTargetType {
+  thread
+  comment
+}
+
+enum CommunityReportTargetType {
+  thread
+  comment
+}
+
+enum CommunityReportStatus {
+  open
+  reviewed
+  resolved
+}
+
+enum CommunityModerationActionType {
+  pin
+  unpin
+  delete
+  lock
+  unlock
+  restore
+}
+
+enum CommunityModerationTargetType {
+  thread
+  comment
+}
+
 model User {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -253,6 +295,18 @@ model User {
   referredBy               ReferralSignup?  @relation("ReferredUser")
   studentNotes             StudentNote[]    @relation("StudentNotes")
   studentTags              StudentTag[]     @relation("StudentTags")
+  communityCategoriesCreated CommunityCategory[] @relation("CommunityCategoryCreator")
+  communityThreads          CommunityThread[] @relation("CommunityThreadAuthor")
+  communityComments         CommunityComment[] @relation("CommunityCommentAuthor")
+  communityVotes            CommunityVote[] @relation("CommunityVoteUser")
+  communityReports          CommunityReport[] @relation("CommunityReportReporter")
+  communityModerationActions CommunityModerationAction[] @relation("CommunityModerationActor")
+  communityBookmarks CommunityBookmark[]
+  communityFollows CommunityFollow[]
+  communityNotifications CommunityNotification[] @relation("CommunityRecipient")
+  communityNotificationsSent CommunityNotification[] @relation("CommunitySender")
+  communityPreferences CommunityPreferences?
+  orgMemberships       OrganizationMembership[]
 }
 
 model Subject {
@@ -572,7 +626,6 @@ model SystemSettings {
   adsEnabled             Boolean  @default(true)
   welcomeMessageTemplate String   @default("Welcome back, {{name}}!")
   adContent              Json?
-  adSenseConfig          Json?
   testSettings           Json?
   subscriptionSettings   Json? @map("subscription_settings")
   activeAvatarPackId     String?  @map("active_avatar_pack_id")
@@ -850,6 +903,182 @@ model UserFeedback {
   @@index([status, createdAt])
 }
 
+model CommunityCategory {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  displayOrder Int      @default(0) @map("display_order")
+  createdById  String?  @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  createdBy User?             @relation("CommunityCategoryCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  threads  CommunityThread[]
+
+  @@index([displayOrder])
+  @@map("community_categories")
+}
+
+model CommunityThread {
+  id         String   @id @default(cuid())
+  categoryId String   @map("category_id")
+  authorId   String   @map("author_id")
+  title      String
+  body       String
+  createdAt  DateTime @default(now()) @map("created_at")
+  editedAt   DateTime? @map("edited_at")
+  locked     Boolean  @default(false)
+  deleted    Boolean  @default(false)
+  postType CommunityPostType @default(discussion) @map("post_type")
+  solvedAt DateTime? @map("solved_at")
+  acceptedCommentId String? @unique @map("accepted_comment_id")
+  pinnedAt DateTime? @map("pinned_at")
+  acceptedComment CommunityComment? @relation("AcceptedAnswer", fields: [acceptedCommentId], references: [id], onDelete: SetNull)
+  bookmarks CommunityBookmark[]
+  follows CommunityFollow[]
+  notifications CommunityNotification[]
+
+  category CommunityCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author User @relation("CommunityThreadAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comments CommunityComment[]
+
+  @@index([categoryId, createdAt])
+  @@index([createdAt])
+  @@index([deleted, locked])
+  @@map("community_threads")
+}
+
+model CommunityComment {
+  id              String   @id @default(cuid())
+  threadId        String   @map("thread_id")
+  parentCommentId String?  @map("parent_comment_id")
+  authorId        String   @map("author_id")
+  body            String
+  createdAt       DateTime @default(now()) @map("created_at")
+  editedAt        DateTime? @map("edited_at")
+  deleted         Boolean  @default(false)
+  acceptedFor CommunityThread? @relation("AcceptedAnswer")
+  notifications CommunityNotification[]
+
+  thread CommunityThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  parent CommunityComment? @relation("CommunityCommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies CommunityComment[] @relation("CommunityCommentReplies")
+  author User @relation("CommunityCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@index([parentCommentId, createdAt])
+  @@map("community_comments")
+}
+
+enum CommunityPostType {
+  question
+  discussion
+  resource
+  exam_advice
+}
+
+model CommunityBookmark {
+  userId String @map("user_id")
+  threadId String @map("thread_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread CommunityThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  @@id([userId, threadId])
+  @@index([userId, createdAt])
+  @@index([threadId])
+  @@map("community_bookmarks")
+}
+
+model CommunityFollow {
+  userId String @map("user_id")
+  threadId String @map("thread_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread CommunityThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  @@id([userId, threadId])
+  @@index([threadId])
+  @@map("community_follows")
+}
+
+model CommunityPreferences {
+  userId String @id @map("user_id")
+  replies Boolean @default(true)
+  followed Boolean @default(true)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("community_preferences")
+}
+
+model CommunityNotification {
+  id String @id @default(cuid())
+  userId String @map("user_id")
+  actorId String @map("actor_id")
+  threadId String @map("thread_id")
+  commentId String @map("comment_id")
+  kind String
+  readAt DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user User @relation("CommunityRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor User @relation("CommunitySender", fields: [actorId], references: [id], onDelete: Cascade)
+  thread CommunityThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  comment CommunityComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  @@unique([userId, commentId, kind])
+  @@index([userId, readAt, createdAt])
+  @@index([threadId])
+  @@index([actorId])
+  @@index([commentId])
+  @@map("community_notifications")
+}
+
+model CommunityVote {
+  id         String                  @id @default(cuid())
+  userId     String                  @map("user_id")
+  targetType CommunityVoteTargetType @map("target_type")
+  targetId   String                  @map("target_id")
+  value      Int
+  createdAt  DateTime                @default(now()) @map("created_at")
+  updatedAt  DateTime                @updatedAt @map("updated_at")
+
+  user User @relation("CommunityVoteUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+  @@map("community_votes")
+}
+
+model CommunityReport {
+  id         String                   @id @default(cuid())
+  targetType CommunityReportTargetType @map("target_type")
+  targetId   String                   @map("target_id")
+  reporterId String                   @map("reporter_id")
+  reason     String
+  status     CommunityReportStatus    @default(open)
+  createdAt  DateTime                 @default(now()) @map("created_at")
+  updatedAt  DateTime                 @updatedAt @map("updated_at")
+
+  reporter User @relation("CommunityReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@map("community_reports")
+}
+
+model CommunityModerationAction {
+  id         String                        @id @default(cuid())
+  actorId    String                        @map("actor_id")
+  actionType CommunityModerationActionType @map("action_type")
+  targetType CommunityModerationTargetType @map("target_type")
+  targetId   String                        @map("target_id")
+  reason     String?
+  createdAt  DateTime                      @default(now()) @map("created_at")
+
+  actor User @relation("CommunityModerationActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
+  @@map("community_moderation_actions")
+}
+
 model StreakAuditLog {
   id          String                @id @default(cuid())
   userId      String                @map("user_id")
@@ -1102,4 +1331,58 @@ model PaymentMethod {
   @@index([type, isActive])
   @@index([displayOrder])
   @@map("payment_methods")
+}
+
+model Organization {
+  id           String      @id @default(cuid())
+  name         String      @unique
+  slug         String      @unique
+  planTier     OrgPlanTier @default(starter)
+  maxSeats     Int         @default(30)
+  isActive     Boolean     @default(true)
+  contactEmail String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  memberships  OrganizationMembership[]
+  subscription OrganizationSubscription?
+
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("organizations")
+}
+
+model OrganizationMembership {
+  id       String  @id @default(cuid())
+  orgId    String  @map("org_id")
+  userId   String  @map("user_id")
+  role     OrgRole @default(member)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+  @@index([userId])
+  @@index([orgId])
+  @@map("organization_memberships")
+}
+
+model OrganizationSubscription {
+  id         String      @id @default(cuid())
+  orgId      String      @unique @map("org_id")
+  planTier   OrgPlanTier @default(starter)
+  seats      Int         @default(30)
+  validFrom  DateTime    @default(now()) @map("valid_from")
+  validUntil DateTime?   @map("valid_until")
+  isActive   Boolean     @default(true) @map("is_active")
+  notes      String?
+  createdBy  String?     @map("created_by")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([isActive])
+  @@map("organization_subscriptions")
 }

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -302,7 +302,7 @@ export default function SuperAdminUsersPage() {
               />
               <label htmlFor="canManageAds" className="text-white cursor-pointer">
                 <div className="font-medium">Manage Ads</div>
-                <div className="text-xs text-gray-400">Can configure AdSense and ad settings</div>
+                <div className="text-xs text-gray-400">Can configure sponsored ad settings</div>
               </label>
             </div>
           </div>

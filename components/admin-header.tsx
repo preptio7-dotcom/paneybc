@@ -75,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Ambassador Apps', href: '/admin/join-us', icon: UserRoundCheck, badgeKey: 'pendingAmbassadorCount' },
       { label: 'Referrals', href: '/admin/referrals', icon: Share2 },
       { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, badgeKey: 'pendingFeedbackCount' },
+      { label: 'Community Reports', href: '/admin/community-reports', icon: Shield },
       { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
       { label: 'Analytics & Reports', href: '/admin/analytics', icon: BarChart2 },
     ],
@@ -90,12 +91,12 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Monetization',
     items: [
       { label: 'Ads', href: '/admin/ads', icon: BarChart2 },
-      { label: 'Ads Diagnostic', href: '/admin/ads-diagnostic', icon: Settings },
     ],
   },
   {
     label: 'Platform',
     items: [
+      { label: 'Organizations', href: '/admin/organizations', icon: Building2 },
       { label: 'Demo Settings', href: '/admin/demo-settings', icon: Settings },
       { label: 'Institutes', href: '/admin/institutes', icon: Building2 },
       { label: 'Beta', href: '/admin/beta-features', icon: FlaskConical },
@@ -118,6 +119,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin$/, title: 'Admin Dashboard' },
+  { match: /^\/admin\/community-reports$/, title: 'Community Moderation Reports' },
   { match: /^\/admin\/blog\/new$/, title: 'Create Blog Post' },
   { match: /^\/admin\/blog\/edit\/.+/, title: 'Edit Blog Post' },
   { match: /^\/admin\/blog$/, title: 'Blog Posts' },
@@ -128,6 +130,7 @@ const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin\/referrals$/, title: 'Ambassador Referrals' },
   { match: /^\/admin\/subscriptions$/, title: 'Subscription Requests' },
   { match: /^\/admin\/payment-methods$/, title: 'Payment Methods' },
+  { match: /^\/admin\/organizations$/, title: 'Organizations' },
 ]
 
 function isActiveRoute(pathname: string, href: string) {

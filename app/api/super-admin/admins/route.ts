@@ -4,15 +4,14 @@ import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import bcryptjs from 'bcryptjs'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
 const getSuperAdmin = async () => {
   const cookieStore = await cookies()
   const token = cookieStore.get('super_admin_session')?.value
   if (!token) return null
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id?: string; role?: string }
+    const decoded = jwt.verify(token, getJwtSecret()) as { id?: string; role?: string }
     if (!decoded || decoded.role !== 'super_admin' || !decoded.id) return null
     return decoded
   } catch (error) {

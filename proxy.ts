@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { applySecurityHeaders } from '@/lib/security-headers'
+import { authHref } from '@/lib/auth-redirect'
 import { neon } from '@neondatabase/serverless'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 
@@ -108,7 +109,6 @@ export default async function proxy(request: NextRequest) {
   const superAdminToken = request.cookies.get('super_admin_session')?.value
   const { pathname } = request.nextUrl
 
-  const isAuthPage = pathname.startsWith('/auth')
   const isAdminLoginPage = pathname === '/admin/login'
   const isAdminForgotPasswordPage = pathname === '/admin/forgot-password'
   const isAdminRoute = pathname.startsWith('/admin') && !isAdminLoginPage && !isAdminForgotPasswordPage
@@ -162,12 +162,11 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  if (!isApiRoute && isAuthPage && !pathname.startsWith('/auth/reset-password') && token) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)), request)
-  }
+  // Login/signup validate the session through /api/auth/me and then resolve returnTo.
+  // A cookie alone may be expired; redirecting it here also discards the requested discussion.
 
   if (!isApiRoute && isProtectedRoute && !token) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)), request)
+    return applySecurityHeaders(NextResponse.redirect(new URL(authHref('login', pathname + request.nextUrl.search), request.url)), request)
   }
 
   if (!isApiRoute && isAdminRoute && token) {

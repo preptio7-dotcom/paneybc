@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context'
 import Image from 'next/image'
 import { NotificationOptIn } from './notification-opt-in'
 import { usePathname } from 'next/navigation'
+import { useAuthLinks } from '@/hooks/use-auth-links'
 import { PremiumBadge } from './premium-badge'
 import { PremiumMobileButton } from './premium-badge'
 import {
@@ -29,6 +30,7 @@ export function Navigation() {
   const [betaFeatures, setBetaFeatures] = useState<BetaFeatureSettings>(DEFAULT_BETA_FEATURE_SETTINGS)
   const { user, logout } = useAuth()
   const pathname = usePathname()
+  const { loginHref, signupHref } = useAuthLinks()
   const dashboardNavRoutes = [
     '/dashboard',
     '/dashboard/analytics',
@@ -53,6 +55,7 @@ export function Navigation() {
   ]
 
   const studyLinks = [
+    { href: '/community', label: 'Community' },
     { href: '/study-session', label: 'Study Session' },
     { href: '/notes', label: 'Notes & Flashcards' },
     { href: '/study-planner', label: 'Study Planner' },
@@ -267,6 +270,7 @@ export function Navigation() {
                   Features
                 </Link>
               ) : null}
+              <Link href="/community" className="text-text-dark hover:text-primary-green transition-colors" aria-current={pathname === "/community" ? "page" : undefined}>Community</Link>
               {showBlogInMainNav ? (
                 <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors">
                   Blog
@@ -303,6 +307,15 @@ export function Navigation() {
               >
                 {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
               </Link>
+              {user.org && (user.org.role === 'admin' || user.org.role === 'owner') && (
+                <Link
+                  href="/org"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                >
+                  <span>🏛️</span>
+                  <span>{user.org.name} Portal</span>
+                </Link>
+              )}
               <div className="relative">
                 <button
                   onClick={handleOpenNotifications}
@@ -360,12 +373,12 @@ export function Navigation() {
                   Try Demo
                 </Button>
               </Link>
-              <Link href="/auth/login">
+              <Link href={loginHref}>
                 <Button variant="outline" size="sm">
                   Login
                 </Button>
               </Link>
-              <Link href="/auth/signup">
+              <Link href={signupHref}>
                 <Button size="sm">
                   Sign Up
                 </Button>
@@ -507,6 +520,7 @@ export function Navigation() {
                     Features
                   </Link>
                 ) : null}
+                <Link href="/community" className="block py-2 text-text-dark hover:text-primary-green" onClick={() => setIsMenuOpen(false)}>Community</Link>
                 {showBlogInMainNav ? (
                   <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                     Blog
@@ -586,12 +600,12 @@ export function Navigation() {
                       Try Demo
                     </Button>
                   </Link>
-                  <Link href="/auth/login" className="w-full" onClick={() => setIsMenuOpen(false)}>
+                  <Link href={loginHref} className="w-full" onClick={() => setIsMenuOpen(false)}>
                     <Button variant="outline" className="w-full">
                       Login
                     </Button>
                   </Link>
-                  <Link href="/auth/signup" className="w-full" onClick={() => setIsMenuOpen(false)}>
+                  <Link href={signupHref} className="w-full" onClick={() => setIsMenuOpen(false)}>
                     <Button className="w-full">
                       Sign Up
                     </Button>

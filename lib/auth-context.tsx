@@ -13,6 +13,12 @@ interface User {
   popupDismissed?: boolean
   referralCode?: string | null
   referralLink?: string | null
+  org?: {
+    id: string
+    name: string
+    slug: string
+    role: string
+  } | null
 }
 
 interface AuthContextType {

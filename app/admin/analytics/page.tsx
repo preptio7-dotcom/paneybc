@@ -145,19 +145,6 @@ type ReportPayload = {
       }>
       insight: string
     }
-    adsense: {
-      manual: {
-        thisMonthPkr: number
-        lastMonthPkr: number
-        history: Array<{ monthKey: string; valuePkr: number }>
-        updatedAt: string | null
-      }
-      estimate: {
-        rpmUsd: number
-        pageViews: number
-        estimatedUsd: number
-      }
-    }
     platformStatsJob: {
       status: 'success' | 'failed' | null
       runAt: string | null
@@ -375,9 +362,6 @@ export default function AdminAnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
-  const [isSavingAdsense, setIsSavingAdsense] = useState(false)
-  const [adsenseThisMonth, setAdsenseThisMonth] = useState('')
-  const [adsenseLastMonth, setAdsenseLastMonth] = useState('')
   const [isMobileViewport, setIsMobileViewport] = useState(false)
 
   useEffect(() => {
@@ -420,8 +404,6 @@ export default function AdminAnalyticsPage() {
 
       const nextReport = payload?.report as ReportPayload
       setReport(nextReport)
-      setAdsenseThisMonth(String(nextReport?.heavy?.adsense?.manual?.thisMonthPkr ?? 0))
-      setAdsenseLastMonth(String(nextReport?.heavy?.adsense?.manual?.lastMonthPkr ?? 0))
       if (preset === 'custom') {
         setStartDate(nextReport?.heavy?.range?.startInput || '')
         setEndDate(nextReport?.heavy?.range?.endInput || '')
@@ -451,35 +433,6 @@ export default function AdminAnalyticsPage() {
       window.open(exportHref, '_blank', 'noopener,noreferrer')
     } finally {
       window.setTimeout(() => setIsExporting(false), 300)
-    }
-  }
-
-  const handleSaveAdsense = async () => {
-    const thisMonthPkr = Number(adsenseThisMonth)
-    const lastMonthPkr = Number(adsenseLastMonth)
-    if (!Number.isFinite(thisMonthPkr) || thisMonthPkr < 0 || !Number.isFinite(lastMonthPkr) || lastMonthPkr < 0) {
-      return
-    }
-
-    setIsSavingAdsense(true)
-    try {
-      const response = await fetch('/api/admin/analytics/adsense', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          thisMonthPkr,
-          lastMonthPkr,
-        }),
-      })
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload?.error || 'Failed to save AdSense values')
-      }
-      await loadReport()
-    } catch (saveError) {
-      console.error(saveError)
-    } finally {
-      setIsSavingAdsense(false)
     }
   }
 
@@ -1140,85 +1093,6 @@ export default function AdminAnalyticsPage() {
                       </div>
                     </div>
                   ))}
-                </div>
-              </section>
-
-              <section className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                <SectionTitle title="AdSense Revenue Overview" subtitle="Estimated earnings from Google AdSense" />
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 p-4">
-                    <p className="text-sm font-semibold text-slate-900">Manual Revenue Entry</p>
-                    <p className="mt-1 text-xs text-slate-500">Enter your earnings from the AdSense dashboard.</p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <label className="text-xs text-slate-600">
-                        This Month (PKR)
-                        <input
-                          type="number"
-                          min={0}
-                          value={adsenseThisMonth}
-                          onChange={(event) => setAdsenseThisMonth(event.target.value)}
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </label>
-                      <label className="text-xs text-slate-600">
-                        Last Month (PKR)
-                        <input
-                          type="number"
-                          min={0}
-                          value={adsenseLastMonth}
-                          onChange={(event) => setAdsenseLastMonth(event.target.value)}
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </label>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <Button type="button" onClick={handleSaveAdsense} disabled={isSavingAdsense}>
-                        {isSavingAdsense ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Save
-                      </Button>
-                      <a
-                        href="https://www.google.com/adsense"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-semibold text-emerald-700 underline"
-                      >
-                        Open AdSense Dashboard
-                      </a>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-500">Last updated: {formatDate(report.heavy.adsense.manual.updatedAt)}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-200 p-4">
-                    <p className="text-sm font-semibold text-slate-900">Revenue Estimates</p>
-                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                        <p className="text-slate-500">Estimated RPM</p>
-                        <p className="mt-1 font-bold text-slate-900">${report.heavy.adsense.estimate.rpmUsd.toFixed(2)}</p>
-                      </div>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                        <p className="text-slate-500">Page views</p>
-                        <p className="mt-1 font-bold text-slate-900">{report.heavy.adsense.estimate.pageViews.toLocaleString()}</p>
-                      </div>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                        <p className="text-slate-500">Estimated USD</p>
-                        <p className="mt-1 font-bold text-slate-900">${report.heavy.adsense.estimate.estimatedUsd.toFixed(2)}</p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-xs text-slate-500">
-                      Revenue estimates are approximate. Check your Google AdSense dashboard for accurate figures.
-                    </p>
-                    <div className="admin-chart-height mt-4 h-[200px] md:h-40">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={report.heavy.adsense.manual.history}>
-                          {!isMobileViewport ? <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /> : null}
-                          <XAxis dataKey="monthKey" tick={{ fontSize: 10 }} />
-                          <YAxis hide={isMobileViewport} />
-                          <Tooltip />
-                          <Bar dataKey="valuePkr" fill="#16a34a" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
                 </div>
               </section>
 

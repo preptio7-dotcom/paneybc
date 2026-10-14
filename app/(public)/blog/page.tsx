@@ -24,8 +24,6 @@ export const metadata: Metadata = buildPublicMetadata({
   path: '/blog',
 })
 
-import { Adsense } from '@/components/adsense'
-
 export default async function BlogPage({
   searchParams,
 }: {
@@ -63,7 +61,6 @@ export default async function BlogPage({
         initialCategory={initialCategory}
         initialTag={initialTag}
       />
-      <Adsense />
       <Footer />
     </main>
   )

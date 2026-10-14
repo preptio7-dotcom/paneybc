@@ -1,9 +1,6 @@
 'use client'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { useAuth } from '@/lib/auth-context'
-import { shouldLoadAdsForContext } from '@/lib/ad-access'
-import { usePathname } from 'next/navigation'
 
 type Question = {
     id: string
@@ -26,40 +23,6 @@ const SUBJECT_COLORS: Record<string, string> = {
     BAEIV2E: 'bg-purple-100 text-purple-800 border-purple-200',
     FOA: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     QAFB: 'bg-orange-100 text-orange-800 border-orange-200',
-}
-
-function AdSenseSlot() {
-    const pathname = usePathname()
-    const { user } = useAuth()
-    const showAd = shouldLoadAdsForContext(pathname || '/', user)
-
-    useEffect(() => {
-        if (showAd) {
-            try {
-                if (typeof window !== 'undefined') {
-                    ; ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
-                }
-            } catch (e) {
-                console.error(e)
-            }
-        }
-    }, [showAd])
-
-    if (!showAd) return null
-
-    return (
-        <div className="w-full my-10 flex justify-center overflow-hidden min-h-[90px] bg-slate-50 border border-slate-200 rounded-xl items-center text-slate-400 text-sm shadow-inner relative">
-            <span className="absolute z-0 opacity-50 text-xs tracking-widest font-semibold uppercase">Advertisement</span>
-            <ins
-                className="adsbygoogle relative z-10"
-                style={{ display: 'block', width: '100%' }}
-                data-ad-client="ca-pub-5583540622875378"
-                data-ad-slot="XXXXXXXXXX"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-            ></ins>
-        </div>
-    )
 }
 
 export function PracticeClient({ initialQuestions }: { initialQuestions: Question[] }) {
@@ -103,9 +66,6 @@ export function PracticeClient({ initialQuestions }: { initialQuestions: Questio
                 </div>
             </div>
 
-            {/* Top Ad */}
-            <AdSenseSlot />
-
             {/* MCQ Card List */}
             <div className="space-y-8">
                 {filteredQuestions.map((q: Question, index: number) => {
@@ -114,8 +74,6 @@ export function PracticeClient({ initialQuestions }: { initialQuestions: Questio
 
                     return (
                         <div key={q.id}>
-                            {index > 0 && index % 25 === 0 && <AdSenseSlot />}
-
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 hover:shadow-md transition-shadow">
                                 <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
                                     <span className="font-extrabold text-gray-300 text-2xl drop-shadow-sm">Q{index + 1}</span>

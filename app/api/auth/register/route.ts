@@ -16,9 +16,8 @@ import { detectReferrerSource } from '@/lib/blog-analytics'
 import { sendInstituteSuggestionAdminEmail } from '@/lib/email'
 import { getInstituteKey } from '@/lib/institutes'
 import { invalidateCache } from '@/lib/cache'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
-const SESSION_JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 const REGISTER_ENDPOINT = '/api/auth/register'
 
 type BlogReferralPayload = {
@@ -196,7 +195,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const payload = jwt.verify(verificationToken, JWT_SECRET) as { email: string; purpose?: string }
+      const payload = jwt.verify(verificationToken, getJwtSecret()) as { email: string; purpose?: string }
       if (normalizeEmail(payload.email) !== normalizedEmail || payload.purpose !== 'signup') {
         return NextResponse.json({ error: 'Invalid verification token' }, { status: 401 })
       }
@@ -440,7 +439,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
 
-    const token = jwt.sign({ userId: createdUserWithAvatar.id, email: createdUserWithAvatar.email, role: createdUserWithAvatar.role }, SESSION_JWT_SECRET, {
+    const token = jwt.sign({ userId: createdUserWithAvatar.id, email: createdUserWithAvatar.email, role: createdUserWithAvatar.role }, getJwtSecret(), {
       expiresIn: '7d',
     })
 

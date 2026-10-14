@@ -1,7 +1,8 @@
 export const runtime = 'nodejs'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { invalidateCache } from '@/lib/cache'
+import { requireSuperAdmin } from '@/lib/admin-auth'
 
 export async function GET() {
   // Admin-only, low traffic — no caching needed, always serve live data
@@ -18,13 +19,9 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const superAdminCookie = request.headers
-      .get('cookie')
-      ?.includes('super_admin_session')
-
-    if (!superAdminCookie) {
+    if (!(await requireSuperAdmin(request))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

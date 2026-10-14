@@ -7,8 +7,8 @@ import { hasValidSameOrigin } from '@/lib/csrf'
 import { detectSuspiciousInput, sanitizeEmail, sanitizePlainText } from '@/lib/security-input'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 import { getIpAccess, getRequestIpAddress, logSecurityEvent } from '@/lib/ip-security'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
 const VERIFY_CODE_ENDPOINT = '/api/auth/signup/verify-code'
 
 export async function POST(req: NextRequest) {
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     await prisma.otp.deleteMany({ where: { email: normalizedEmail, purpose: 'signup' } })
 
-    const verificationToken = jwt.sign({ email: normalizedEmail, purpose: 'signup' }, JWT_SECRET, {
+    const verificationToken = jwt.sign({ email: normalizedEmail, purpose: 'signup' }, getJwtSecret(), {
       expiresIn: '15m',
     })
 

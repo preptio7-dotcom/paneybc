@@ -111,7 +111,6 @@ import { WelcomePopup } from "@/components/welcome-popup"
 import { SubscriptionPopup } from "@/components/subscription-popup"
 import { AutoUpdateDetector } from "@/components/auto-update-detector"
 
-import { AdsLoader } from "@/components/ads-loader"
 import Script from 'next/script'
 
 export default function RootLayout({
@@ -130,7 +129,6 @@ export default function RootLayout({
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://api.dicebear.com" />
         <link rel="dns-prefetch" href="https://api.multiavatar.com" />
@@ -148,7 +146,6 @@ export default function RootLayout({
         <DeferredGtag />
         <AutoUpdateDetector />
         <AuthProvider>
-          <AdsLoader />
           <PWARegistration />
           <PWAInstallPrompt />
           <Suspense fallback={null}>

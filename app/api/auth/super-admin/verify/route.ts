@@ -6,10 +6,10 @@ import { hasValidSameOrigin } from '@/lib/csrf'
 import { detectSuspiciousInput, sanitizeEmail, sanitizePlainText } from '@/lib/security-input'
 import { enforceIpRateLimit, rateLimitExceededResponse } from '@/lib/rate-limit'
 import { getIpAccess, getRequestIpAddress, logSecurityEvent, maybeAutoBlockIp } from '@/lib/ip-security'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
 export const runtime = 'nodejs'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
 const SUPER_ADMIN_VERIFY_ENDPOINT = '/api/auth/super-admin/verify'
 
 export async function POST(req: NextRequest) {
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         // 4. Create JWT for Super Admin session
         const token = jwt.sign(
             { id: user.id, role: 'super_admin' },
-            JWT_SECRET,
+            getJwtSecret(),
             { expiresIn: '1d' }
         )
 

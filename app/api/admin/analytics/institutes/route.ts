@@ -1,10 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAdminUser } from '@/lib/admin-auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        if (!requireAdminUser(request)) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        
         const rawData = await prisma.user.groupBy({
             by: ['institute'],
             where: {
@@ -33,7 +38,8 @@ export async function GET() {
         }))
 
         return NextResponse.json({ data: chartData })
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+    } catch (error) {
+        console.error('Institute analytics error:', error)
+        return NextResponse.json({ error: 'Failed to load institute analytics' }, { status: 500 })
     }
 }

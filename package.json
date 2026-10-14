@@ -11,7 +11,9 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:community": "vitest run test/api/community-helpers.test.ts test/api/community-vote-route.test.ts test/api/community-comments-route.test.ts test/api/community-moderation.test.ts test/api/community-report-route.test.ts test/api/community-threads-route.test.ts test/api/community-proxy.test.ts test/api/community-phase3.test.ts test/api/community-database.test.ts",
+    "test:community:e2e": "playwright test --config=playwright.community.config.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
@@ -95,6 +97,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.15",
     "@next/bundle-analyzer": "^16.1.6",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.9",

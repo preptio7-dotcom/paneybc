@@ -3,17 +3,24 @@ import { prisma } from '@/lib/prisma'
 import { sendReviewDueEmail } from '@/lib/email'
 import { sendReviewDuePush } from '@/lib/push-notifications'
 import { NextResponse } from 'next/server'
+import { timingSafeEqual } from 'node:crypto'
 
 const MIN_HOURS_BETWEEN_NOTIFICATIONS = 20
 
+function hasValidNotifySecret(request: Request) {
+  const configuredSecret = process.env.REVIEW_NOTIFY_SECRET?.trim()
+  const providedSecret = request.headers.get('x-cron-secret') || ''
+  if (!configuredSecret || !providedSecret) return false
+
+  const expected = Buffer.from(configuredSecret)
+  const received = Buffer.from(providedSecret)
+  return expected.length === received.length && timingSafeEqual(expected, received)
+}
+
 export async function POST(request: Request) {
   try {
-    const secret = process.env.REVIEW_NOTIFY_SECRET
-    if (secret) {
-      const header = request.headers.get('x-cron-secret')
-      if (header !== secret) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
+    if (!hasValidNotifySecret(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const now = new Date()
@@ -73,9 +80,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ results })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Review notify error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to send review notifications' }, { status: 500 })
   }
 }
 

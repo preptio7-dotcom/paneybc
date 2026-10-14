@@ -42,7 +42,7 @@ if (databaseUrl) {
 
 // Fallback for drivers that rely on PG* env vars instead of DATABASE_URL
 try {
-  const parsed = new URL(databaseUrl)
+  const parsed = new URL(databaseUrl || '')
   if (parsed.hostname) process.env.PGHOST = parsed.hostname
   if (parsed.port) process.env.PGPORT = parsed.port
   if (parsed.username) process.env.PGUSER = decodeURIComponent(parsed.username)
@@ -72,7 +72,7 @@ globalForPrisma.neonSql = sql
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaNeon(sql),
+    adapter: new PrismaNeon({ connectionString: databaseUrl }),
     log:
       process.env.NODE_ENV === 'development'
         ? ['error', 'warn']

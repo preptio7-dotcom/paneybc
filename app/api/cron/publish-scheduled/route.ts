@@ -9,7 +9,7 @@ import { revalidateBlogPaths } from '@/lib/blog-cache'
 
 function hasValidCronSecret(request: NextRequest) {
   const secret = process.env.CRON_SECRET || process.env.PUBLISH_SCHEDULED_SECRET
-  if (!secret) return true
+  if (!secret) return false
 
   const authHeader = request.headers.get('authorization')
   if (authHeader === `Bearer ${secret}`) return true

@@ -1,16 +1,16 @@
 export const runtime = 'nodejs'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const minAttempts = Math.max(parseInt(searchParams.get('minAttempts') || '3', 10), 1)
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    const currentUser = getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = currentUser.userId
+    const minAttempts = Math.max(parseInt(request.nextUrl.searchParams.get('minAttempts') || '3', 10), 1)
 
     const results = await prisma.testResult.findMany({ where: { userId } })
     const answers = results

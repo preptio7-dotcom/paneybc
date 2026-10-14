@@ -8,10 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast'
 import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { authDestination } from '@/lib/auth-redirect'
+import { useAuthLinks } from '@/hooks/use-auth-links'
 
 export default function LoginPage() {
   const { toast } = useToast()
   const { login, user, loading } = useAuth()
+  const { signupHref } = useAuthLinks()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -21,9 +24,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (loading) return
     if (!user) return
-    const target = user.role === 'admin' ? '/admin' : '/dashboard'
     // Use a hard redirect to avoid client router getting stuck on auth pages.
-    window.location.replace(target)
+    window.location.replace(authDestination(window.location.search, user.role, user.org?.role))
   }, [loading, user])
 
 
@@ -57,8 +59,7 @@ export default function LoginPage() {
         description: "Logged in successfully. Redirecting...",
       })
 
-      // Hard redirect to ensure navigation even if router state is stale.
-      window.location.assign('/dashboard')
+      // Auth state drives the single redirect effect above.
     } catch (error: any) {
       console.log("[v0] Login error:", error)
       toast({
@@ -151,7 +152,7 @@ export default function LoginPage() {
 
               <div className="mt-6 text-center text-sm">
                 <span className="text-gray-600">Don't have an account? </span>
-                <Link href="/auth/signup" className="text-[#0F7938] hover:underline font-semibold">
+                <Link href={signupHref} className="text-[#0F7938] hover:underline font-semibold">
                   Sign up here
                 </Link>
               </div>

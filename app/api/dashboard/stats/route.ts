@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 import { prisma } from '@/lib/prisma'
 import { computePracticeStreak, resolvePersistedStreakSnapshot } from '@/lib/practice-streak'
 import { getConfiguredStreakResetTimezone, getDateKeyInTimezone } from '@/lib/streak-settings'
+import { getCurrentUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 function getAnswerKey(answer: any) {
@@ -43,12 +44,11 @@ function estimateWrongAnswersSessionCount(results: any[]) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    const currentUser = getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = currentUser.userId
 
     // 1. Get all results for user
     const results = await prisma.testResult.findMany({

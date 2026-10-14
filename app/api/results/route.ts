@@ -9,14 +9,14 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, subject, answers, duration } = body
+    const { subject, answers, duration } = body
 
     if (!subject || !answers) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const tokenUser = getCurrentUser(request)
-    const resolvedUserId = userId || tokenUser?.userId
+    const resolvedUserId = tokenUser?.userId || 'guest'
 
     const rawAnswers = Array.isArray(answers) ? answers : []
     let normalizedAnswers = rawAnswers
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     const result = await prisma.testResult.create({
       data: {
-        userId: resolvedUserId || 'guest',
+        userId: resolvedUserId,
         subject,
         totalQuestions,
         correctAnswers,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (resolvedUserId && resolvedUserId !== 'guest') {
+    if (resolvedUserId !== 'guest') {
       const now = new Date()
       const questionIds = normalizedAnswers
         .map((answer: any) => answer.questionId)
@@ -183,12 +183,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    const currentUser = getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = currentUser.userId
 
     const results = await prisma.testResult.findMany({
       where: { userId },

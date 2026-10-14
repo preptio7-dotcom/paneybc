@@ -31,8 +31,8 @@ const KEY_INSTITUTE_USAGE  = 'public:settings:institute-usage'
 // FIX: was running prisma.user.groupBy() on every single settings request
 // This is a heavy aggregation across the entire users table
 // Now cached 30 min — institute popularity barely changes minute to minute
-async function sortInstitutesByUsageCached(institutes: string[]) {
-  if (!institutes.length) return institutes
+async function sortInstitutesByUsageCached(institutes: readonly string[]): Promise<string[]> {
+  if (!institutes.length) return [...institutes]
 
   const usageMap = await withCache(
     KEY_INSTITUTE_USAGE,
@@ -195,28 +195,12 @@ export async function GET(request: NextRequest) {
       homepageFeatureShowcase: { visibility: betaFeatures.homepageFeatureShowcase },
     }
 
-    const savedAdSenseConfig =
-      settings.adSenseConfig && typeof settings.adSenseConfig === 'object' && !Array.isArray(settings.adSenseConfig)
-        ? (settings.adSenseConfig as Record<string, any>)
-        : {}
-
-    const adSenseConfig = {
-      globalEnabled: settings.adsEnabled ?? true,
-      allowedPaths: ['/', '/blog', '/blog/*'],
-      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-      showAdsToUnpaid: true,
-      showAdsToPaid: false,
-      showAdsToAmbassador: false,
-      ...savedAdSenseConfig,
-    }
-
     return NextResponse.json(
       {
         adsEnabled: settings.adsEnabled ?? false,
         welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
         activeAvatarPackId: settings.activeAvatarPackId || null,
         adContent,
-        adSenseConfig,
         testSettings: normalizedTestSettings,
       },
       {
@@ -229,14 +213,6 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     const fallbackBetaFeatures = extractBetaFeatureSettings({})
-    const fallbackAdSenseConfig = {
-      globalEnabled: true,
-      allowedPaths: ['/', '/blog', '/blog/*'],
-      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-      showAdsToUnpaid: true,
-      showAdsToPaid: false,
-      showAdsToAmbassador: false,
-    }
     const fallbackAdContent = {
       dashboard: {
         headline: 'Level up your CA prep with expert-led notes',
@@ -257,7 +233,6 @@ export async function GET(request: NextRequest) {
         welcomeMessageTemplate: 'Welcome back, {{name}}!',
         activeAvatarPackId: null,
         adContent: fallbackAdContent,
-        adSenseConfig: fallbackAdSenseConfig,
         testSettings: {
           fullBookTimeMinutes: 120,
           chapterTestDefaultMinutes: 30,

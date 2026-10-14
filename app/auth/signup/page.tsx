@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast'
 import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { authDestination } from '@/lib/auth-redirect'
+import { useAuthLinks } from '@/hooks/use-auth-links'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Star } from 'lucide-react'
 import { DEFAULT_REGISTRATION_INSTITUTES, normalizePkPhone } from '@/lib/account-utils'
@@ -27,6 +29,7 @@ const fallbackOptions: RegistrationOptions = {
 export default function SignupPage() {
   const { toast } = useToast()
   const { register, user, loading } = useAuth()
+  const { loginHref } = useAuthLinks()
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingOptions, setIsLoadingOptions] = useState(true)
   const [isInstituteDropdownOpen, setIsInstituteDropdownOpen] = useState(false)
@@ -60,7 +63,7 @@ export default function SignupPage() {
   useEffect(() => {
     if (loading) return
     if (!user) return
-    const target = user.role === 'admin' ? '/admin' : '/dashboard'
+    const target = authDestination(window.location.search, user.role)
     window.location.replace(target)
   }, [loading, user])
 
@@ -392,7 +395,7 @@ export default function SignupPage() {
         description: 'Account created successfully. Redirecting...',
       })
 
-      window.location.assign('/dashboard')
+      // Auth state drives the single redirect effect above.
     } catch (error: any) {
       const msg = error.message || 'An error occurred. Please try again.'
       if (msg.toLowerCase().includes('referral') || msg.toLowerCase().includes('referral code')) {
@@ -865,7 +868,7 @@ export default function SignupPage() {
 
               <div className="mt-6 text-center text-sm">
                 <span className="text-gray-600">Already have an account? </span>
-                <Link href="/auth/login" className="text-[#0F7938] hover:underline font-semibold">
+                <Link href={loginHref} className="text-[#0F7938] hover:underline font-semibold">
                   Login here
                 </Link>
               </div>

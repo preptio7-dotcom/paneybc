@@ -113,10 +113,6 @@ export type AdminAnalyticsHeavyPayload = {
     rows: Array<{ rank: number; city: string; students: number; percent: number; medal: 'gold' | 'silver' | 'bronze' | null }>
     insight: string
   }
-  adsense: {
-    manual: { thisMonthPkr: number; lastMonthPkr: number; history: Array<{ monthKey: string; valuePkr: number }>; updatedAt: string | null }
-    estimate: { rpmUsd: number; pageViews: number; estimatedUsd: number }
-  }
   platformStatsJob: {
     status: 'success' | 'failed' | null
     runAt: string | null
@@ -353,30 +349,6 @@ function shortName(value: string | null | undefined) {
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
   return value as Record<string, unknown>
-}
-
-function readAdsenseSettings(testSettings: Record<string, unknown>) {
-  const raw = asRecord(testSettings.adminAnalyticsAdsense)
-  const parseAmount = (value: unknown) => {
-    const parsed = Number(value)
-    if (!Number.isFinite(parsed)) return 0
-    return Math.max(0, parsed)
-  }
-  const history = (Array.isArray(raw.history) ? raw.history : [])
-    .map((row) => {
-      const record = asRecord(row)
-      const monthKey = String(record.monthKey || '').trim()
-      if (!/^\d{4}-\d{2}$/.test(monthKey)) return null
-      return { monthKey, valuePkr: parseAmount(record.valuePkr) }
-    })
-    .filter((row): row is { monthKey: string; valuePkr: number } => Boolean(row))
-    .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-  return {
-    thisMonthPkr: parseAmount(raw.thisMonthPkr),
-    lastMonthPkr: parseAmount(raw.lastMonthPkr),
-    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : null,
-    history,
-  }
 }
 
 function averageNullable(values: Array<number | null>) {
@@ -832,13 +804,6 @@ async function buildHeavyPayload(prisma: PrismaClient, range: DateRange): Promis
   }))
 
   const settingsRecord = asRecord(settings?.testSettings)
-  const manualAdsense = readAdsenseSettings(settingsRecord)
-  const thisMonthStart = new Date(Date.UTC(range.to.getUTCFullYear(), range.to.getUTCMonth(), 1, 0, 0, 0, 0))
-  const thisMonthPageViews = await prisma.analytics.count({
-    where: { createdAt: { gte: thisMonthStart, lte: range.to } },
-  })
-  const rpmUsd = 0.45
-  const estimatedUsd = (thisMonthPageViews / 1000) * rpmUsd
 
   const runMeta = asRecord(settingsRecord.platformStatsLastRun)
   const fallbackRunMeta = asRecord(settingsRecord.platformStatsDailyLastRun)
@@ -959,14 +924,6 @@ async function buildHeavyPayload(prisma: PrismaClient, range: DateRange): Promis
     geography: {
       rows: geographyRows,
       insight: geographyRows[0] ? `${geographyRows[0].city} accounts for ${geographyRows[0].percent.toFixed(1)}% of active students in this period.` : 'Location data not available for this period.',
-    },
-    adsense: {
-      manual: manualAdsense,
-      estimate: {
-        rpmUsd,
-        pageViews: thisMonthPageViews,
-        estimatedUsd,
-      },
     },
     platformStatsJob: {
       status: runStatus,
@@ -1213,45 +1170,6 @@ export async function buildAdminAnalyticsReport(prisma: PrismaClient, range: Dat
   const liveActivity = await buildLiveActivityPayload(prisma, range)
 
   return { heavy, leaderboard, liveActivity }
-}
-
-export async function updateAdminAdsenseManualRevenue(
-  prisma: PrismaClient,
-  values: { thisMonthPkr: number; lastMonthPkr: number }
-) {
-  let settings = await prisma.systemSettings.findFirst({ select: { id: true, testSettings: true } })
-  if (!settings) {
-    settings = await prisma.systemSettings.create({ data: {}, select: { id: true, testSettings: true } })
-  }
-
-  const record = asRecord(settings.testSettings)
-  const existing = readAdsenseSettings(record)
-  const monthKey = dayInput(new Date()).slice(0, 7)
-  const map = new Map(existing.history.map((row) => [row.monthKey, row.valuePkr]))
-  map.set(monthKey, values.thisMonthPkr)
-  const history = Array.from(map.entries())
-    .map(([key, value]) => ({ monthKey: key, valuePkr: value }))
-    .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-    .slice(-6)
-
-  const nextManual = {
-    thisMonthPkr: values.thisMonthPkr,
-    lastMonthPkr: values.lastMonthPkr,
-    updatedAt: new Date().toISOString(),
-    history,
-  }
-
-  const nextSettings: Record<string, unknown> = {
-    ...record,
-    adminAnalyticsAdsense: nextManual,
-  }
-
-  await prisma.systemSettings.update({
-    where: { id: settings.id },
-    data: { testSettings: nextSettings as any },
-  })
-
-  return nextManual
 }
 
 export function buildAdminAnalyticsCsv(report: AdminAnalyticsReportPayload) {

@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const decoded = getCurrentUser(request)
 
-    if (!decoded || decoded.role === 'student') {
+    if (!decoded || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

@@ -69,7 +69,11 @@ const useMemoryLimit = (key: string, maxRequests: number, windowSeconds: number)
 
 export async function enforceIpRateLimit(request: RequestLike, config: LimitConfig): Promise<LimitResult> {
   const ip = getClientIp(request)
-  const key = `rl:${config.scope}:${ip}`
+  return enforceKeyRateLimit(`ip:${ip}`, config)
+}
+
+export async function enforceKeyRateLimit(identity: string, config: LimitConfig): Promise<LimitResult> {
+  const key = `rl:${config.scope}:${identity}`
 
   if (!redis) {
     return useMemoryLimit(key, config.maxRequests, config.windowSeconds)
@@ -99,4 +103,3 @@ export function rateLimitExceededResponse(scope: string, retryAfterSeconds: numb
   response.headers.set('Retry-After', String(retryAfterSeconds))
   return response
 }
-

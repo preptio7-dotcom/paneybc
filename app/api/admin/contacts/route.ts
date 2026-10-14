@@ -1,14 +1,11 @@
 export const runtime = 'nodejs'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { cookies } from 'next/headers'
+import { requireSuperAdmin } from '@/lib/admin-auth'
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
-        // 1. Verify super admin session
-        const cookieStore = await cookies()
-        const superAdminToken = cookieStore.get('super_admin_session')?.value
-        if (!superAdminToken) {
+        if (!(await requireSuperAdmin(req))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 

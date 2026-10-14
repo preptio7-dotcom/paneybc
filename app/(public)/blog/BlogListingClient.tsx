@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -8,7 +8,6 @@ import type { BlogCategoryDto, BlogPostDto } from '@/lib/blog-types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getProxyMediaUrl } from '@/lib/media-url'
-import { Adsense } from '@/components/adsense'
 
 const POSTS_PER_PAGE = 9
 
@@ -287,11 +286,6 @@ export function BlogListingClient({
               {currentPosts.map((post, index) => (
                 <div key={post.id} className="contents">
                   <BlogCard post={post} priority={index < 2} />
-                  {index === 2 && (
-                    <div className="col-span-1 md:col-span-2 xl:col-span-3">
-                      <Adsense />
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

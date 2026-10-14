@@ -12,6 +12,7 @@ import {
 import { extractFaqSettings } from '@/lib/faq-utils'
 import { extractBetaFeatureSettings } from '@/lib/beta-features'
 import { createAdminAuditLog } from '@/lib/admin-audit'
+import { requireSuperAdmin } from '@/lib/admin-auth'
 import { hasPermission } from '@/lib/admin-permissions'
 import {
   extractHomepageHeroMotionSettings,
@@ -23,12 +24,12 @@ import {
 } from '@/lib/streak-settings'
 
 async function getAuthorizedUser(request: NextRequest) {
-  const hasSuperAdminSession = request.headers.get('cookie')?.includes('super_admin_session')
   const decoded = getCurrentUser(request)
+  const superAdmin = await requireSuperAdmin(request)
   
-  if (hasSuperAdminSession) {
+  if (superAdmin) {
     return { 
-      userId: 'super-admin', 
+      userId: superAdmin.id,
       email: 'super-admin@preptio.com',
       role: 'super_admin' as any, 
       adminPermissions: { canManageAds: true },
@@ -150,27 +151,11 @@ export async function GET(request: NextRequest) {
       homepageFeatureShowcase: { visibility: normalizedBetaFeatures.homepageFeatureShowcase },
     }
 
-    const savedAdSenseConfig =
-      settings.adSenseConfig && typeof settings.adSenseConfig === 'object' && !Array.isArray(settings.adSenseConfig)
-        ? (settings.adSenseConfig as Record<string, any>)
-        : {}
-
-    const adSenseConfig = {
-      globalEnabled: settings.adSenseConfig?.globalEnabled ?? settings.adsEnabled ?? true,
-      allowedPaths: ['/', '/blog', '/blog/*'],
-      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-      showAdsToUnpaid: true,
-      showAdsToPaid: false,
-      showAdsToAmbassador: false,
-      ...savedAdSenseConfig,
-    }
-
     return NextResponse.json({
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
       activeAvatarPackId: settings.activeAvatarPackId || null,
       adContent,
-      adSenseConfig,
       testSettings: normalizedTestSettings,
     })
   } catch (error) {
@@ -238,33 +223,13 @@ export async function POST(request: NextRequest) {
       ...savedTestSettings,
     }
 
-    const savedAdSenseConfig =
-      settings.adSenseConfig && typeof settings.adSenseConfig === 'object' && !Array.isArray(settings.adSenseConfig)
-        ? (settings.adSenseConfig as Record<string, any>)
-        : {}
-
-    const adSenseConfig = {
-      globalEnabled: settings.adSenseConfig?.globalEnabled ?? settings.adsEnabled ?? true,
-      allowedPaths: ['/', '/blog', '/blog/*'],
-      blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-      showAdsToUnpaid: true,
-      showAdsToPaid: false,
-      showAdsToAmbassador: false,
-      ...savedAdSenseConfig,
-    }
-
     const beforeSnapshot = {
       adsEnabled: settings.adsEnabled ?? false,
       welcomeMessageTemplate: settings.welcomeMessageTemplate || 'Welcome back, {{name}}!',
       activeAvatarPackId: settings.activeAvatarPackId || null,
       adContent: currentAdContent,
-      adSenseConfig,
       testSettings: currentTestSettings,
     }
-
-    const updatedAdSenseConfig = payload.adSenseConfig
-      ? { ...adSenseConfig, ...payload.adSenseConfig }
-      : adSenseConfig
 
     const updatedAdContent = {
       ...currentAdContent,
@@ -320,7 +285,6 @@ export async function POST(request: NextRequest) {
         ...(typeof payload.activeAvatarPackId === 'string' || payload.activeAvatarPackId === null
           ? { activeAvatarPackId: payload.activeAvatarPackId || null } : {}),
         adContent: updatedAdContent,
-        adSenseConfig: updatedAdSenseConfig as any,
         testSettings: updatedTestSettings,
       },
     })

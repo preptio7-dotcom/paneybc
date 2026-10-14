@@ -2,18 +2,8 @@
 
 import { useState, useEffect } from 'react'
 
-export type AdSenseConfig = {
-  globalEnabled: boolean
-  allowedPaths: string[]
-  blockedPaths: string[]
-  showAdsToUnpaid: boolean
-  showAdsToPaid: boolean
-  showAdsToAmbassador: boolean
-}
-
 export type SystemSettings = {
   adsEnabled: boolean
-  adSenseConfig: AdSenseConfig
 }
 
 let cachedSettings: SystemSettings | null = null
@@ -32,7 +22,6 @@ export function useSystemSettings() {
           const data = await response.json()
           const fetchedSettings = {
             adsEnabled: data.adsEnabled,
-            adSenseConfig: data.adSenseConfig
           }
           cachedSettings = fetchedSettings
           setSettings(fetchedSettings)

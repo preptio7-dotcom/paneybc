@@ -21,7 +21,7 @@ type ReconciliationAuditLogInput = {
 
 function hasValidCronSecret(request: NextRequest) {
   const secret = process.env.CRON_SECRET || process.env.STREAK_RECONCILIATION_SECRET
-  if (!secret) return true
+  if (!secret) return false
 
   const authHeader = request.headers.get('authorization')
   if (authHeader === `Bearer ${secret}`) return true

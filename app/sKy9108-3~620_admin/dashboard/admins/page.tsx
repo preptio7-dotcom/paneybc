@@ -109,9 +109,9 @@ export default function CreateAdminPage() {
                   onChange={(e) => setForm(prev => ({ ...prev, adsAccess: e.target.checked }))}
                   className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-primary-green focus:ring-primary-green"
                 />
-                <label htmlFor="adsAccess" className="text-sm font-medium text-gray-300">Grant Ads & AdSense Access</label>
+                <label htmlFor="adsAccess" className="text-sm font-medium text-gray-300">Grant Ads Access</label>
               </div>
-              <p className="text-xs text-gray-500 ml-6">Allows this admin to configure site-wide ads and Google AdSense units.</p>
+              <p className="text-xs text-gray-500 ml-6">Allows this admin to configure site-wide ads and sponsored units.</p>
             </div>
 
             <Button

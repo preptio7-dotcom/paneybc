@@ -25,7 +25,6 @@ export default function AdminAdsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isForbidden, setIsForbidden] = useState(false)
   const [adsEnabled, setAdsEnabled] = useState<boolean | null>(null)
-  const [adSenseConfig, setAdSenseConfig] = useState<any>(null)
   const [dashboardAd, setDashboardAd] = useState<AdContent>({
     headline: '',
     body: '',
@@ -53,15 +52,6 @@ export default function AdminAdsPage() {
         }
         const data = await response.json()
         setAdsEnabled(Boolean(data.adsEnabled))
-        const config = data.adSenseConfig || {
-          globalEnabled: true,
-          allowedPaths: ['/', '/blog', '/blog/*'],
-          blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-          showAdsToUnpaid: true,
-          showAdsToPaid: false,
-          showAdsToAmbassador: false,
-        }
-        setAdSenseConfig(config)
         setDashboardAd({
           headline: data.adContent?.dashboard?.headline || '',
           body: data.adContent?.dashboard?.body || '',
@@ -96,7 +86,6 @@ export default function AdminAdsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           adsEnabled,
-          adSenseConfig,
           adContent: {
             dashboard: dashboardAd,
             results: resultsAd,
@@ -142,7 +131,7 @@ export default function AdminAdsPage() {
           </div>
           <h1 className="text-2xl font-bold text-text-dark mb-2">Access Denied</h1>
           <p className="text-text-light max-w-md">
-            Your admin account does not have permission to manage the AdSense system. Please request access from a Super Admin.
+            Your admin account does not have permission to manage ads. Please request access from a Super Admin.
           </p>
           <Link href="/admin">
             <Button variant="outline" className="mt-6 font-semibold">
@@ -154,98 +143,6 @@ export default function AdminAdsPage() {
     )
   }
 
-  const handleToggleGlobal = async (value: boolean) => {
-    try {
-      const updatedConfig = { ...adSenseConfig, globalEnabled: value }
-      setAdSenseConfig(updatedConfig)
-      // Auto-save to database immediately
-      const response = await fetch('/api/admin/system/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          adsEnabled,
-          adSenseConfig: updatedConfig,
-          adContent: {
-            dashboard: dashboardAd,
-            results: resultsAd,
-          },
-        }),
-      })
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to save')
-      }
-      toast({
-        title: 'Saved',
-        description: 'Toggle updated successfully.',
-      })
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to save toggle.',
-        variant: 'destructive',
-      })
-      // Revert on error
-      loadSettings()
-    }
-  }
-
-  const loadSettings = async () => {
-    try {
-      const response = await fetch('/api/admin/system/settings')
-      if (!response.ok) return
-      const data = await response.json()
-      setAdsEnabled(Boolean(data.adsEnabled))
-      const config = data.adSenseConfig || {
-        globalEnabled: true,
-        allowedPaths: ['/', '/blog', '/blog/*'],
-        blockedPaths: ['/admin/*', '/dashboard/*', '/auth/*', '/register'],
-        showAdsToUnpaid: true,
-        showAdsToPaid: false,
-        showAdsToAmbassador: false,
-      }
-      setAdSenseConfig(config)
-    } catch {
-      // keep existing values
-    }
-  }
-
-  const handleToggleUserRole = async (roleKey: string, value: boolean) => {
-    try {
-      const updatedConfig = { ...adSenseConfig, [roleKey]: value }
-      setAdSenseConfig(updatedConfig)
-      // Auto-save to database immediately
-      const response = await fetch('/api/admin/system/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          adsEnabled,
-          adSenseConfig: updatedConfig,
-          adContent: {
-            dashboard: dashboardAd,
-            results: resultsAd,
-          },
-        }),
-      })
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to save')
-      }
-      toast({
-        title: 'Saved',
-        description: 'User role visibility updated successfully.',
-      })
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to save.',
-        variant: 'destructive',
-      })
-      // Revert on error
-      loadSettings()
-    }
-  }
-
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
@@ -254,93 +151,8 @@ export default function AdminAdsPage() {
         <div className="max-w-5xl mx-auto px-4 md:px-6 space-y-8">
           <div>
             <h1 className="font-heading text-3xl font-bold text-text-dark">Ad Management</h1>
-            <p className="text-text-light">Control Google AdSense and internal Sponsored sections.</p>
+            <p className="text-text-light">Control internal Sponsored sections.</p>
           </div>
-
-          <Card className="border-border">
-            <CardHeader>
-                <CardTitle>Google AdSense Configuration</CardTitle>
-                <CardDescription>Grandular control over where and to whom Google Ads are shown.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-                {isLoading || !adSenseConfig ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-text-light">Loading settings...</div>
-                  </div>
-                ) : (
-                  <>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <Label className="text-base font-bold">Global AdSense Toggle</Label>
-                        <p className="text-sm text-text-light">Master switch to enable or disable AdSense sitewide.</p>
-                    </div>
-                    <Switch 
-                        checked={adSenseConfig.globalEnabled} 
-                        onCheckedChange={(val) => handleToggleGlobal(val)} 
-                        disabled={isLoading}
-                    />
-                </div>
-
-                <div className="space-y-4 pt-4 border-t">
-                    <Label className="text-base font-bold">Visibility by User Role</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-center space-x-2">
-                            <Switch 
-                                checked={adSenseConfig.showAdsToUnpaid} 
-                                onCheckedChange={(val) => handleToggleUserRole('showAdsToUnpaid', val)} 
-                                disabled={isLoading}
-                            />
-                            <Label>Unpaid Students</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Switch 
-                                checked={adSenseConfig.showAdsToPaid} 
-                                onCheckedChange={(val) => handleToggleUserRole('showAdsToPaid', val)} 
-                                disabled={isLoading}
-                            />
-                            <Label>Paid Students</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Switch 
-                                checked={adSenseConfig.showAdsToAmbassador} 
-                                onCheckedChange={(val) => handleToggleUserRole('showAdsToAmbassador', val)} 
-                                disabled={isLoading}
-                            />
-                            <Label>Ambassadors</Label>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t">
-                    <div className="space-y-2">
-                        <Label className="text-base font-bold">Allowed Paths</Label>
-                        <p className="text-xs text-text-light">Comma-separated list of paths where ads CAN show (Wildcards supported, e.g. /blog/*).</p>
-                        <Input 
-                            value={adSenseConfig.allowedPaths.join(', ')} 
-                            onChange={(e) => setAdSenseConfig((prev: any) => ({ 
-                                ...prev, 
-                                allowedPaths: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
-                            }))} 
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-base font-bold">Blocked Paths (Restriction Override)</Label>
-                        <p className="text-xs text-text-light">Comma-separated list of paths where ads MUST NEVER show.</p>
-                        <Input 
-                            value={adSenseConfig.blockedPaths.join(', ')} 
-                            onChange={(e) => setAdSenseConfig((prev: any) => ({ 
-                                ...prev, 
-                                blockedPaths: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
-                            }))} 
-                            disabled={isLoading}
-                        />
-                    </div>
-                </div>
-                  </>
-                )}
-            </CardContent>
-          </Card>
 
           <Card className="border-border">
             <CardHeader>
@@ -363,7 +175,6 @@ export default function AdminAdsPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                           adsEnabled: val,
-                          adSenseConfig,
                           adContent: {
                             dashboard: dashboardAd,
                             results: resultsAd,

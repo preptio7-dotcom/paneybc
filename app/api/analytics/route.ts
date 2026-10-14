@@ -1,10 +1,10 @@
 export const runtime = 'nodejs'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-123'
+import { getJwtSecret } from '@/lib/jwt-secret'
+import { requireSuperAdmin } from '@/lib/admin-auth'
 
 // POST: Log a new visit
 export async function POST(req: Request) {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         const token = cookieStore.get('token')?.value
         if (token) {
             try {
-                const decoded = jwt.verify(token, JWT_SECRET) as { userId?: string }
+                const decoded = jwt.verify(token, getJwtSecret()) as { userId?: string }
                 userId = decoded.userId || null
             } catch (e) {
                 // Ignore invalid tokens for analytics
@@ -46,12 +46,9 @@ export async function POST(req: Request) {
 }
 
 // GET: Retrieve analytics for admin
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
-        // Verify super admin session
-        const cookieStore = await cookies()
-        const superAdminToken = cookieStore.get('super_admin_session')?.value
-        if (!superAdminToken) {
+        if (!(await requireSuperAdmin(req))) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
