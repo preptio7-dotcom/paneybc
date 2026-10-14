@@ -127,7 +127,7 @@ export default function OrgAnalyticsPage() {
                   <div>
                     <p className="text-sm text-text-light">Total Questions</p>
                     <p className="text-2xl font-bold text-text-dark">
-                      {data.analytics.totalQuestioned.toLocaleString()}
+                      {(data.analytics.totalQuestioned ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export default function OrgAnalyticsPage() {
                   <div>
                     <p className="text-sm text-text-light">Avg. Accuracy</p>
                     <p className="text-2xl font-bold text-text-dark">
-                      {data.analytics.avgAccuracy}%
+                      {data.analytics.avgAccuracy ?? 0}%
                     </p>
                   </div>
                 </div>
@@ -159,8 +159,8 @@ export default function OrgAnalyticsPage() {
                   <div>
                     <p className="text-sm text-text-light">Active Members</p>
                     <p className="text-2xl font-bold text-text-dark">
-                      {data.memberBreakdown.filter((m) => m.totalQuestioned > 0).length}
-                      <span className="text-sm font-normal text-text-light"> / {data.memberCount}</span>
+                      {(data.memberBreakdown ?? []).filter((m) => (m.totalQuestioned ?? 0) > 0).length}
+                      <span className="text-sm font-normal text-text-light"> / {data.memberCount ?? 0}</span>
                     </p>
                   </div>
                 </div>
@@ -169,19 +169,19 @@ export default function OrgAnalyticsPage() {
           </div>
 
           {/* Subject breakdown */}
-          {data.analytics.subjects.length > 0 && (
+          {(data.analytics.subjects ?? []).length > 0 && (
             <Card className="border-border-light shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Subject Performance</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="divide-y divide-border-light">
-                  {data.analytics.subjects.map((subj) => (
+                  {(data.analytics.subjects ?? []).map((subj) => (
                     <div key={subj.code} className="flex items-center justify-between py-3">
                       <div>
                         <p className="text-sm font-medium text-text-dark">{subj.name}</p>
                         <p className="text-xs text-text-light">
-                          {subj.questionsAttempted.toLocaleString()} questions attempted
+                          {(subj.questionsAttempted ?? 0).toLocaleString()} questions attempted
                         </p>
                       </div>
                       <div className="text-right">
@@ -251,21 +251,21 @@ export default function OrgAnalyticsPage() {
                           )}
                           <div>
                             <p className="text-sm font-bold text-text-dark">
-                              {m.totalQuestioned.toLocaleString()}
+                              {(m.totalQuestioned ?? 0).toLocaleString()}
                             </p>
                             <p className="text-xs text-text-light">questions</p>
                           </div>
                           <div>
                             <p
                               className={`text-sm font-bold ${
-                                m.accuracy >= 70
+                                (m.accuracy ?? 0) >= 70
                                   ? 'text-green-600'
-                                  : m.accuracy >= 50
+                                  : (m.accuracy ?? 0) >= 50
                                   ? 'text-amber-600'
                                   : 'text-red-500'
                               }`}
                             >
-                              {Math.round(m.accuracy)}%
+                              {Math.round(m.accuracy ?? 0)}%
                             </p>
                             <p className="text-xs text-text-light">accuracy</p>
                           </div>

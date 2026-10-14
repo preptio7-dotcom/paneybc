@@ -307,13 +307,13 @@ export function Navigation() {
               >
                 {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
               </Link>
-              {user.org && (
+              {user.org && (user.org.role === 'admin' || user.org.role === 'owner') && (
                 <Link
                   href="/org"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
                 >
                   <span>🏛️</span>
-                  <span>{user.org.name}</span>
+                  <span>{user.org.name} Portal</span>
                 </Link>
               )}
               <div className="relative">
