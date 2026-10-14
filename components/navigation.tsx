@@ -164,35 +164,35 @@ export function Navigation() {
 
   return (
     <nav
-      className={`sticky top-0 left-0 right-0 z-[1000] h-[70px] flex items-center transition-all duration-300 ease-in-out ${
+      className={`sticky top-0 left-0 right-0 z-[1000] h-[72px] flex items-center transition-all duration-300 ease-in-out ${
         useFrostedNavbar
           ? 'navbar-frosted border-b border-black/10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
-          : 'bg-transparent border-b border-transparent shadow-none'
+          : 'bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-none'
       }`}
     >
-      <div className="max-w-7xl mx-auto w-full px-6 flex items-center justify-between gap-6">
+      <div className="max-w-[96rem] mx-auto w-full px-4 sm:px-8 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 font-heading font-bold text-xl text-primary-green tracking-tight hover:opacity-95 transition-opacity">
+        <Link href="/" className="flex items-center gap-2.5 font-heading font-bold text-2xl text-primary-green tracking-tight hover:opacity-90 transition-opacity shrink-0">
           <Image
-            src="/web-app-manifest-192x192.png"
+            src="/favicon.svg"
             alt="Preptio logo"
-            width={32}
-            height={32}
-            className="rounded-lg shadow-sm"
+            width={34}
+            height={34}
+            className="w-[34px] h-[34px] object-contain drop-shadow-xs"
             priority
           />
           <span>Preptio</span>
         </Link>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-4 lg:gap-6 text-sm font-medium">
           {showDashboardNav ? (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-[60vw] rounded-full bg-slate-50 border border-slate-200 px-2 py-1">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-[55vw] rounded-full bg-slate-50 border border-slate-200 px-2 py-1">
               {dashboardSectionLinks.slice(0, 1).map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-2 rounded-full hover:bg-white"
+                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white"
                 >
                   {link.label}
                 </Link>
@@ -200,11 +200,11 @@ export function Navigation() {
               <div className="relative group">
                 <Link
                   href="/dashboard#practice-modes"
-                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-2 rounded-full hover:bg-white flex items-center gap-1"
+                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white flex items-center gap-1"
                 >
                   Practice Modes
                 </Link>
-                <div className="absolute left-0 top-full mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg p-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                <div className="absolute left-0 top-full mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg p-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-50">
                   {practiceLinks.map((link) => (
                     <Link
                       key={link.href}
@@ -219,11 +219,11 @@ export function Navigation() {
               <div className="relative group">
                 <Link
                   href="/dashboard#study-tools"
-                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-2 rounded-full hover:bg-white flex items-center gap-1"
+                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white flex items-center gap-1"
                 >
                   Study Tools
                 </Link>
-                <div className="absolute left-0 top-full mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg p-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                <div className="absolute left-0 top-full mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg p-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-50">
                   {studyLinks.map((link) => (
                     <Link
                       key={link.href}
@@ -239,100 +239,78 @@ export function Navigation() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-2 rounded-full hover:bg-white"
+                  className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white"
                 >
                   {link.label}
                 </Link>
               ))}
-              {showBetaLinks ? (
-                <div className="flex items-center gap-2 border-l border-slate-200 pl-3 ml-1">
-                  <span className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold">Beta</span>
-                  {betaNavItems.map((item) => (
-                    <Link
-                      key={item.key}
-                      href={item.href}
-                      className="text-slate-700 hover:text-primary-green transition-colors whitespace-nowrap text-xs font-medium px-3 py-2 rounded-full hover:bg-white"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
             </div>
           ) : (
-            <>
-              <Link href="/" className="text-text-dark hover:text-primary-green transition-colors">
+            <div className="flex items-center gap-3.5 lg:gap-5">
+              <Link href="/" className="text-slate-600 hover:text-primary-green transition-colors">
                 Home
               </Link>
-              <Link href="/about" className="text-text-dark hover:text-primary-green transition-colors">
+              <Link href="/about" className="text-slate-600 hover:text-primary-green transition-colors">
                 About
               </Link>
-              <Link href="/subjects" className="text-text-dark hover:text-primary-green transition-colors">
+              <Link href="/subjects" className="text-slate-600 hover:text-primary-green transition-colors">
                 Subjects
               </Link>
               {showFeatureShowcaseInMainNav ? (
                 <Link
                   href="/#platform-features-showcase"
-                  className="text-text-dark hover:text-primary-green transition-colors"
+                  className="text-slate-600 hover:text-primary-green transition-colors"
                 >
                   Features
                 </Link>
               ) : null}
-              <Link href="/community" className="text-text-dark hover:text-primary-green transition-colors" aria-current={pathname === "/community" ? "page" : undefined}>Community</Link>
+              <Link href="/community" className="text-slate-600 hover:text-primary-green transition-colors" aria-current={pathname === "/community" ? "page" : undefined}>
+                Community
+              </Link>
               {showBlogInMainNav ? (
-                <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors">
+                <Link href="/blog" className="text-slate-600 hover:text-primary-green transition-colors">
                   Blog
                 </Link>
               ) : null}
-              <Link href="/ambassador" className="text-text-dark hover:text-primary-green transition-colors">
+              <Link href="/ambassador" className="text-slate-600 hover:text-primary-green transition-colors">
                 Ambassador
               </Link>
-              <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors">
+              <Link href="/contact" className="text-slate-600 hover:text-primary-green transition-colors">
                 Contact
               </Link>
-              {showBetaLinks ? (
-                <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
-                  <span className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold">Beta</span>
-                  {betaNavItems.map((item) => (
-                    <Link key={item.key} href={item.href} className="text-text-dark hover:text-primary-green transition-colors">
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </>
+            </div>
           )}
         </div>
 
         {/* Auth Buttons - Desktop */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2.5 shrink-0">
           {user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2.5 lg:gap-3">
               <PremiumBadge />
               <Link
                 href={user.role === 'admin' ? '/admin' : '/dashboard'}
-                className="text-text-dark hover:text-primary-green font-medium text-sm transition-colors"
+                className="text-slate-700 hover:text-primary-green font-medium text-xs lg:text-sm px-2.5 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
               </Link>
               {user.org && (user.org.role === 'admin' || user.org.role === 'owner') && (
                 <Link
                   href="/org"
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors shadow-xs"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors shrink-0"
                 >
-                  <span className="text-sm">🏛️</span>
-                  <span>{user.org.name} Portal</span>
+                  <span className="text-xs">🏛️</span>
+                  <span>{user.org.name}</span>
                 </Link>
               )}
               <div className="relative">
                 <button
                   onClick={handleOpenNotifications}
-                  className="relative flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 hover:border-primary-green transition-colors"
+                  className="relative flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 hover:border-primary-green hover:bg-slate-50 transition-colors"
                   aria-label="Notifications"
                 >
-                  <Bell size={18} className="text-text-dark" />
+                  <Bell size={15} className="text-slate-700" />
                   {hasUnread && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
                       1
                     </span>
                   )}
@@ -350,25 +328,27 @@ export function Navigation() {
               </div>
               <Link
                 href={profileHref}
-                className="flex items-center gap-2 text-text-dark font-medium hover:text-primary-green transition-colors focus:outline-none"
+                className="flex items-center gap-1.5 text-slate-800 font-medium text-xs lg:text-sm hover:text-primary-green px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none"
               >
                 {user.avatar ? (
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-[#dcfce7]">
+                  <div className="relative w-7 h-7 rounded-full overflow-hidden border border-[#86efac]">
                     <Image src={user.avatar} alt={user.name} fill className="object-cover" />
                   </div>
                 ) : (
-                  <UserIcon size={18} className="text-primary-green" />
+                  <div className="w-7 h-7 rounded-full bg-primary-green/10 text-primary-green flex items-center justify-center font-bold text-xs">
+                    {(user.name || 'U')[0]?.toUpperCase()}
+                  </div>
                 )}
-                <span>{user.name}</span>
+                <span className="max-w-[80px] lg:max-w-[110px] truncate">{user.name}</span>
               </Link>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => logout()}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 text-slate-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 h-8 text-xs font-medium"
               >
-                <LogOut size={16} />
-                Logout
+                <LogOut size={14} />
+                <span>Logout</span>
               </Button>
             </div>
           ) : (
