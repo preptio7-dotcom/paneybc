@@ -42,7 +42,9 @@ export async function GET(request: NextRequest) {
       ${sort === 'top' && range !== 'all' ? Prisma.sql`AND t.created_at >= ${new Date(Date.now() - days * 86400000)}` : Prisma.empty}
       ORDER BY t.pinned_at DESC NULLS LAST, ${ranking}, t.created_at DESC, t.id DESC
       LIMIT ${limit + 1} OFFSET ${skip}`)
-    const threads = await threadResults(rows.slice(0, limit).map(r => r.id), viewerId)
+    const viewer = getCurrentUser(request)
+    const threadIds = rows.slice(0, limit).map(r => r.id)
+    const threads = await (viewer?.role ? threadResults(threadIds, viewer.userId, viewer.role) : threadResults(threadIds, viewer?.userId))
     return NextResponse.json({ threads, page, limit, hasMore: rows.length > limit }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
     console.error('Community feed error:', error)
@@ -68,8 +70,14 @@ export async function POST(request: NextRequest) {
     if (!category) return NextResponse.json({ error: 'Subject not found.' }, { status: 404 })
     const limited = await communityLimit(user.userId, 'thread')
     if (limited) return limited
-    const thread = await prisma.communityThread.create({ data: { title, body: content, categoryId, postType, authorId: user.userId } })
-    const [result] = await threadResults([thread.id], user.userId)
+    const isAnonymous = body?.isAnonymous === true
+    const thread = await prisma.communityThread.create({
+      data: {
+        title, body: content, categoryId, postType, authorId: user.userId,
+        ...(isAnonymous ? { isAnonymous: true } : {}),
+      },
+    })
+    const [result] = await (user.role ? threadResults([thread.id], user.userId, user.role) : threadResults([thread.id], user.userId))
     return NextResponse.json({ thread: result }, { status: 201 })
   } catch (error) {
     console.error('Community create error:', error)

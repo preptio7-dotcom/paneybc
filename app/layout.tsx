@@ -152,7 +152,7 @@ export default function RootLayout({
           {children}
           <ContactPopup />
           <WelcomePopup />
-          <SubscriptionPopup />
+          {/* <SubscriptionPopup /> — hidden per request */}
 
 
         </AuthProvider>

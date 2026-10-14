@@ -7,6 +7,7 @@ import { Button } from './ui/button'
 import { useAuth } from '@/lib/auth-context'
 import Image from 'next/image'
 import { NotificationOptIn } from './notification-opt-in'
+import { CommunityAnnouncementBanner } from './community-announcement-banner'
 import { usePathname } from 'next/navigation'
 import { useAuthLinks } from '@/hooks/use-auth-links'
 import { PremiumBadge } from './premium-badge'
@@ -149,22 +150,18 @@ export function Navigation() {
       (item) => item.key !== 'studentFeedback' && betaFeatures[item.key] !== 'public'
     )
   }, [betaFeatures, user?.studentRole])
-  const showBlogInMainNav =
-    betaFeatures.blog === 'public' || isPrivilegedUser
   const showFeatureShowcaseInMainNav =
     isPrivilegedUser ||
     canAccessBetaFeature(betaFeatures.homepageFeatureShowcase, user?.studentRole)
-  const canAccessBlogRoute =
-    showBlogInMainNav ||
-    canAccessBetaFeature(betaFeatures.blog, user?.studentRole) ||
-    isPrivilegedUser
   const showBetaLinks = betaNavItems.length > 0
   const useFrostedNavbar = isScrolled || isMenuOpen
   const profileHref = user?.role === 'student' ? '/dashboard/settings' : '/admin/users'
 
   return (
-    <nav
-      className={`sticky top-0 left-0 right-0 z-[1000] h-[72px] flex items-center transition-all duration-300 ease-in-out ${
+    <>
+      <CommunityAnnouncementBanner />
+      <nav
+        className={`sticky top-0 left-0 right-0 z-[1000] h-[72px] flex items-center transition-all duration-300 ease-in-out ${
         useFrostedNavbar
           ? 'navbar-frosted border-b border-black/10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
           : 'bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-none'
@@ -266,14 +263,6 @@ export function Navigation() {
               ) : null}
               <Link href="/community" className="text-slate-600 hover:text-primary-green transition-colors" aria-current={pathname === "/community" ? "page" : undefined}>
                 Community
-              </Link>
-              {showBlogInMainNav ? (
-                <Link href="/blog" className="text-slate-600 hover:text-primary-green transition-colors">
-                  Blog
-                </Link>
-              ) : null}
-              <Link href="/ambassador" className="text-slate-600 hover:text-primary-green transition-colors">
-                Ambassador
               </Link>
               <Link href="/contact" className="text-slate-600 hover:text-primary-green transition-colors">
                 Contact
@@ -509,22 +498,9 @@ export function Navigation() {
                   </Link>
                 ) : null}
                 <Link href="/community" className="block py-2 text-text-dark hover:text-primary-green" onClick={() => setIsMenuOpen(false)}>Community</Link>
-                {showBlogInMainNav ? (
-                  <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
-                    Blog
-                  </Link>
-                ) : null}
-                <Link href="/ambassador" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
-                  Ambassador
+                <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                  Contact
                 </Link>
-              <Link href="/contact" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
-                Contact
-              </Link>
-              {!showBlogInMainNav && canAccessBlogRoute && user?.studentRole === 'ambassador' ? (
-                <Link href="/blog" className="text-text-dark hover:text-primary-green transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
-                  Blog
-                </Link>
-              ) : null}
                 {showBetaLinks ? (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-semibold mb-1">Beta</p>
@@ -617,5 +593,6 @@ export function Navigation() {
         }
       `}</style>
     </nav>
+    </>
   )
 }

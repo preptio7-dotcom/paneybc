@@ -15,7 +15,7 @@ export const DEFAULT_BETA_FEATURE_SETTINGS: BetaFeatureSettings = {
   faq: 'beta_ambassador',
   studentFeedback: 'beta_ambassador',
   blog: 'beta_ambassador',
-  performanceAnalytics: 'beta_ambassador',
+  performanceAnalytics: 'public',
   aiRecommendations: 'beta_ambassador',
   homepageFeatureShowcase: 'beta_ambassador',
 }

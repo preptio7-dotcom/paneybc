@@ -926,6 +926,7 @@ model CommunityThread {
   authorId   String   @map("author_id")
   title      String
   body       String
+  isAnonymous Boolean @default(false) @map("is_anonymous")
   createdAt  DateTime @default(now()) @map("created_at")
   editedAt   DateTime? @map("edited_at")
   locked     Boolean  @default(false)
@@ -955,6 +956,7 @@ model CommunityComment {
   parentCommentId String?  @map("parent_comment_id")
   authorId        String   @map("author_id")
   body            String
+  isAnonymous     Boolean  @default(false) @map("is_anonymous")
   createdAt       DateTime @default(now()) @map("created_at")
   editedAt        DateTime? @map("edited_at")
   deleted         Boolean  @default(false)

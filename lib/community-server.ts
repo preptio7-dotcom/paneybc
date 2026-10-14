@@ -14,13 +14,34 @@ export async function canParticipate(userId: string) {
   return !!user && !user.isBanned
 }
 
+export const ANON_AUTHOR = { id: 'anonymous', name: 'Anonymous', avatar: null } as const
+
 export const threadInclude = {
   category: { select: { id: true, name: true, slug: true, description: true } },
   author: { select: { id: true, name: true, avatar: true } },
   _count: { select: { comments: { where: { deleted: false } } } },
 } as const
 
-export async function threadResults(ids: string[], viewerId?: string) {
+/**
+ * Resolve the displayed author for a thread/comment.
+ * - If not anonymous: return the real author.
+ * - If anonymous AND viewer is admin/super_admin: return ANON_AUTHOR but also pass realAuthor.
+ * - If anonymous AND viewer is regular: return ANON_AUTHOR, no realAuthor.
+ */
+export function resolveAuthor(
+  realAuthor: { id: string; name: string; avatar: string | null },
+  isAnonymous: boolean,
+  viewerRole?: string | null,
+) {
+  if (!isAnonymous) return { author: realAuthor, realAuthor: null }
+  const isMod = viewerRole === 'admin' || viewerRole === 'super_admin'
+  return {
+    author: ANON_AUTHOR,
+    realAuthor: isMod ? realAuthor : null,
+  }
+}
+
+export async function threadResults(ids: string[], viewerId?: string, viewerRole?: string | null) {
   if (!ids.length) return []
   const [threads, totals, mine, bookmarks, follows] = await Promise.all([
     prisma.communityThread.findMany({ where: { id: { in: ids }, deleted: false }, include: threadInclude }),
@@ -33,6 +54,18 @@ export async function threadResults(ids: string[], viewerId?: string) {
   const votes = new Map(mine.map(v => [v.targetId, v.value]))
   const saved = new Set(bookmarks.map(b => b.threadId))
   const followed = new Set(follows.map(f => f.threadId))
-  const mapped = new Map(threads.map(({ _count, ...thread }) => [thread.id, { ...thread, saved: saved.has(thread.id), following: followed.has(thread.id), score: scores.get(thread.id) || 0, viewerVote: votes.get(thread.id) || 0, commentCount: _count.comments }]))
+  const mapped = new Map(threads.map(({ _count, ...thread }) => {
+    const { author, realAuthor } = resolveAuthor(thread.author, thread.isAnonymous, viewerRole)
+    return [thread.id, {
+      ...thread,
+      author,
+      realAuthor,
+      saved: saved.has(thread.id),
+      following: followed.has(thread.id),
+      score: scores.get(thread.id) || 0,
+      viewerVote: votes.get(thread.id) || 0,
+      commentCount: _count.comments,
+    }]
+  }))
   return ids.flatMap(id => mapped.has(id) ? [mapped.get(id)!] : [])
 }

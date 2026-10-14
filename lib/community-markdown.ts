@@ -4,21 +4,39 @@ function escapeHtml(value: string) {
 
 function inline(value: string): string {
   // Tokenize source text once; never apply Markdown replacements to generated HTML.
-  const tokens = /(`[^`\n]+`|\[[^\]\n]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g
+  const tokens = /(`[^`\n]+`|!\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[[^\]\n]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g
   let html = '', offset = 0
   for (const match of value.matchAll(tokens)) {
     html += escapeHtml(value.slice(offset, match.index))
     const token = match[0]
-    if (token.startsWith('`')) html += `<code>${escapeHtml(token.slice(1, -1))}</code>`
-    else if (token.startsWith('[')) {
+    if (token.startsWith('`')) {
+      html += `<code>${escapeHtml(token.slice(1, -1))}</code>`
+    } else if (token.startsWith('![')) {
+      const parts = /^!\[([^\]]*)\]\((.+)\)$/.exec(token)!
+      try {
+        const url = new URL(parts[2])
+        if (['http:', 'https:'].includes(url.protocol)) {
+          const altText = escapeHtml(parts[1] || 'Community image')
+          const src = escapeHtml(url.href)
+          html += `<span class="my-3 block"><a href="${src}" target="_blank" rel="noopener noreferrer" class="inline-block max-w-full"><img src="${src}" alt="${altText}" loading="lazy" class="max-h-96 max-w-full rounded-xl border border-slate-200/90 shadow-sm object-contain bg-slate-50 hover:opacity-95 transition-opacity" /></a></span>`
+        } else {
+          html += escapeHtml(token)
+        }
+      } catch {
+        html += escapeHtml(token)
+      }
+    } else if (token.startsWith('[')) {
       const parts = /^\[([^\]]+)\]\((.+)\)$/.exec(token)!
       try {
         const url = new URL(parts[2])
         html += ['http:', 'https:'].includes(url.protocol)
           ? `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer nofollow ugc">${escapeHtml(parts[1])}</a>` : escapeHtml(token)
       } catch { html += escapeHtml(token) }
-    } else if (token.startsWith('**')) html += `<strong>${escapeHtml(token.slice(2, -2))}</strong>`
-    else html += `<em>${escapeHtml(token.slice(1, -1))}</em>`
+    } else if (token.startsWith('**')) {
+      html += `<strong>${escapeHtml(token.slice(2, -2))}</strong>`
+    } else {
+      html += `<em>${escapeHtml(token.slice(1, -1))}</em>`
+    }
     offset = match.index! + token.length
   }
   return html + escapeHtml(value.slice(offset))

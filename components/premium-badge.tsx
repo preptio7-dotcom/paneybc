@@ -23,13 +23,7 @@ export function PremiumBadge() {
     )
   }
 
-  return (
-    <Link href="/buy-subscription" className="hidden sm:inline-block">
-      <Button className="text-xs md:text-sm bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-3 md:px-4 py-1.5 h-auto rounded-full">
-        GO AD'S FREE NOW!
-      </Button>
-    </Link>
-  )
+  return null
 }
 
 export function PremiumMobileButton() {
@@ -52,11 +46,5 @@ export function PremiumMobileButton() {
     )
   }
 
-  return (
-    <Link href="/buy-subscription" className="flex md:hidden w-full">
-      <Button className="w-full text-sm bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-2 rounded-lg">
-        ⭐ GO AD'S FREE NOW!
-      </Button>
-    </Link>
-  )
+  return null
 }

@@ -72,7 +72,7 @@ export function createR2Client() {
 
 export async function uploadBufferToR2(params: {
   key: string
-  body: Buffer
+  body: Buffer | Uint8Array
   contentType: string
   cacheControl?: string
 }) {

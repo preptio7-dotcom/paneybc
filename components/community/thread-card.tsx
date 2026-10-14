@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { LockKeyhole, MessageSquare, ArrowUpRight, Bookmark, Pin, CheckCircle2 } from 'lucide-react'
+import { LockKeyhole, MessageSquare, ArrowUpRight, Bookmark, Pin, CheckCircle2, EyeOff, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
 import { postLabels } from '@/lib/community-options'
@@ -15,6 +15,7 @@ export function ThreadCard({ thread, detail = false, href, openThread, onSubject
   onReport: (target: Target) => void; onUpdate: (value: Partial<Thread>) => void; onEdit: () => void; onDeleted: () => void; focusComment?: string
 }) {
   const { user } = useAuth()
+  const isMod = user?.role === 'admin' || user?.role === 'super_admin'
   const [expanded, setExpanded] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [pending, setPending] = useState(false)
@@ -29,12 +30,22 @@ export function ThreadCard({ thread, detail = false, href, openThread, onSubject
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to save changes.') }
     finally { setPending(false) }
   }
-  const owner = user?.id === thread.author.id
-  const moderator = user?.role === 'admin' || user?.role === 'super_admin'
+  // For anonymous threads: real owner is the actual author (shown to mods via realAuthor)
+  const ownerId = thread.isAnonymous ? (thread.realAuthor?.id ?? thread.author.id) : thread.author.id
+  const owner = user?.id === ownerId
+  const moderator = isMod
+  const displayAuthor = thread.isAnonymous ? { name: 'Anonymous', avatar: null } : thread.author
+  const revealAuthor = thread.isAnonymous && isMod ? thread.realAuthor : null
   return <article className={`min-w-0 rounded-2xl border bg-white ${detail ? 'border-slate-200 p-4 sm:p-6' : 'border-slate-200/90 p-4 transition-colors hover:border-emerald-200 sm:p-5'}`}>
     <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
       <button type="button" onClick={() => onSubject(thread.category.slug)} className="min-h-8 rounded-full bg-emerald-50 px-2.5 font-semibold text-emerald-800 hover:bg-emerald-100">{thread.category.name}</button>
-      <span aria-hidden="true">·</span><img src={thread.author.avatar || '/avatars/boy_1.png'} alt="" className="h-5 w-5 rounded-full bg-slate-100" /><span className="max-w-44 truncate">{thread.author.name}</span>
+      <span aria-hidden="true">·</span>
+      <img src={displayAuthor.avatar || '/avatars/boy_1.png'} alt="" className={`h-5 w-5 rounded-full bg-slate-100 ${thread.isAnonymous ? 'opacity-40 grayscale' : ''}`} />
+      <span className="max-w-44 truncate">
+        {displayAuthor.name}
+        {thread.isAnonymous && <EyeOff size={11} className="inline ml-1 text-slate-400" aria-label="Anonymous" />}
+      </span>
+      {revealAuthor && <span className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"><ShieldAlert size={10} />{revealAuthor.name}</span>}
       <span aria-hidden="true">·</span><time dateTime={thread.createdAt} title={new Date(thread.createdAt).toLocaleString()}>{timeAgo(thread.createdAt)}</time>
       <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">{postLabels[thread.postType] || 'Discussion'}</span>
       {thread.pinnedAt && <span className="flex items-center gap-1 font-semibold text-emerald-800"><Pin size={12} />Pinned</span>}

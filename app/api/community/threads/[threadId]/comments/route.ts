@@ -46,10 +46,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ thr
     ])
     const scores = new Map(totals.map(v => [v.targetId, v._sum.value || 0]))
     const votes = new Map(mine.map(v => [v.targetId, v.value]))
+    const viewerSession = getCurrentUser(request)
+    const viewerRole = viewerSession?.role
+    const isMod = viewerRole === 'admin' || viewerRole === 'super_admin'
     return NextResponse.json({
       comments: comments.map(c => ({
         id: c.id, parentCommentId: c.parentCommentId, createdAt: c.createdAt, editedAt: c.deleted ? null : c.editedAt, deleted: c.deleted,
-        body: c.deleted ? '' : c.body, author: c.deleted ? null : c.author,
+        body: c.deleted ? '' : c.body,
+        isAnonymous: c.deleted ? false : c.isAnonymous,
+        author: c.deleted ? null : (c.isAnonymous ? { id: 'anonymous', name: 'Anonymous', avatar: null } : c.author),
+        realAuthor: c.deleted ? null : (c.isAnonymous && isMod ? c.author : null),
         score: c.deleted ? 0 : scores.get(c.id) || 0, viewerVote: c.deleted ? 0 : votes.get(c.id) || 0,
       })), page: paging.page, hasMore: ranked.length > paging.limit, total, locked: thread.locked, acceptedCommentId: thread.acceptedCommentId,
     }, { headers: { 'Cache-Control': 'private, no-store' } })
@@ -77,12 +83,22 @@ export async function POST(request: NextRequest, context: { params: Promise<{ th
       const parent = parentCommentId ? await tx.communityComment.findFirst({ where: { id: parentCommentId, threadId, deleted: false } }) : null
       if (parentCommentId && !parent) throw new CommunityError('The comment you are replying to is no longer available.', 404)
       const created = await tx.communityComment.create({
-        data: { threadId, parentCommentId, authorId: user.userId, body: content }, include: { author: { select: authorSelect } },
+        data: { threadId, parentCommentId, authorId: user.userId, body: content, isAnonymous: body?.isAnonymous === true }, include: { author: { select: authorSelect } },
       })
       await notifyComment(tx, thread, created, parent?.authorId)
       return created
     })
-    return NextResponse.json({ comment: { ...comment, score: 0, viewerVote: 0 } }, { status: 201 })
+    const isAnon = comment.isAnonymous
+    const isMod = (getCurrentUser(request)?.role ?? '') === 'admin' || (getCurrentUser(request)?.role ?? '') === 'super_admin'
+    return NextResponse.json({
+      comment: {
+        ...comment,
+        author: isAnon ? { id: 'anonymous', name: 'Anonymous', avatar: null } : comment.author,
+        realAuthor: isAnon && isMod ? comment.author : null,
+        isAnonymous: isAnon,
+        score: 0, viewerVote: 0,
+      }
+    }, { status: 201 })
   } catch (error) {
     return mutationError(error)
   }

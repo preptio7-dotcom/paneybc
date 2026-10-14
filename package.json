@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:community": "vitest run test/api/community-helpers.test.ts test/api/community-vote-route.test.ts test/api/community-comments-route.test.ts test/api/community-moderation.test.ts test/api/community-report-route.test.ts test/api/community-threads-route.test.ts test/api/community-proxy.test.ts test/api/community-phase3.test.ts test/api/community-database.test.ts",
+    "test:community": "vitest run test/api/community-helpers.test.ts test/api/community-vote-route.test.ts test/api/community-comments-route.test.ts test/api/community-moderation.test.ts test/api/community-report-route.test.ts test/api/community-threads-route.test.ts test/api/community-proxy.test.ts test/api/community-phase3.test.ts test/api/community-database.test.ts test/api/community-anonymous.test.ts",
     "test:community:e2e": "playwright test --config=playwright.community.config.ts"
   },
   "dependencies": {

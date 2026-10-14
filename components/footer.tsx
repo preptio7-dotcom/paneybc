@@ -87,6 +87,8 @@ export function Footer() {
               <Link href="/" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Home</Link>
               <Link href="/about" className="text-slate-400 hover:text-primary-green text-sm transition-colors">About Us</Link>
               <Link href="/subjects" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Subjects</Link>
+              <Link href="/community" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Community</Link>
+              <Link href="/blog" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Blog</Link>
               <Link href="/ambassador" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Ambassador</Link>
             </div>
           </div>
@@ -125,11 +127,18 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-[13px]">
-          <p>&copy; {currentYear} <span className="text-primary-green">Preptio</span> All rights reserved.</p>
-          <div className="flex flex-col items-center gap-1">
-           <p>Designed and Developed by <Link href="https://forgeweb.dev" target="_blank" rel="noopener noreferrer" className="text-primary-green hover:underline">ForgeWeb</Link></p>
-            <p>Designed for Excellence.</p>
-          </div>
+          <p>&copy; {currentYear} <span className="text-primary-green">Preptio</span>. All rights reserved.</p>
+          <p>
+            Designed & Developed by{' '}
+            <Link
+              href="https://forgeweb.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-green hover:underline font-medium"
+            >
+              ForgeWeb
+            </Link>
+          </p>
         </div>
       </div>
     </footer>
