@@ -973,6 +973,15 @@ model CommunityComment {
   @@map("community_comments")
 }
 
+model CommunityImage {
+  id        String   @id @default(cuid())
+  mimeType  String   @map("mime_type")
+  data      Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("community_images")
+}
+
 enum CommunityPostType {
   question
   discussion

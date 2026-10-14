@@ -128,10 +128,14 @@ function CommentBranch({ comment, childrenByParent, authorId, depth = 0, locked,
         {!locked && <button type="button" className="community-action" onClick={() => user ? setReplying(!replying) : requireAuth()}>
           <Reply size={15} />Reply</button>}
         {canAccept && !locked && <button className="community-action text-emerald-800" onClick={() => onAccept(comment.id)}>{acceptedId === comment.id ? 'Reopen question' : 'Accept answer'}</button>}
-        <PostMenu onReport={() => onReport({ targetType: 'comment', targetId: comment.id })} actions={user?.id === (comment.isAnonymous ? comment.realAuthor?.id : comment.author?.id) || user?.id === comment.author?.id ? [
-          { label: 'Edit comment', run: () => onEdit(comment), disabled: locked },
-          { label: 'Delete comment', run: () => onDelete(comment) },
-        ] : []} />
+        <PostMenu onReport={() => onReport({ targetType: 'comment', targetId: comment.id })} actions={[
+          ...(comment.isOwner || (user?.id && (user.id === comment.author?.id || (comment.realAuthor && user.id === comment.realAuthor.id))) ? [
+            { label: 'Edit comment', run: () => onEdit(comment), disabled: locked },
+            { label: 'Delete comment', run: () => onDelete(comment) },
+          ] : isMod ? [
+            { label: 'Delete comment', run: () => onDelete(comment) },
+          ] : [])
+        ]} />
       </div>}
       {replying && !locked && user && <CommentForm draftKey={`community:${user.id}:reply:${comment.id}`} label={`Reply to ${displayAuthor?.name || 'member'}`} onSubmit={(body, isAnon) => submit(body, comment.id, isAnon)} onCancel={() => setReplying(false)} />}
       {children.length > 0 && <div className={`mt-2 space-y-2 ${depth < 3 ? 'ml-2 sm:ml-4' : ''}`}>{children.map(child => <CommentBranch key={child.id} comment={child} childrenByParent={childrenByParent} authorId={authorId} depth={depth + 1} locked={locked} requireAuth={requireAuth} onReport={onReport} onVote={onVote} submit={submit} acceptedId={acceptedId} canAccept={canAccept} onAccept={onAccept} onEdit={onEdit} onDelete={onDelete} />)}</div>}

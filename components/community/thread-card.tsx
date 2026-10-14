@@ -30,9 +30,8 @@ export function ThreadCard({ thread, detail = false, href, openThread, onSubject
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to save changes.') }
     finally { setPending(false) }
   }
-  // For anonymous threads: real owner is the actual author (shown to mods via realAuthor)
-  const ownerId = thread.isAnonymous ? (thread.realAuthor?.id ?? thread.author.id) : thread.author.id
-  const owner = user?.id === ownerId
+  // For anonymous threads: real owner is the actual author (shown to mods or self via realAuthor, or thread.isOwner)
+  const owner = Boolean(thread.isOwner || (user?.id && (user.id === thread.author.id || (thread.realAuthor && user.id === thread.realAuthor.id))))
   const moderator = isMod
   const displayAuthor = thread.isAnonymous ? { name: 'Anonymous', avatar: null } : thread.author
   const revealAuthor = thread.isAnonymous && isMod ? thread.realAuthor : null
@@ -68,7 +67,10 @@ export function ThreadCard({ thread, detail = false, href, openThread, onSubject
           ...(thread.postType === 'question' ? [{ label: thread.solvedAt ? 'Reopen question' : 'Mark as solved', run: () => void change({ action: 'solve', solved: !thread.solvedAt }), disabled: thread.locked || pending }] : []),
           { label: 'Delete discussion', run: () => setDeleting(true), disabled: pending },
         ] : []),
-        ...(moderator ? [{ label: thread.pinnedAt ? 'Unpin discussion' : 'Pin discussion', run: () => void change({ action: 'pin', pinned: !thread.pinnedAt }), disabled: pending }] : []),
+        ...(moderator ? [
+          { label: thread.pinnedAt ? 'Unpin discussion' : 'Pin discussion', run: () => void change({ action: 'pin', pinned: !thread.pinnedAt }), disabled: pending },
+          ...(!owner ? [{ label: 'Delete discussion', run: () => setDeleting(true), disabled: pending }] : []),
+        ] : []),
       ]} />
     </div>
     {(detail || expanded) && <div id={detail ? 'discussion-comments' : undefined} className="mt-4">

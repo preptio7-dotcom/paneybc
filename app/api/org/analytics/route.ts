@@ -55,12 +55,12 @@ export async function GET(request: NextRequest) {
     const valid = perMemberResults.filter((r) => r.payload !== null)
 
     const totalQuestioned = valid.reduce(
-      (sum, r) => sum + (r.payload?.overview?.totalQuestioned ?? 0),
+      (sum, r) => sum + (r.payload?.topStats?.totalQuestionsPracticed ?? (r.payload as any)?.overview?.totalQuestioned ?? 0),
       0
     )
     const avgAccuracy =
       valid.length > 0
-        ? valid.reduce((sum, r) => sum + (r.payload?.overview?.overallAccuracy ?? 0), 0) /
+        ? valid.reduce((sum, r) => sum + (r.payload?.topStats?.overallAccuracy ?? (r.payload as any)?.overview?.overallAccuracy ?? 0), 0) /
           valid.length
         : 0
 
@@ -68,15 +68,16 @@ export async function GET(request: NextRequest) {
     for (const { payload } of valid) {
       if (!payload?.subjects) continue
       for (const subj of payload.subjects) {
+        const attempted = (subj as any).attempted ?? (subj as any).questionsAttempted ?? 0
+        const correct = (subj as any).correct ?? Math.round(attempted * ((subj.accuracy ?? 0) / 100))
         const existing = subjectMap.get(subj.code)
-        const correct = Math.round(subj.questionsAttempted * (subj.accuracy / 100))
         if (existing) {
-          existing.attempted += subj.questionsAttempted
+          existing.attempted += attempted
           existing.correct += correct
         } else {
           subjectMap.set(subj.code, {
             name: subj.name,
-            attempted: subj.questionsAttempted,
+            attempted,
             correct,
           })
         }
@@ -92,14 +93,16 @@ export async function GET(request: NextRequest) {
 
     const memberBreakdown = perMemberResults.map((r) => {
       const info = memberships.find((m) => m.userId === r.userId)
+      const topStats = r.payload?.topStats
+      const overview = (r.payload as any)?.overview
       return {
         userId: r.userId,
         name: info?.user.name,
         email: info?.user.email,
         studentRole: info?.user.studentRole,
-        totalQuestioned: r.payload?.overview?.totalQuestioned ?? 0,
-        accuracy: r.payload?.overview?.overallAccuracy ?? 0,
-        currentStreak: r.payload?.overview?.currentStreak ?? 0,
+        totalQuestioned: topStats?.totalQuestionsPracticed ?? overview?.totalQuestioned ?? 0,
+        accuracy: topStats?.overallAccuracy ?? overview?.overallAccuracy ?? 0,
+        currentStreak: topStats?.streak?.current ?? overview?.currentStreak ?? 0,
       }
     })
 

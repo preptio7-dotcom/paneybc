@@ -4,13 +4,13 @@ export type Thread = {
   postType: import('@/lib/community-options').PostType; solvedAt: string | null; acceptedCommentId: string | null; pinnedAt: string | null; editedAt: string | null; saved: boolean; following: boolean
   id: string; title: string; body: string; createdAt: string; locked: boolean
   score: number; viewerVote: number; commentCount: number; category: Category; author: Author
-  isAnonymous: boolean; realAuthor?: Author | null
+  isAnonymous: boolean; realAuthor?: Author | null; isOwner?: boolean
 }
 export type Comment = {
   editedAt?: string | null
   id: string; body: string; createdAt: string; parentCommentId: string | null
   deleted: boolean; score: number; viewerVote: number; author: Author | null
-  isAnonymous?: boolean; realAuthor?: Author | null
+  isAnonymous?: boolean; realAuthor?: Author | null; isOwner?: boolean
 }
 export type Target = { targetType: 'thread' | 'comment'; targetId: string }
 

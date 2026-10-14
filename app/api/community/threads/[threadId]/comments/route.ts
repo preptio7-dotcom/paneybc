@@ -55,7 +55,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ thr
         body: c.deleted ? '' : c.body,
         isAnonymous: c.deleted ? false : c.isAnonymous,
         author: c.deleted ? null : (c.isAnonymous ? { id: 'anonymous', name: 'Anonymous', avatar: null } : c.author),
-        realAuthor: c.deleted ? null : (c.isAnonymous && isMod ? c.author : null),
+        realAuthor: c.deleted ? null : (c.isAnonymous && (isMod || viewerId === c.authorId) ? c.author : null),
+        isOwner: !c.deleted && Boolean(viewerId && viewerId === c.authorId),
         score: c.deleted ? 0 : scores.get(c.id) || 0, viewerVote: c.deleted ? 0 : votes.get(c.id) || 0,
       })), page: paging.page, hasMore: ranked.length > paging.limit, total, locked: thread.locked, acceptedCommentId: thread.acceptedCommentId,
     }, { headers: { 'Cache-Control': 'private, no-store' } })
@@ -89,12 +90,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ th
       return created
     })
     const isAnon = comment.isAnonymous
-    const isMod = (getCurrentUser(request)?.role ?? '') === 'admin' || (getCurrentUser(request)?.role ?? '') === 'super_admin'
+    const viewer = getCurrentUser(request)
+    const isMod = viewer?.role === 'admin' || viewer?.role === 'super_admin'
     return NextResponse.json({
       comment: {
         ...comment,
         author: isAnon ? { id: 'anonymous', name: 'Anonymous', avatar: null } : comment.author,
-        realAuthor: isAnon && isMod ? comment.author : null,
+        realAuthor: isAnon && (isMod || user.userId === comment.authorId) ? comment.author : null,
+        isOwner: true,
         isAnonymous: isAnon,
         score: 0, viewerVote: 0,
       }

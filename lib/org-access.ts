@@ -62,7 +62,24 @@ export async function getOrgForUser(
     },
   })
 
-  if (!membership || !membership.org.isActive) return null
+  if (!membership || !membership.org.isActive) {
+    if (tokenUser.role === 'super_admin' || tokenUser.role === 'admin') {
+      const org = await prisma.organization.findFirst({
+        where: { isActive: true },
+        include: { subscription: true },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (org) {
+        return {
+          orgId: org.id,
+          userId: tokenUser.userId,
+          role: 'owner',
+          org: org as OrgWithSubscription,
+        }
+      }
+    }
+    return null
+  }
 
   return {
     orgId: membership.orgId,

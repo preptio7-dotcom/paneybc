@@ -73,7 +73,8 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     const { threadId } = await context.params
     await prisma.$transaction(async tx => {
       const thread = await lockThread(tx, threadId)
-      if (thread.authorId !== actor.id) throw new CommunityError('Only the author can delete this discussion.', 403)
+      const isMod = actor.role === 'admin' || actor.role === 'super_admin'
+      if (thread.authorId !== actor.id && !isMod) throw new CommunityError('Only the author or a moderator can delete this discussion.', 403)
       await tx.communityThread.update({ where: { id: threadId }, data: { deleted: true, acceptedCommentId: null, solvedAt: null } })
     })
     return NextResponse.json({ deleted: true })

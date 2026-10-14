@@ -32,12 +32,14 @@ export function resolveAuthor(
   realAuthor: { id: string; name: string; avatar: string | null },
   isAnonymous: boolean,
   viewerRole?: string | null,
+  viewerId?: string | null,
 ) {
   if (!isAnonymous) return { author: realAuthor, realAuthor: null }
   const isMod = viewerRole === 'admin' || viewerRole === 'super_admin'
+  const isSelf = Boolean(viewerId && viewerId === realAuthor.id)
   return {
     author: ANON_AUTHOR,
-    realAuthor: isMod ? realAuthor : null,
+    realAuthor: (isMod || isSelf) ? realAuthor : null,
   }
 }
 
@@ -55,11 +57,12 @@ export async function threadResults(ids: string[], viewerId?: string, viewerRole
   const saved = new Set(bookmarks.map(b => b.threadId))
   const followed = new Set(follows.map(f => f.threadId))
   const mapped = new Map(threads.map(({ _count, ...thread }) => {
-    const { author, realAuthor } = resolveAuthor(thread.author, thread.isAnonymous, viewerRole)
+    const { author, realAuthor } = resolveAuthor(thread.author, thread.isAnonymous, viewerRole, viewerId)
     return [thread.id, {
       ...thread,
       author,
       realAuthor,
+      isOwner: Boolean(viewerId && viewerId === thread.authorId),
       saved: saved.has(thread.id),
       following: followed.has(thread.id),
       score: scores.get(thread.id) || 0,

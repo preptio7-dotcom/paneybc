@@ -4,7 +4,7 @@ function escapeHtml(value: string) {
 
 function inline(value: string): string {
   // Tokenize source text once; never apply Markdown replacements to generated HTML.
-  const tokens = /(`[^`\n]+`|!\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[[^\]\n]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g
+  const tokens = /(`[^`\n]+`|!\[[^\]\n]*\]\((?:https?:\/\/[^\s)]+|\/[^\s)]+)\)|\[[^\]\n]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g
   let html = '', offset = 0
   for (const match of value.matchAll(tokens)) {
     html += escapeHtml(value.slice(offset, match.index))
@@ -13,16 +13,21 @@ function inline(value: string): string {
       html += `<code>${escapeHtml(token.slice(1, -1))}</code>`
     } else if (token.startsWith('![')) {
       const parts = /^!\[([^\]]*)\]\((.+)\)$/.exec(token)!
-      try {
-        const url = new URL(parts[2])
-        if (['http:', 'https:'].includes(url.protocol)) {
-          const altText = escapeHtml(parts[1] || 'Community image')
-          const src = escapeHtml(url.href)
-          html += `<span class="my-3 block"><a href="${src}" target="_blank" rel="noopener noreferrer" class="inline-block max-w-full"><img src="${src}" alt="${altText}" loading="lazy" class="max-h-96 max-w-full rounded-xl border border-slate-200/90 shadow-sm object-contain bg-slate-50 hover:opacity-95 transition-opacity" /></a></span>`
-        } else {
-          html += escapeHtml(token)
-        }
-      } catch {
+      let src = ''
+      if (parts[2].startsWith('/') && !parts[2].startsWith('//')) {
+        src = escapeHtml(parts[2])
+      } else {
+        try {
+          const url = new URL(parts[2])
+          if (['http:', 'https:'].includes(url.protocol)) {
+            src = escapeHtml(url.href)
+          }
+        } catch {}
+      }
+      if (src) {
+        const altText = escapeHtml(parts[1] || 'Community image')
+        html += `<span class="my-3 block"><a href="${src}" target="_blank" rel="noopener noreferrer" class="inline-block max-w-full"><img src="${src}" alt="${altText}" loading="lazy" class="max-h-96 max-w-full rounded-xl border border-slate-200/90 shadow-sm object-contain bg-slate-50 hover:opacity-95 transition-opacity" /></a></span>`
+      } else {
         html += escapeHtml(token)
       }
     } else if (token.startsWith('[')) {

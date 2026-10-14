@@ -18,8 +18,8 @@ describe('Anonymous posting author resolution and security', () => {
   })
 
   it('hides author identity for non-admin viewers when isAnonymous is true', () => {
-    // Regular student viewer
-    const student = resolveAuthor(author, true, 'student')
+    // Other student viewer
+    const student = resolveAuthor(author, true, 'student', 'other-student-456')
     expect(student.author).toEqual(ANON_AUTHOR)
     expect(student.realAuthor).toBeNull()
 
@@ -27,6 +27,11 @@ describe('Anonymous posting author resolution and security', () => {
     const guest = resolveAuthor(author, true, null)
     expect(guest.author).toEqual(ANON_AUTHOR)
     expect(guest.realAuthor).toBeNull()
+
+    // Author themselves receives their realAuthor for editing/deleting their post
+    const self = resolveAuthor(author, true, 'student', author.id)
+    expect(self.author).toEqual(ANON_AUTHOR)
+    expect(self.realAuthor).toEqual(author)
   })
 
   it('reveals real author to admins and super_admins when isAnonymous is true', () => {
