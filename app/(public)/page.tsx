@@ -212,9 +212,26 @@ export default function Home() {
           <LogoutToast />
         </Suspense>
         <HomepageContent />
-        <div className="sr-only">
-          <Link href="/practice">Free Practice MCQs</Link>
-        </div>
+        <section className="sr-only" aria-label="Preptio Platform Overview">
+          <h2>Free CA Foundation Preparation Platform for ICAP Candidates</h2>
+          <p>
+            Preparing for CA examinations in Pakistan requires structured practice and consistent effort.
+            Therefore, Preptio provides Pakistani students with unlimited access to thousands of syllabus-aligned
+            multiple choice questions, complete mock exams, and instant performance analysis.
+          </p>
+          <p>
+            Furthermore, students can practice specifically by subject to strengthen their weak areas.
+            For example, you can prepare for <Link href="/subjects/FOA">Fundamentals of Accounting (FOA)</Link>,
+            tackle quantitative problem sets in <Link href="/subjects/QAFB">Quantitative Analysis for Business (QAFB)</Link>,
+            and test comprehensive concepts in Business and Economics Volumes I and II.
+          </p>
+          <p>
+            In addition to timed mock tests, our platform tracks your daily practice streaks and accuracy metrics.
+            Consequently, every candidate can evaluate their exam readiness before attempting the actual ICAP exam session.
+            Explore our <Link href="/subjects">all CA subjects guide</Link>, read exam advice on our <Link href="/blog">student blog</Link>,
+            or start your <Link href="/practice">free practice session</Link> today.
+          </p>
+        </section>
       </HomeWrapper>
       <script
         type="application/ld+json"
