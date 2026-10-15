@@ -4,18 +4,33 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendCampaignEmail } from '@/lib/email'
 
-async function resolveRecipients(schedule: any) {
+async function resolveRecipients(schedule: any): Promise<Array<{ email: string; name?: string }>> {
   const now = new Date()
   const segment = schedule.segment
 
+  if (segment === 'specific_users') {
+    const raw = schedule.specificEmails || ''
+    const emails = raw
+      .split(/[\n,;]+/)
+      .map((e: string) => e.trim().toLowerCase())
+      .filter((e: string) => e.length > 3 && e.includes('@') && !e.includes(' '))
+    const uniqueEmails = Array.from(new Set(emails)) as string[]
+    return uniqueEmails.map((email) => ({ email }))
+  }
+
   if (segment === 'all_users') {
-    return prisma.user.findMany()
+    const users = await prisma.user.findMany({ select: { email: true, name: true } })
+    return users.filter((u) => u.email)
   }
 
   if (segment === 'new_users') {
     const days = schedule.newWithinDays || 1
     const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
-    return prisma.user.findMany({ where: { createdAt: { gte: cutoff } } })
+    const users = await prisma.user.findMany({
+      where: { createdAt: { gte: cutoff } },
+      select: { email: true, name: true },
+    })
+    return users.filter((u) => u.email)
   }
 
   if (segment === 'active_users') {
@@ -27,7 +42,12 @@ async function resolveRecipients(schedule: any) {
       select: { userId: true },
     })
     const ids = activeUserIds.map((item) => item.userId).filter(Boolean) as string[]
-    return ids.length > 0 ? prisma.user.findMany({ where: { id: { in: ids } } }) : []
+    if (ids.length === 0) return []
+    const users = await prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: { email: true, name: true },
+    })
+    return users.filter((u) => u.email)
   }
 
   if (segment === 'inactive_users') {
@@ -39,13 +59,21 @@ async function resolveRecipients(schedule: any) {
       select: { userId: true },
     })
     const ids = activeUserIds.map((item) => item.userId).filter(Boolean) as string[]
-    return prisma.user.findMany({ where: { id: { notIn: ids } } })
+    const users = await prisma.user.findMany({
+      where: { id: { notIn: ids } },
+      select: { email: true, name: true },
+    })
+    return users.filter((u) => u.email)
   }
 
   if (segment === 'exam_prep') {
     const days = schedule.examDaysBefore || 30
     const future = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
-    return prisma.user.findMany({ where: { examDate: { gte: now, lte: future } } })
+    const users = await prisma.user.findMany({
+      where: { examDate: { gte: now, lte: future } },
+      select: { email: true, name: true },
+    })
+    return users.filter((u) => u.email)
   }
 
   return []
@@ -54,11 +82,11 @@ async function resolveRecipients(schedule: any) {
 export async function POST(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { scheduleId } = await request.json()
+    const { scheduleId } = await request.json().catch(() => ({}))
     const now = new Date()
 
     const query: any = { status: 'scheduled' }
@@ -84,10 +112,17 @@ export async function POST(request: NextRequest) {
 
       const recipients = await resolveRecipients(schedule)
       let sentCount = 0
+      const errors: string[] = []
+
       for (const recipient of recipients) {
         if (!recipient.email) continue
-        await sendCampaignEmail(recipient.email, template.subject, template.body)
-        sentCount += 1
+        try {
+          await sendCampaignEmail(recipient.email, template.subject, template.body)
+          sentCount += 1
+        } catch (err: any) {
+          console.error(`Failed to send campaign email to ${recipient.email}:`, err?.message || err)
+          errors.push(`${recipient.email}: ${err?.message || 'Send failed'}`)
+        }
       }
 
       totalSent += sentCount
@@ -97,7 +132,7 @@ export async function POST(request: NextRequest) {
           status: 'sent',
           sentAt: new Date(),
           sentCount,
-          lastError: '',
+          lastError: errors.length > 0 ? errors.slice(0, 5).join('; ') : '',
         },
       })
     }
@@ -107,4 +142,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-

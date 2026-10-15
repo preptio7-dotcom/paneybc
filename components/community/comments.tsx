@@ -36,7 +36,7 @@ function CommentForm({ draftKey, label, onSubmit, onCancel, userRole }: { draftK
       formData.append('file', file)
       const res = await fetch('/api/community/upload-image', { method: 'POST', body: formData })
       const data = await res.json()
-      if (!res.ok || !data.success) {
+      if (!res.ok || (!data.success && !data.url)) {
         throw new Error(data.error || 'Failed to upload image.')
       }
       const imageSnippet = `\n\n${data.markdown}\n\n`

@@ -55,6 +55,7 @@ enum EmailSegment {
   inactive_users
   exam_prep
   all_users
+  specific_users
 }
 
 enum EmailScheduleStatus {
@@ -512,6 +513,7 @@ model EmailSchedule {
   activeWithinDays Int               @default(7)
   inactiveDays    Int                @default(14)
   examDaysBefore  Int                @default(30)
+  specificEmails  String?
   lastError       String?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
