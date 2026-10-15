@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle, Shield, X } from 'lucide-react'
+import { LayoutDashboard, FileText, Settings, Users, Database, Plus, Flag, PlayCircle, Shield, X, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -231,6 +231,12 @@ export default function AdminDashboardPage() {
             description: 'View, ban, or delete registered users.',
             href: '/admin/users',
             icon: Users,
+        },
+        {
+            title: 'Email Campaigns',
+            description: 'Create templates, schedule broadcasts, and send emails now.',
+            href: '/admin/email-campaigns',
+            icon: Mail,
         },
     ]
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -222,6 +223,14 @@ export default function OrgMembersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {isPrivileged && (
+                  <Link
+                    href={`/org/analytics/${m.user.id}`}
+                    className="text-xs font-medium text-primary-green hover:underline"
+                  >
+                    Analytics
+                  </Link>
+                )}
                 {m.user.practiceStreakCurrent != null && m.user.practiceStreakCurrent > 0 && (
                   <span className="text-xs text-amber-600 font-medium">
                     🔥 {m.user.practiceStreakCurrent} day streak

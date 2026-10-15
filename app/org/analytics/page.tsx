@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   BarChart2,
@@ -221,7 +222,11 @@ export default function OrgAnalyticsPage() {
                   {[...data.memberBreakdown]
                     .sort((a, b) => b.totalQuestioned - a.totalQuestioned)
                     .map((m, i) => (
-                      <div key={m.userId} className="flex items-center justify-between py-3">
+                      <Link
+                        key={m.userId}
+                        href={`/org/analytics/${m.userId}?range=${range}`}
+                        className="flex items-center justify-between py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors"
+                      >
                         <div className="flex items-center gap-3">
                           <span
                             className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -240,9 +245,9 @@ export default function OrgAnalyticsPage() {
                             <p className="text-sm font-medium text-text-dark">
                               {m.name || 'Unnamed'}
                             </p>
-                            {m.studentRole && (
-                              <p className="text-xs text-text-light">{m.studentRole}</p>
-                            )}
+                            <p className="text-xs text-text-light">
+                              {m.studentRole ? `${m.studentRole} · ` : ''}View analytics
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 text-right">
@@ -270,7 +275,7 @@ export default function OrgAnalyticsPage() {
                             <p className="text-xs text-text-light">accuracy</p>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                 </div>
               )}

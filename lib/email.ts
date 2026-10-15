@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer'
 import { resolveAppBaseUrl } from '@/lib/app-url'
 
 const smtpUser = process.env.SMTP_USER
-const smtpPass = process.env.SMTP_PASS
+const smtpPass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS
 const smtpHost = process.env.SMTP_HOST
 const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined
 const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
@@ -163,6 +163,10 @@ export async function sendReviewDueEmail(email: string, name: string, count: num
 }
 
 export async function sendCampaignEmail(email: string, subject: string, body: string) {
+  if (!smtpUser || !smtpPass) {
+    throw new Error('Email is not configured. Set SMTP_USER and SMTP_PASS (or SMTP_PASSWORD).')
+  }
+
   const mailOptions = {
     from: 'Preptio <support@preptio.com>',
     to: email,

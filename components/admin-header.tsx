@@ -18,6 +18,7 @@ import {
   Layers,
   Lock,
   LogOut,
+  Mail,
   Menu,
   MessageSquare,
   Palette,
@@ -55,6 +56,10 @@ type NavGroup = {
 }
 
 const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Communication',
+    items: [{ label: 'Email Campaigns', href: '/admin/email-campaigns', icon: Mail }],
+  },
   {
     label: 'Content Management',
     items: [
@@ -131,6 +136,7 @@ const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin\/subscriptions$/, title: 'Subscription Requests' },
   { match: /^\/admin\/payment-methods$/, title: 'Payment Methods' },
   { match: /^\/admin\/organizations$/, title: 'Organizations' },
+  { match: /^\/admin\/email-campaigns$/, title: 'Email Campaigns' },
 ]
 
 function isActiveRoute(pathname: string, href: string) {

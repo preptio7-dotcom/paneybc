@@ -25,7 +25,7 @@ type Schedule = {
   name: string
   segment: string
   sendAt: string
-  status: 'scheduled' | 'sent' | 'cancelled'
+  status: 'scheduled' | 'sent' | 'cancelled' | 'failed'
   sentAt?: string
   sentCount?: number
   lastError?: string | null
@@ -88,6 +88,27 @@ const DEFAULT_COMMUNITY_TEMPLATE = {
   status: 'active' as const,
 }
 
+function toLocalDatetimeString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function localDatetimeToIso(localStr: string): string {
+  const value = localStr.length === 16 ? `${localStr}:00` : localStr
+  const localDate = new Date(value)
+  if (Number.isNaN(localDate.getTime())) {
+    throw new Error('Invalid send time')
+  }
+  return localDate.toISOString()
+}
+
+function formatSendAt(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
+
 export default function EmailCampaignsPage() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
@@ -107,7 +128,7 @@ export default function EmailCampaignsPage() {
     name: '',
     templateId: '',
     segment: 'all_users',
-    sendAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    sendAt: toLocalDatetimeString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
     specificEmails: '',
     newWithinDays: 1,
     activeWithinDays: 7,
@@ -205,7 +226,33 @@ export default function EmailCampaignsPage() {
     await loadData()
   }
 
-  const handleScheduleSubmit = async () => {
+  const runSchedules = async (scheduleId?: string) => {
+    setRunningSchedules(true)
+    try {
+      const res = await fetch('/api/admin/email-campaigns/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scheduleId ? { scheduleId, sendNow: true } : {}),
+      })
+      const data = await res.json()
+      if (res.ok && (data.sent ?? 0) > 0) {
+        toast.success(`Sent campaign to ${data.sent} recipient(s)`)
+        await loadData()
+      } else if (res.ok) {
+        toast.error(data.message || 'No emails were sent')
+        await loadData()
+      } else {
+        toast.error(data.error || 'Failed to trigger campaign send')
+        await loadData()
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to run campaign')
+    } finally {
+      setRunningSchedules(false)
+    }
+  }
+
+  const handleScheduleSubmit = async (options?: { sendImmediately?: boolean }) => {
     if (!scheduleForm.name || !scheduleForm.templateId || !scheduleForm.sendAt) {
       toast.error('Please enter Schedule Name, select a Template, and set Send Time.')
       return
@@ -217,50 +264,40 @@ export default function EmailCampaignsPage() {
 
     setSavingSchedule(true)
     try {
+      const sendAt = options?.sendImmediately
+        ? new Date().toISOString()
+        : localDatetimeToIso(scheduleForm.sendAt)
       const response = await fetch('/api/admin/email-campaigns/schedules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scheduleForm),
+        body: JSON.stringify({
+          ...scheduleForm,
+          sendAt,
+        }),
       })
-      if (response.ok) {
-        toast.success('Campaign scheduled successfully')
-        setScheduleForm((prev) => ({
-          ...prev,
-          name: '',
-          specificEmails: '',
-          sendAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-        }))
-        await loadData()
-      } else {
-        const d = await response.json()
-        toast.error(d.error || 'Failed to create schedule')
+      const created = await response.json()
+      if (!response.ok) {
+        toast.error(created.error || 'Failed to create schedule')
+        return
       }
+
+      if (options?.sendImmediately && created.schedule?._id) {
+        await runSchedules(created.schedule._id)
+      } else {
+        toast.success('Campaign scheduled successfully')
+      }
+
+      setScheduleForm((prev) => ({
+        ...prev,
+        name: '',
+        specificEmails: '',
+        sendAt: toLocalDatetimeString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+      }))
+      await loadData()
     } catch (e: any) {
       toast.error(e?.message || 'Failed to create schedule')
     } finally {
       setSavingSchedule(false)
-    }
-  }
-
-  const runSchedules = async (scheduleId?: string) => {
-    setRunningSchedules(true)
-    try {
-      const res = await fetch('/api/admin/email-campaigns/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scheduleId ? { scheduleId } : {}),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        toast.success(`Sent campaign to ${data.sent} recipient(s)`)
-        await loadData()
-      } else {
-        toast.error(data.error || 'Failed to trigger campaign send')
-      }
-    } catch (e: any) {
-      toast.error(e?.message || 'Failed to run campaign')
-    } finally {
-      setRunningSchedules(false)
     }
   }
 
@@ -486,13 +523,16 @@ export default function EmailCampaignsPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scheduleSendAt">Send At</Label>
+                <Label htmlFor="scheduleSendAt">Send At (your local time)</Label>
                 <Input
                   id="scheduleSendAt"
                   type="datetime-local"
                   value={scheduleForm.sendAt}
                   onChange={(event) => setScheduleForm((prev) => ({ ...prev, sendAt: event.target.value }))}
                 />
+                <p className="text-xs text-text-light">
+                  Times are saved in UTC and shown back in your timezone. Send Now delivers immediately and does not wait for this time.
+                </p>
               </div>
 
               {/* Specific Users / Custom Emails input */}
@@ -578,9 +618,19 @@ export default function EmailCampaignsPage() {
               </div>
             )}
 
-            <Button onClick={handleScheduleSubmit} disabled={savingSchedule} className="bg-emerald-600 hover:bg-emerald-700">
-              {savingSchedule ? 'Scheduling...' : 'Create Campaign Schedule'}
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => handleScheduleSubmit()} disabled={savingSchedule} className="bg-emerald-600 hover:bg-emerald-700">
+                {savingSchedule ? 'Scheduling...' : 'Create Campaign Schedule'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={savingSchedule || runningSchedules}
+                onClick={() => handleScheduleSubmit({ sendImmediately: true })}
+              >
+                Create & Send Now
+              </Button>
+            </div>
 
             {/* List of Schedules */}
             <div className="space-y-3 pt-4 border-t border-border">
@@ -603,7 +653,7 @@ export default function EmailCampaignsPage() {
                             </span>
                           </p>
                           <p className="text-xs text-text-light">
-                            Send at: {new Date(schedule.sendAt).toLocaleString()}
+                            Send at: {formatSendAt(schedule.sendAt)}
                           </p>
                           {schedule.specificEmails && (
                             <p className="text-xs text-slate-500 font-mono truncate max-w-md">
@@ -649,6 +699,8 @@ export default function EmailCampaignsPage() {
                           className={`font-semibold ${
                             schedule.status === 'sent'
                               ? 'text-emerald-700'
+                              : schedule.status === 'failed'
+                              ? 'text-red-600'
                               : schedule.status === 'scheduled'
                               ? 'text-blue-700'
                               : 'text-slate-500'

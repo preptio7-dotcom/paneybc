@@ -54,12 +54,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter at least one valid recipient email address' }, { status: 400 })
     }
 
+    const parsedSendAt = new Date(sendAt)
+    if (Number.isNaN(parsedSendAt.getTime())) {
+      return NextResponse.json({ error: 'Invalid send time' }, { status: 400 })
+    }
+
     const schedule: any = await prisma.emailSchedule.create({
       data: {
         name,
         templateId,
         segment: segment as any,
-        sendAt: new Date(sendAt),
+        sendAt: parsedSendAt,
         specificEmails: specificEmails || null,
         newWithinDays: newWithinDays || 1,
         activeWithinDays: activeWithinDays || 7,
