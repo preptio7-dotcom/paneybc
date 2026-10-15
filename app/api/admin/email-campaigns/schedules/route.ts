@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       orderBy: { sendAt: 'desc' },
     })
 
-    const mapped = schedules.map((s) => ({
+    const mapped = schedules.map((s: any) => ({
       ...s,
       _id: s.id,
       templateId: s.template ? { ...s.template, _id: s.template.id } : null,
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter at least one valid recipient email address' }, { status: 400 })
     }
 
-    const schedule = await prisma.emailSchedule.create({
+    const schedule: any = await prisma.emailSchedule.create({
       data: {
         name,
         templateId,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         inactiveDays: inactiveDays || 14,
         examDaysBefore: examDaysBefore || 30,
         status: 'scheduled',
-      },
+      } as any,
       include: { template: true },
     })
 
@@ -98,7 +98,7 @@ export async function PUT(request: NextRequest) {
       updates.sendAt = new Date(updates.sendAt)
     }
 
-    const schedule = await prisma.emailSchedule.update({
+    const schedule: any = await prisma.emailSchedule.update({
       where: { id },
       data: updates,
       include: { template: true },

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export const DEFAULT_COMMUNITY_TEMPLATE = {
   name: 'Preptio Community Announcement',
-  category: 'general',
+  category: 'general' as const,
   subject: 'Introducing Preptio Community: Discuss, Ask & Learn Together! 🚀',
   body: `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
   <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 36px 32px; text-align: center; color: #ffffff;">
@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
     const template = await prisma.emailTemplate.create({
       data: {
         name,
-        category: category || 'general',
+        category: (category as any) || 'general',
         subject,
         body,
-        status: status || 'draft',
+        status: (status as any) || 'draft',
       },
     })
 

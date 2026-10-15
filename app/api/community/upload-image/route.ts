@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       const imageRecord = await prisma.communityImage.create({
         data: {
           mimeType: finalContentType,
-          data: bodyToUpload,
+          data: bodyToUpload as any,
         },
         select: { id: true },
       })
