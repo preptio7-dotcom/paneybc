@@ -58,33 +58,156 @@ const DEFAULT_COMMUNITY_TEMPLATE = {
   name: 'Preptio Community Announcement',
   category: 'general',
   subject: 'Introducing Preptio Community: Discuss, Ask & Learn Together! 🚀',
-  body: `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-  <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 36px 32px; text-align: center; color: #ffffff;">
-    <span style="display: inline-block; background-color: rgba(255, 255, 255, 0.2); padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">New Feature Launch</span>
-    <h1 style="margin: 0; font-size: 26px; font-weight: 800; line-height: 1.25;">Welcome to Preptio Community! 🚀</h1>
-    <p style="margin: 10px 0 0; font-size: 15px; opacity: 0.95;">Discuss, ask questions, share notes, and prepare smarter together.</p>
-  </div>
-  
-  <div style="padding: 32px 28px; color: #334155; font-size: 15px; line-height: 1.6;">
-    <p style="margin-top: 0;">Hello Preptio Scholar,</p>
-    <p>We're thrilled to introduce the brand new <strong>Preptio Student Community</strong> — your interactive hub to collaborate, solve tough exam questions, and learn from peers and mentors.</p>
-    
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0;">
-      <h3 style="margin: 0 0 12px; color: #0f172a; font-size: 16px; font-weight: 700;">✨ What you can do in Community:</h3>
-      <ul style="margin: 0; padding-left: 20px; color: #475569;">
-        <li style="margin-bottom: 8px;"><strong>Ask Questions & Get Answers:</strong> Post questions on difficult concepts and mark verified solutions.</li>
-        <li style="margin-bottom: 8px;"><strong>Anonymous Posting Option:</strong> Prefer privacy? Post questions or comments anonymously anytime.</li>
-        <li style="margin-bottom: 8px;"><strong>Rich Markdown & Images:</strong> Upload diagrams, worksheets, and format your workings cleanly.</li>
-        <li style="margin-bottom: 0;"><strong>Filter by Subject & Track:</strong> Browse discussions organized by subjects, top upvoted topics, and solved status.</li>
-      </ul>
-    </div>
-    
-    <div style="text-align: center; margin: 32px 0 20px;">
-      <a href="https://preptio.com/community" style="display: inline-block; background-color: #059669; color: #ffffff; font-weight: 700; font-size: 16px; padding: 14px 32px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);">Explore Community Now →</a>
-    </div>
-    <p style="text-align: center; font-size: 13px; color: #64748b; margin-top: 0;">Jump right into the discussions and start participating today!</p>
-  </div>
-</div>`,
+  body: `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100% !important; min-width: 100%; border-collapse: collapse; margin: 0; padding: 0; background-color: #f1f5f9;">
+  <tr>
+    <td align="center" style="padding: 12px 6px 28px 6px;">
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100% !important; max-width: 660px; margin: 0 auto; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+        <!-- Header Banner -->
+        <tr>
+          <td style="background: linear-gradient(135deg, #047857 0%, #059669 45%, #10b981 100%); padding: 40px 24px 36px 24px; text-align: center; color: #ffffff;">
+            <!-- Brand Badge -->
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 16px auto;">
+              <tr>
+                <td style="background-color: rgba(255, 255, 255, 0.22); border: 1px solid rgba(255, 255, 255, 0.35); padding: 6px 16px; border-radius: 9999px;">
+                  <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #ffffff;">✨ New Feature Launch</span>
+                </td>
+              </tr>
+            </table>
+
+            <h1 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 900; line-height: 1.25; color: #ffffff; letter-spacing: -0.02em;">
+              Welcome to Preptio Community! 🚀
+            </h1>
+            <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #ecfdf5; font-weight: 500; max-width: 480px; margin-left: auto; margin-right: auto;">
+              Discuss tough exam questions, share study notes, and collaborate with CA students across Pakistan.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Main Body Content -->
+        <tr>
+          <td style="padding: 32px 24px; color: #334155; font-size: 15px; line-height: 1.65; background-color: #ffffff;">
+            <p style="margin-top: 0; font-size: 16px; font-weight: 600; color: #0f172a;">
+              Hello Preptio Scholar, 👋
+            </p>
+            <p style="margin-bottom: 24px; color: #475569;">
+              We are excited to introduce the brand new <strong style="color: #047857;">Preptio Student Community</strong> — your central space to ask questions, solve past paper doubts, and prepare smarter alongside peers and mentors.
+            </p>
+
+            <!-- Feature Showcase Cards -->
+            <div style="margin: 28px 0;">
+              <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; border-spacing: 0 12px;">
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            💬
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Ask Questions & Mark Solved</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Post questions on complex topics and mark the verified correct answer.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            🎭
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Anonymous Posting Option</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Hesitant to post? Toggle Anonymous mode anytime to ask questions with peace of mind.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            📸
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Diagrams & Worksheets Upload</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Snap and upload screenshots of financial statements or past papers directly into discussions.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            🏷️
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Organized by Subjects & Tags</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Filter discussions by Accounting, Law, Tax, Audit, and more to find quick answers.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Call to Action Button -->
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 32px auto 20px auto;">
+              <tr>
+                <td align="center" style="border-radius: 12px; background-color: #059669; box-shadow: 0 6px 16px -2px rgba(5, 150, 105, 0.4);">
+                  <a href="https://preptio.com/community" target="_blank" style="display: inline-block; font-size: 16px; font-weight: 700; color: #ffffff; text-decoration: none; padding: 16px 36px; border-radius: 12px; border: 1px solid #047857;">
+                    Explore Community Discussions →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Quick Pro Tip -->
+            <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 0 10px 10px 0; padding: 14px 16px; margin: 24px 0 12px 0;">
+              <p style="margin: 0; font-size: 13.5px; color: #166534; line-height: 1.5;">
+                💡 <strong>Pro Tip:</strong> Bookmark helpful discussions to revisit later from your student dashboard, and follow threads to receive alerts when answers are posted.
+              </p>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px 20px; text-align: center; color: #64748b; font-size: 12.5px; line-height: 1.6;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #334155;">
+              Preptio — The Smarter Way to Prepare for CA Exams
+            </p>
+            <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+              You received this announcement because you have an active account on Preptio.
+              <br />
+              <a href="https://preptio.com/community" style="color: #059669; text-decoration: underline;">Visit Community</a> •
+              <a href="https://preptio.com/dashboard" style="color: #059669; text-decoration: underline;">Student Dashboard</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`,
   status: 'active' as const,
 }
 
