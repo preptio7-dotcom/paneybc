@@ -6,7 +6,7 @@ import { canParticipate, communityLimit } from '@/lib/community-server'
 import { communityText, pagination } from '@/lib/community-input'
 import { NextRequest, NextResponse } from 'next/server'
 
-const authorSelect = { id: true, name: true, avatar: true } as const
+const authorSelect = { id: true, name: true, avatar: true, email: true } as const
 
 export async function GET(request: NextRequest, context: { params: Promise<{ threadId: string }> }) {
   try {
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ thr
         id: c.id, parentCommentId: c.parentCommentId, createdAt: c.createdAt, editedAt: c.deleted ? null : c.editedAt, deleted: c.deleted,
         body: c.deleted ? '' : c.body,
         isAnonymous: c.deleted ? false : c.isAnonymous,
-        author: c.deleted ? null : (c.isAnonymous ? { id: 'anonymous', name: 'Anonymous', avatar: null } : c.author),
+        author: c.deleted ? null : (c.isAnonymous ? { id: 'anonymous', name: 'Anonymous', avatar: null } : (isMod || viewerId === c.authorId ? c.author : { id: c.author.id, name: c.author.name, avatar: c.author.avatar })),
         realAuthor: c.deleted ? null : (c.isAnonymous && (isMod || viewerId === c.authorId) ? c.author : null),
         isOwner: !c.deleted && Boolean(viewerId && viewerId === c.authorId),
         score: c.deleted ? 0 : scores.get(c.id) || 0, viewerVote: c.deleted ? 0 : votes.get(c.id) || 0,

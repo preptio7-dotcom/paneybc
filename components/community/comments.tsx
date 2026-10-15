@@ -116,7 +116,15 @@ function CommentBranch({ comment, childrenByParent, authorId, depth = 0, locked,
         {comment.isAnonymous && !comment.deleted && <EyeOff size={11} className="inline ml-1 text-slate-400" aria-label="Anonymous" />}
       </span>
       {!comment.isAnonymous && comment.author?.id === authorId && <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-800">OP</span>}
-      {revealAuthor && <span className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"><ShieldAlert size={10} />{revealAuthor.name}</span>}
+      {revealAuthor && (
+        <span
+          className="flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200/80"
+          title={`Anonymous commenter email: ${revealAuthor.email || 'N/A'} (Name: ${revealAuthor.name})`}
+        >
+          <ShieldAlert size={10} className="shrink-0 text-amber-700" />
+          <span className="max-w-[180px] truncate">{revealAuthor.email || revealAuthor.name}</span>
+        </span>
+      )}
       <time dateTime={comment.createdAt} title={new Date(comment.createdAt).toLocaleString()} className="shrink-0 text-slate-500">{timeAgo(comment.createdAt)}</time>
     </div>
     {!comment.deleted && acceptedId === comment.id && <p className="my-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">Accepted answer · selected by the question author</p>}

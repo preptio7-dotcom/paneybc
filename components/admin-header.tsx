@@ -13,6 +13,7 @@ import {
   CreditCard,
   FileText,
   FlaskConical,
+  Hash,
   HelpCircle,
   History,
   Layers,
@@ -67,6 +68,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Blog Analytics', href: '/admin/blog/analytics', icon: BarChart2 },
       { label: 'Questions', href: '/admin/questions', icon: BookOpen },
       { label: 'Subjects', href: '/admin/subjects', icon: Layers },
+      { label: 'Community Subjects', href: '/admin/community-subjects', icon: Hash },
       { label: 'Upload', href: '/admin/upload', icon: Upload },
       { label: 'Financial Statements', href: '/admin/financial-statements', icon: FileText },
       { label: 'FAQ', href: '/admin/faq', icon: HelpCircle },
@@ -125,6 +127,7 @@ const NAV_GROUPS: NavGroup[] = [
 const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin$/, title: 'Admin Dashboard' },
   { match: /^\/admin\/community-reports$/, title: 'Community Moderation Reports' },
+  { match: /^\/admin\/community-subjects$/, title: 'Community Subjects & Tags' },
   { match: /^\/admin\/blog\/new$/, title: 'Create Blog Post' },
   { match: /^\/admin\/blog\/edit\/.+/, title: 'Edit Blog Post' },
   { match: /^\/admin\/blog$/, title: 'Blog Posts' },

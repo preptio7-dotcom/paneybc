@@ -1,5 +1,5 @@
 export type Category = { id: string; name: string; slug: string; description: string | null }
-export type Author = { id: string; name: string; avatar: string | null }
+export type Author = { id: string; name: string; avatar: string | null; email?: string | null }
 export type Thread = {
   postType: import('@/lib/community-options').PostType; solvedAt: string | null; acceptedCommentId: string | null; pinnedAt: string | null; editedAt: string | null; saved: boolean; following: boolean
   id: string; title: string; body: string; createdAt: string; locked: boolean

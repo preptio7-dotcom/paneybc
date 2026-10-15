@@ -18,25 +18,30 @@ export const ANON_AUTHOR = { id: 'anonymous', name: 'Anonymous', avatar: null } 
 
 export const threadInclude = {
   category: { select: { id: true, name: true, slug: true, description: true } },
-  author: { select: { id: true, name: true, avatar: true } },
+  author: { select: { id: true, name: true, avatar: true, email: true } },
   _count: { select: { comments: { where: { deleted: false } } } },
 } as const
 
 /**
  * Resolve the displayed author for a thread/comment.
- * - If not anonymous: return the real author.
- * - If anonymous AND viewer is admin/super_admin: return ANON_AUTHOR but also pass realAuthor.
+ * - If not anonymous: return the real author (without exposing email to regular users).
+ * - If anonymous AND viewer is admin/super_admin: return ANON_AUTHOR but also pass realAuthor with email.
  * - If anonymous AND viewer is regular: return ANON_AUTHOR, no realAuthor.
  */
 export function resolveAuthor(
-  realAuthor: { id: string; name: string; avatar: string | null },
+  realAuthor: { id: string; name: string; avatar: string | null; email?: string | null },
   isAnonymous: boolean,
   viewerRole?: string | null,
   viewerId?: string | null,
 ) {
-  if (!isAnonymous) return { author: realAuthor, realAuthor: null }
   const isMod = viewerRole === 'admin' || viewerRole === 'super_admin'
   const isSelf = Boolean(viewerId && viewerId === realAuthor.id)
+  if (!isAnonymous) {
+    const author = (isMod || isSelf)
+      ? realAuthor
+      : { id: realAuthor.id, name: realAuthor.name, avatar: realAuthor.avatar }
+    return { author, realAuthor: null }
+  }
   return {
     author: ANON_AUTHOR,
     realAuthor: (isMod || isSelf) ? realAuthor : null,
