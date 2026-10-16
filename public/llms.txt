@@ -56,6 +56,7 @@ CA Foundation / ICAP Pakistan
 - Homepage: https://preptio.com
 - About: https://preptio.com/about
 - Subjects: https://preptio.com/subjects
+- Community: https://preptio.com/community
 - Blog: https://preptio.com/blog
 - Contact: https://preptio.com/contact
 
