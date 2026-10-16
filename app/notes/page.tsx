@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/lib/auth-context'
+import { HouseAdBanner } from '@/components/home-ad-banner'
 
 interface Note {
   id?: string
@@ -254,6 +255,8 @@ export default function NotesPage() {
             Flashcards
           </Button>
         </div>
+
+        <HouseAdBanner placement="notes" className="w-full my-4" />
 
         {activeTab === 'notes' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

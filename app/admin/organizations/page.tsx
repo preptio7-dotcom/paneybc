@@ -60,6 +60,7 @@ export default function AdminOrganizationsPage() {
   const [newEmail, setNewEmail] = useState('')
   const [newPlan, setNewPlan] = useState<OrgPlanTier>('starter')
   const [newSeats, setNewSeats] = useState(30)
+  const [newDuration, setNewDuration] = useState(12)
 
   const load = useCallback(
     async (search = '') => {
@@ -102,15 +103,18 @@ export default function AdminOrganizationsPage() {
           contactEmail: newEmail.trim() || null,
           planTier: newPlan,
           maxSeats: newSeats,
+          subscriptionDurationMonths: newDuration,
+          subscriptionActive: true,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to create')
-      toast({ title: 'Created', description: `${newName.trim()} has been created.` })
+      toast({ title: 'Created', description: `${newName.trim()} has been created with active subscription.` })
       setNewName('')
       setNewEmail('')
       setNewPlan('starter')
       setNewSeats(30)
+      setNewDuration(12)
       setShowCreate(false)
       void load()
     } catch (err: any) {
@@ -199,6 +203,21 @@ export default function AdminOrganizationsPage() {
                       id="org-seats-input"
                     />
                   </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-xs font-medium text-slate-600">Subscription Duration</label>
+                    <select
+                      value={newDuration}
+                      onChange={(e) => setNewDuration(parseInt(e.target.value))}
+                      className="h-10 w-full rounded-md border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                    >
+                      <option value={1}>1 Month</option>
+                      <option value={3}>3 Months</option>
+                      <option value={6}>6 Months</option>
+                      <option value={12}>1 Year (Default)</option>
+                      <option value={24}>2 Years</option>
+                      <option value={0}>Lifetime (No Expiry)</option>
+                    </select>
+                  </div>
                 </div>
                 <Button
                   onClick={handleCreate}
@@ -245,6 +264,8 @@ export default function AdminOrganizationsPage() {
                     const used = org.memberCount
                     const limit = org.subscription?.seats ?? org.maxSeats
                     const utilPct = limit > 0 ? Math.round((used / limit) * 100) : 0
+                    const sub = org.subscription
+                    const isSubExpired = sub?.validUntil && new Date(sub.validUntil).getTime() < Date.now()
                     return (
                       <Link
                         key={org.id}
@@ -259,15 +280,32 @@ export default function AdminOrganizationsPage() {
                             >
                               {PLAN_LABELS[tier]}
                             </span>
-                            {!org.isActive && (
+                            {!org.isActive ? (
                               <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
                                 Inactive
+                              </span>
+                            ) : !sub ? (
+                              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                No Subscription
+                              </span>
+                            ) : !sub.isActive ? (
+                              <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                                Sub Inactive
+                              </span>
+                            ) : isSubExpired ? (
+                              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                                Sub Expired
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                Sub Active
                               </span>
                             )}
                           </div>
                           <p className="text-xs text-slate-500">
                             {used}/{limit} seats used ({utilPct}%)
                             {org.contactEmail ? ` · ${org.contactEmail}` : ''}
+                            {sub?.validUntil ? ` · Expires ${new Date(sub.validUntil).toLocaleDateString()}` : sub ? ' · Lifetime' : ''}
                           </p>
                         </div>
                         <div className="flex items-center gap-1 text-slate-400">

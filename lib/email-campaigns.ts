@@ -1,6 +1,34 @@
 import { prisma } from '@/lib/prisma'
 import { sendCampaignEmail } from '@/lib/email'
 
+export const DEFAULT_DAILY_EMAIL_LIMIT = 100
+
+/** Pause between campaign sends, so mail goes out at a steady pace. */
+export function getSendDelayMs(): number {
+  const configured = Number(process.env.CAMPAIGN_SEND_DELAY_MS)
+  return Number.isFinite(configured) && configured >= 0 ? configured : 1500
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export function getDailyEmailLimit(): number {
+  const configured = Number(process.env.CAMPAIGN_DAILY_EMAIL_LIMIT)
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : DEFAULT_DAILY_EMAIL_LIMIT
+}
+
+/** Start of the current UTC day. The daily quota resets here. */
+export function startOfTodayUtc(now = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+}
+
+/** True when the SMTP server is refusing mail for rate or quota reasons. */
+export function isSmtpRateLimitError(err: any): boolean {
+  const code = Number(err?.responseCode ?? err?.code)
+  if ([421, 450, 451, 452, 454].includes(code)) return true
+  const text = String(err?.response || err?.message || '')
+  return /rate|limit|quota|too many|daily|exceeded/i.test(text)
+}
+
 type ScheduleRecord = {
   id: string
   templateId: string
@@ -12,7 +40,7 @@ type ScheduleRecord = {
   examDaysBefore: number
 }
 
-async function resolveRecipients(schedule: ScheduleRecord): Promise<Array<{ email: string; name?: string | null }>> {
+export async function resolveRecipients(schedule: ScheduleRecord): Promise<Array<{ email: string; name?: string | null }>> {
   const now = new Date()
   const segment = schedule.segment
 
@@ -87,89 +115,151 @@ async function resolveRecipients(schedule: ScheduleRecord): Promise<Array<{ emai
   return []
 }
 
+/**
+ * Runs due campaigns. The audience is snapshotted into email_campaign_recipients
+ * the first time a campaign runs, so every recipient has a row with a status.
+ * Sending stops at the daily cap (CAMPAIGN_DAILY_EMAIL_LIMIT, default 100) or
+ * when SMTP reports a rate limit. Unsent rows stay pending and are picked up
+ * on the next run. A campaign is marked sent only when no pending rows remain.
+ */
 export async function processEmailSchedules(options: { scheduleId?: string; sendNow?: boolean } = {}) {
   const now = new Date()
-  const query: { status: 'scheduled'; id?: string; sendAt?: { lte: Date } } = { status: 'scheduled' }
+  const dailyLimit = getDailyEmailLimit()
 
-  if (options.scheduleId) {
-    query.id = options.scheduleId
-  } else {
-    query.sendAt = { lte: now }
-  }
+  const dueFilter = options.scheduleId
+    ? { id: options.scheduleId, status: { in: ['scheduled', 'in_progress'] as const } }
+    : {
+        OR: [
+          { status: 'scheduled' as const, sendAt: { lte: now } },
+          { status: 'in_progress' as const },
+        ],
+      }
 
-  const schedules = await prisma.emailSchedule.findMany({ where: query })
+  const schedules = await prisma.emailSchedule.findMany({ where: dueFilter })
   if (schedules.length === 0) {
-    return { sent: 0, failed: 0, processed: 0, message: options.scheduleId ? 'Schedule not found or already sent' : 'No schedules due' }
+    return {
+      sent: 0,
+      failed: 0,
+      processed: 0,
+      message: options.scheduleId ? 'Schedule not found or already sent' : 'No schedules due',
+    }
   }
 
+  let quotaLeft = Math.max(0, dailyLimit - (await prisma.emailCampaignRecipient.count({
+    where: { status: 'sent', sentAt: { gte: startOfTodayUtc(now) } },
+  })))
+  let stoppedByRateLimit = false
   let totalSent = 0
   let totalFailed = 0
+  const summaries: Array<{ scheduleId: string; sentThisRun: number; remaining: number; status: string }> = []
 
   for (const schedule of schedules) {
     const template = await prisma.emailTemplate.findUnique({ where: { id: schedule.templateId } })
     if (!template) {
-      await prisma.emailSchedule.update({
-        where: { id: schedule.id },
-        data: { lastError: 'Template not found' },
-      })
+      await prisma.emailSchedule.update({ where: { id: schedule.id }, data: { lastError: 'Template not found' } })
       totalFailed += 1
       continue
     }
 
-    if (options.sendNow) {
-      await prisma.emailSchedule.update({
-        where: { id: schedule.id },
-        data: { sendAt: now },
-      })
+    if (options.sendNow && schedule.status === 'scheduled') {
+      await prisma.emailSchedule.update({ where: { id: schedule.id }, data: { sendAt: now } })
     }
 
-    const recipients = await resolveRecipients(schedule)
-    let sentCount = 0
+    // First run: snapshot the audience into per-recipient rows.
+    const existing = await prisma.emailCampaignRecipient.count({ where: { scheduleId: schedule.id } })
+    if (existing === 0) {
+      const recipients = await resolveRecipients(schedule)
+      if (recipients.length === 0) {
+        await prisma.emailSchedule.update({
+          where: { id: schedule.id },
+          data: { lastError: 'No recipients matched this audience' },
+        })
+        totalFailed += 1
+        continue
+      }
+      await prisma.emailCampaignRecipient.createMany({
+        data: recipients
+          .filter((r) => r.email)
+          .map((r) => ({ scheduleId: schedule.id, email: r.email.trim().toLowerCase(), name: r.name ?? null })),
+        skipDuplicates: true,
+      })
+      await prisma.emailSchedule.update({ where: { id: schedule.id }, data: { status: 'in_progress' } })
+    } else if (schedule.status === 'scheduled') {
+      await prisma.emailSchedule.update({ where: { id: schedule.id }, data: { status: 'in_progress' } })
+    }
+
+    let sentThisRun = 0
     const errors: string[] = []
 
-    if (recipients.length === 0) {
-      await prisma.emailSchedule.update({
-        where: { id: schedule.id },
-        data: { lastError: 'No recipients matched this audience' },
+    if (quotaLeft > 0 && !stoppedByRateLimit) {
+      const batch = await prisma.emailCampaignRecipient.findMany({
+        where: { scheduleId: schedule.id, status: 'pending' },
+        orderBy: { createdAt: 'asc' },
+        take: quotaLeft,
       })
-      totalFailed += 1
-      continue
-    }
 
-    for (const recipient of recipients) {
-      if (!recipient.email) continue
-      try {
-        await sendCampaignEmail(recipient.email, template.subject, template.body)
-        sentCount += 1
-      } catch (err: any) {
-        console.error(`Failed to send campaign email to ${recipient.email}:`, err?.message || err)
-        errors.push(`${recipient.email}: ${err?.message || 'Send failed'}`)
+      for (const recipient of batch) {
+        try {
+          await sendCampaignEmail(recipient.email, template.subject, template.body)
+          await prisma.emailCampaignRecipient.update({
+            where: { id: recipient.id },
+            data: { status: 'sent', sentAt: new Date(), attempts: { increment: 1 }, lastError: null },
+          })
+          sentThisRun += 1
+          quotaLeft -= 1
+          await sleep(getSendDelayMs())
+        } catch (err: any) {
+          const message = err?.message || 'Send failed'
+          if (isSmtpRateLimitError(err)) {
+            // Leave this recipient pending and stop sending until the next run.
+            stoppedByRateLimit = true
+            errors.push(`SMTP rate limit reached: ${message}`)
+            break
+          }
+          console.error(`Failed to send campaign email to ${recipient.email}:`, message)
+          await prisma.emailCampaignRecipient.update({
+            where: { id: recipient.id },
+            data: { status: 'failed', attempts: { increment: 1 }, lastError: message.slice(0, 500) },
+          })
+          totalFailed += 1
+          errors.push(`${recipient.email}: ${message}`)
+        }
       }
     }
 
-    totalSent += sentCount
-    totalFailed += errors.length
+    totalSent += sentThisRun
 
-    if (sentCount === 0) {
-      await prisma.emailSchedule.update({
-        where: { id: schedule.id },
-        data: {
-          lastError: errors.length > 0 ? errors.slice(0, 5).join('; ') : 'No emails were delivered',
-        },
-      })
-      continue
-    }
+    const [sentTotal, remaining] = await Promise.all([
+      prisma.emailCampaignRecipient.count({ where: { scheduleId: schedule.id, status: 'sent' } }),
+      prisma.emailCampaignRecipient.count({ where: { scheduleId: schedule.id, status: 'pending' } }),
+    ])
 
+    const done = remaining === 0
     await prisma.emailSchedule.update({
       where: { id: schedule.id },
       data: {
-        status: 'sent',
-        sentAt: new Date(),
-        sentCount,
-        lastError: errors.length > 0 ? errors.slice(0, 5).join('; ') : null,
+        status: done ? 'sent' : 'in_progress',
+        sentAt: done ? new Date() : null,
+        sentCount: sentTotal,
+        lastError: errors.length > 0 ? errors.slice(0, 3).join('; ') : null,
       },
+    })
+
+    summaries.push({
+      scheduleId: schedule.id,
+      sentThisRun,
+      remaining,
+      status: done ? 'sent' : 'in_progress',
     })
   }
 
-  return { sent: totalSent, failed: totalFailed, processed: schedules.length }
+  return {
+    sent: totalSent,
+    failed: totalFailed,
+    processed: schedules.length,
+    dailyLimit,
+    quotaLeftToday: quotaLeft,
+    stoppedByRateLimit,
+    campaigns: summaries,
+  }
 }

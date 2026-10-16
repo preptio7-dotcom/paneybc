@@ -30,11 +30,12 @@ export async function GET(request: NextRequest) {
     const ranking = sort === 'new' ? Prisma.sql`t.created_at DESC` : sort === 'top'
       ? Prisma.sql`COALESCE(v.score, 0) DESC`
       : Prisma.sql`(CASE WHEN COALESCE(v.score, 0) > 0 THEN v.score / POWER(GREATEST(EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 3600, 1) + 2, 0.8) ELSE COALESCE(v.score, 0) END) DESC`
+    const isModerator = ['admin', 'super_admin'].includes(getCurrentUser(request)?.role || '')
     const rows = await prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
       SELECT t.id FROM community_threads t
       JOIN community_categories c ON c.id = t.category_id
       LEFT JOIN (SELECT target_id, SUM(value)::double precision AS score FROM community_votes WHERE target_type = 'thread' GROUP BY target_id) v ON v.target_id = t.id
-      WHERE t.deleted = false ${category ? Prisma.sql`AND c.slug = ${category}` : Prisma.empty}
+      WHERE t.deleted = false ${isModerator ? Prisma.empty : Prisma.sql`AND c.is_hidden = false`} ${category ? Prisma.sql`AND c.slug = ${category}` : Prisma.empty}
       ${q ? Prisma.sql`AND to_tsvector('simple', t.title || ' ' || t.body) @@ websearch_to_tsquery('simple', ${q})` : Prisma.empty}
       ${postType ? Prisma.sql`AND t.post_type::text = ${postType}` : Prisma.empty}
       ${status === 'unanswered' ? Prisma.sql`AND t.post_type = 'question' AND t.solved_at IS NULL` : status === 'solved' ? Prisma.sql`AND t.post_type = 'question' AND t.solved_at IS NOT NULL` : Prisma.empty}

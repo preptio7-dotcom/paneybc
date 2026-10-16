@@ -39,18 +39,13 @@ export function isResultRoute(pathname: string) {
 }
 
 export function getRouteAdRestrictionReason(pathname: string): string | null {
-  const isHomePage = pathname === '/'
-  const isBlogPage = pathname === '/blog' || pathname.startsWith('/blog/')
-
-  if (isHomePage || isBlogPage) {
-    return null // Eligible
-  }
-
-  if (pathname.startsWith('/admin') || pathname.startsWith('/sKy9108-3~620_admin')) {
+  // Routes where ads are strictly blocked (admin, institute portal, auth, or active exam sessions)
+  if (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/sKy9108-3~620_admin') ||
+    pathname.startsWith('/org')
+  ) {
     return 'admin-area'
-  }
-  if (pathname.startsWith('/dashboard')) {
-    return 'dashboard-area'
   }
   if (isAuthRoute(pathname)) {
     return 'auth-page'
@@ -58,8 +53,25 @@ export function getRouteAdRestrictionReason(pathname: string): string | null {
   if (isAssessmentRoute(pathname)) {
     return 'active-test-session'
   }
-  if (isResultRoute(pathname)) {
-    return 'results-page'
+
+  // Eligible user-facing content & portal pages
+  const isEligible =
+    pathname === '/' ||
+    pathname === '/dashboard' ||
+    pathname.startsWith('/dashboard/') ||
+    pathname === '/results' ||
+    pathname.startsWith('/results/') ||
+    pathname === '/community' ||
+    pathname.startsWith('/community/') ||
+    pathname === '/blog' ||
+    pathname.startsWith('/blog/') ||
+    pathname === '/notes' ||
+    pathname.startsWith('/notes/') ||
+    pathname === '/practice' ||
+    pathname.startsWith('/practice/')
+
+  if (isEligible) {
+    return null // Eligible for ads
   }
 
   return 'restricted-path'

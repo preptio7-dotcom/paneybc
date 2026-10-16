@@ -1,17 +1,20 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrgForUser, getEffectiveSeats, getOrgMemberCount } from '@/lib/org-access'
+import { gateOrg, getEffectiveSeats, getOrgMemberCount } from '@/lib/org-access'
 
 /**
  * GET /api/org/dashboard
  *
- * Returns a summary of the org for the currently logged-in institute admin or owner.
+ * Summary for the institute owner/admin/member. Loads even when the
+ * subscription has lapsed so the UI can show a renewal notice; the
+ * subscriptionStatus field tells the client what to display.
  */
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await getOrgForUser(request)
-    if (!ctx) return NextResponse.json({ error: 'Not a member of any organization' }, { status: 403 })
+    const gate = await gateOrg(request, { allowLapsed: true })
+    if (!gate.ok) return NextResponse.json({ error: gate.error, code: gate.code }, { status: gate.status })
+    const { ctx } = gate
 
     const seatLimit = getEffectiveSeats(ctx.org)
     const memberCount = await getOrgMemberCount(ctx.orgId)
@@ -19,6 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       orgId: ctx.orgId,
       role: ctx.role,
+      subscriptionStatus: ctx.subscriptionStatus,
       org: {
         id: ctx.org.id,
         name: ctx.org.name,

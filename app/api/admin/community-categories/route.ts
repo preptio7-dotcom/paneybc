@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       description: c.description,
       displayOrder: c.displayOrder,
       threadCount: c._count.threads,
+      isHidden: c.isHidden,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
     }))

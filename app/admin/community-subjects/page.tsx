@@ -41,6 +41,7 @@ import {
 import { toast } from 'sonner'
 
 interface CommunityCategoryItem {
+  isHidden?: boolean
   id: string
   name: string
   slug: string
@@ -85,6 +86,22 @@ export default function AdminCommunitySubjectsPage() {
 
   // Sync state
   const [syncing, setSyncing] = useState(false)
+
+  async function toggleHidden(cat: CommunityCategoryItem) {
+    const next = !cat.isHidden
+    const res = await fetch(`/api/admin/community-categories/${cat.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isHidden: next }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      toast.error(data.error || 'Could not update subject')
+      return
+    }
+    toast.success(next ? `"${cat.name}" is hidden from members.` : `"${cat.name}" is visible again.`)
+    await fetchCategories()
+  }
 
   async function fetchCategories() {
     setLoading(true)
@@ -484,6 +501,15 @@ export default function AdminCommunitySubjectsPage() {
                               title="Edit Subject"
                             >
                               <Pencil size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleHidden(cat)}
+                              className="h-8 px-2 text-xs text-slate-600 hover:text-amber-700"
+                              title={cat.isHidden ? 'Show this subject to members' : 'Hide this subject from members'}
+                            >
+                              {cat.isHidden ? 'Show' : 'Hide'}
                             </Button>
                             <Button
                               variant="ghost"

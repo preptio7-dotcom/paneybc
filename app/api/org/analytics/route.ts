@@ -2,20 +2,19 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireOrgAdmin } from '@/lib/org-access'
+import { gateOrg } from '@/lib/org-access'
 import { buildOrgAnalyticsSummary } from '@/lib/org-analytics'
 
 /**
  * GET /api/org/analytics
  *
- * Lightweight org-wide summary from test results so the institute
- * dashboard loads instead of timing out on per-student deep analytics.
+ * Org-wide summary. Owners and admins only, and only while the subscription is active.
  */
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await requireOrgAdmin(request)
-    if (!ctx)
-      return NextResponse.json({ error: 'Only org owners and admins can view analytics' }, { status: 403 })
+    const gate = await gateOrg(request, { adminOnly: true })
+    if (!gate.ok) return NextResponse.json({ error: gate.error, code: gate.code }, { status: gate.status })
+    const { ctx } = gate
 
     const { searchParams } = new URL(request.url)
     const data = await buildOrgAnalyticsSummary(prisma, ctx.orgId, searchParams.get('range'))

@@ -15,6 +15,7 @@ type OrgPlanTier = 'starter' | 'professional' | 'enterprise'
 type OrgDashboard = {
   orgId: string
   role: string
+  subscriptionStatus?: 'active' | 'expired' | 'inactive' | 'none'
   org: {
     id: string
     name: string
@@ -149,12 +150,19 @@ export default function OrgOverviewPage() {
               <div>
                 <p className="text-sm text-text-light">Status</p>
                 <p className="text-lg font-bold text-text-dark">
-                  {data.org.isActive ? (
+                  {data.subscriptionStatus === 'active' || (data.org.isActive && data.org.subscription?.isActive && (!data.org.subscription.validUntil || new Date(data.org.subscription.validUntil).getTime() > Date.now())) ? (
                     <span className="text-green-600">Active</span>
+                  ) : data.subscriptionStatus === 'expired' || (data.org.subscription?.validUntil && new Date(data.org.subscription.validUntil).getTime() <= Date.now()) ? (
+                    <span className="text-amber-600">Expired</span>
                   ) : (
                     <span className="text-red-500">Inactive</span>
                   )}
                 </p>
+                {data.org.subscription?.validUntil && (
+                  <p className="text-xs text-text-light mt-0.5">
+                    Until {new Date(data.org.subscription.validUntil).toLocaleDateString()}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>

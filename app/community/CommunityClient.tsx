@@ -11,6 +11,7 @@ import { CommunityNotifications } from '@/components/community/notifications'
 import { ThreadCard } from '@/components/community/thread-card'
 import { AuthDialog, Composer, ReportDialog } from '@/components/community/community-dialogs'
 import { communityRequest, type Category, type Target, type Thread } from '@/components/community/types'
+import { HouseAdBanner } from '@/components/home-ad-banner'
 import '@/components/community/community.css'
 
 type Location = FeedFilters & { comment: string; sort: string; category: string; page: number; thread: string }
@@ -158,6 +159,7 @@ export default function CommunityClient() {
           </div>
         </div>
         <aside aria-label="Community information" className="space-y-4 lg:sticky lg:top-24">
+          <HouseAdBanner placement="community" variant="card" className="w-full" />
           <section className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-700 text-white"><BookOpen size={22} /></div><h2 className="text-base font-bold">{subject ? subject.name : 'A little help goes a long way.'}</h2><p className="mt-2 text-sm leading-relaxed text-slate-600">{subject?.description || 'A space for questions, useful explanations, and the small wins that make studying together better.'}</p>
             {!authLoading && !user && <div className="mt-4 border-t border-emerald-200/70 pt-4"><h3 className="mb-2 text-sm font-bold">Start a discussion</h3><p className="text-sm leading-relaxed"><Link className="font-semibold text-emerald-800 underline" href={authHref('login', destination)}>Log in</Link> to create threads, comment, and vote.</p><p className="mt-2 text-xs">New here? <Link className="font-semibold text-emerald-800 underline" href={authHref('signup', destination)}>Sign up for free</Link></p></div>}
           </section>

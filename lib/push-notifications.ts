@@ -1,69 +1,76 @@
 import webpush from 'web-push'
 import { prisma } from '@/lib/prisma'
 
-// VAPID keys should ideally be in env
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || ''
+// VAPID configuration is read lazily. Reading env vars and calling
+// setVapidDetails at module load made `next build` crash whenever the keys
+// were absent at build time (page-data collection imports every route).
+let vapidConfigured = false
 
-webpush.setVapidDetails(
-    'mailto:support@preptio.com',
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-)
+function getWebPush(): typeof webpush | null {
+  if (vapidConfigured) return webpush
 
-export async function broadcastBackOnline() {
-    const subscriptions = await prisma.pushSubscription.findMany()
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()
+  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim()
+  if (!publicKey || !privateKey) {
+    console.warn('[push] VAPID keys are not configured; push notifications are skipped')
+    return null
+  }
 
-    const notificationPayload = JSON.stringify({
-        title: 'Platform is Back Online! 🚀',
-        body: 'Maintenance is complete. You can now resume your studies and timed exams.',
-        icon: '/web-app-manifest-512x512.png',
-        badge: '/web-app-manifest-512x512.png',
-        url: '/dashboard'
-    })
-
-    const sendPromises = subscriptions.map(sub => {
-        return webpush.sendNotification(sub.subscription as any, notificationPayload)
-            .catch((err: any) => {
-                if (err.statusCode === 404 || err.statusCode === 410) {
-                    // Subscription has expired or is no longer valid
-                    return prisma.pushSubscription.delete({ where: { id: sub.id } })
-                }
-                console.error('Push error:', err)
-            })
-    })
-
-    await Promise.all(sendPromises)
-
-    // Optional: Clear subscriptions after broadcast since it's a one-time event
-    // await PushSubscription.deleteMany({})
+  webpush.setVapidDetails('mailto:support@preptio.com', publicKey, privateKey)
+  vapidConfigured = true
+  return webpush
 }
 
-export async function sendReviewDuePush(params: {
-    userId: string
-    dueCount: number
-}) {
-    const subscriptions = await prisma.pushSubscription.findMany({ where: { userId: params.userId } })
+export async function broadcastBackOnline() {
+  const client = getWebPush()
+  if (!client) return
 
-    if (subscriptions.length === 0) return
+  const subscriptions = await prisma.pushSubscription.findMany()
 
-    const notificationPayload = JSON.stringify({
-        title: 'Review Due ⏳',
-        body: `You have ${params.dueCount} questions ready for spaced repetition.`,
-        icon: '/web-app-manifest-512x512.png',
-        badge: '/web-app-manifest-512x512.png',
-        url: '/review'
+  const notificationPayload = JSON.stringify({
+    title: 'Platform is Back Online! 🚀',
+    body: 'Maintenance is complete. You can now resume your studies and timed exams.',
+    icon: '/web-app-manifest-512x512.png',
+    badge: '/web-app-manifest-512x512.png',
+    url: '/dashboard',
+  })
+
+  const sendPromises = subscriptions.map((sub) =>
+    client.sendNotification(sub.subscription as any, notificationPayload).catch((err: any) => {
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        // Subscription has expired or is no longer valid
+        return prisma.pushSubscription.delete({ where: { id: sub.id } })
+      }
+      console.error('Push error:', err)
     })
+  )
 
-    const sendPromises = subscriptions.map(sub => {
-        return webpush.sendNotification(sub.subscription as any, notificationPayload)
-            .catch((err: any) => {
-                if (err.statusCode === 404 || err.statusCode === 410) {
-                    return prisma.pushSubscription.delete({ where: { id: sub.id } })
-                }
-                console.error('Push error:', err)
-            })
+  await Promise.all(sendPromises)
+}
+
+export async function sendReviewDuePush(params: { userId: string; dueCount: number }) {
+  const client = getWebPush()
+  if (!client) return
+
+  const subscriptions = await prisma.pushSubscription.findMany({ where: { userId: params.userId } })
+  if (subscriptions.length === 0) return
+
+  const notificationPayload = JSON.stringify({
+    title: 'Review Due ⏳',
+    body: `You have ${params.dueCount} questions ready for spaced repetition.`,
+    icon: '/web-app-manifest-512x512.png',
+    badge: '/web-app-manifest-512x512.png',
+    url: '/review',
+  })
+
+  const sendPromises = subscriptions.map((sub) =>
+    client.sendNotification(sub.subscription as any, notificationPayload).catch((err: any) => {
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        return prisma.pushSubscription.delete({ where: { id: sub.id } })
+      }
+      console.error('Push error:', err)
     })
+  )
 
-    await Promise.all(sendPromises)
+  await Promise.all(sendPromises)
 }

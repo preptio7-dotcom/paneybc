@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { InvitesPanel } from './invites-panel'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 
 type Member = {
+  consentedAt?: string | null
   id: string
   role: string
   joinedAt: string
@@ -140,45 +142,10 @@ export default function OrgMembersPage() {
             Members
           </h2>
           <p className="text-sm text-text-light">
-            {members.length} member{members.length !== 1 ? 's' : ''} · {orgInfo?.seats.available ?? 0} seats available
+            {members.length} member{members.length !== 1 ? 's' : ''} · {orgInfo?.seats.available ?? 0} seats available · {members.filter((m) => m.consentedAt).length} of {members.length} consented
           </p>
         </div>
-        {isPrivileged && (
-          <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
-            {showAdd ? <X size={14} className="mr-1.5" /> : <Plus size={14} className="mr-1.5" />}
-            {showAdd ? 'Cancel' : 'Add Member'}
-          </Button>
-        )}
       </div>
-
-      {/* Add member form */}
-      {showAdd && isPrivileged && (
-        <Card className="border-border-light shadow-sm">
-          <CardContent className="pt-6 space-y-3">
-            <h4 className="text-sm font-semibold text-text-dark">Add a member by email</h4>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                type="email"
-                placeholder="user@example.com"
-                value={addEmail}
-                onChange={(e) => setAddEmail(e.target.value)}
-                className="flex-1"
-              />
-              <select
-                value={addRole}
-                onChange={(e) => setAddRole(e.target.value as 'member' | 'admin')}
-                className="h-10 rounded-md border border-border-light bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
-              >
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
-              </select>
-              <Button size="sm" onClick={handleAdd} disabled={isAdding || !addEmail.trim()}>
-                {isAdding ? <Loader2 size={14} className="animate-spin" /> : 'Add'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Search */}
       <div className="flex items-center gap-2">
@@ -192,6 +159,8 @@ export default function OrgMembersPage() {
           />
         </div>
       </div>
+
+      {isPrivileged && <InvitesPanel />}
 
       {/* Members list */}
       {filtered.length === 0 ? (
@@ -245,6 +214,16 @@ export default function OrgMembersPage() {
                 >
                   {(m.role === 'admin' || m.role === 'owner') && <Crown size={10} />}
                   {m.role}
+                </span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                    m.consentedAt
+                      ? 'bg-green-50 text-green-700 border-green-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}
+                  title={m.consentedAt ? `Agreed on ${new Date(m.consentedAt).toLocaleDateString()}` : 'Has not agreed to share results yet'}
+                >
+                  {m.consentedAt ? 'Consented' : 'No consent'}
                 </span>
                 {isPrivileged && (
                   <button

@@ -2,41 +2,33 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireOrgAdmin } from '@/lib/org-access'
-import { buildDeepPerformanceAnalytics, parseAnalyticsRangeKey } from '@/lib/deep-analytics'
+import { gateOrg } from '@/lib/org-access'
+import { buildInstituteStudentAnalytics } from '@/lib/org-analytics'
 
 type Params = { params: Promise<{ studentId: string }> }
 
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const ctx = await requireOrgAdmin(request)
-    if (!ctx) {
-      return NextResponse.json({ error: 'Only org owners and admins can view analytics' }, { status: 403 })
-    }
+    const gate = await gateOrg(request, { adminOnly: true })
+    if (!gate.ok) return NextResponse.json({ error: gate.error, code: gate.code }, { status: gate.status })
+    const { ctx } = gate
 
     const { studentId } = await params
-    const membership = await prisma.organizationMembership.findFirst({
-      where: { orgId: ctx.orgId, userId: studentId },
-      select: {
-        user: { select: { id: true, name: true, email: true, studentRole: true } },
-      },
-    })
+    const { searchParams } = new URL(request.url)
+    const data = await buildInstituteStudentAnalytics(prisma, ctx.orgId, studentId, searchParams.get('range'))
 
-    if (!membership) {
-      return NextResponse.json({ error: 'Student is not a member of this organization' }, { status: 404 })
+    if ('error' in data) {
+      if (data.error === 'NOT_MEMBER') {
+        return NextResponse.json({ error: 'Student is not a member of this organization' }, { status: 404 })
+      }
+      return NextResponse.json(
+        { error: 'This student has not agreed to share their results', code: 'NO_CONSENT' },
+        { status: 403 }
+      )
     }
 
-    const { searchParams } = new URL(request.url)
-    const range = parseAnalyticsRangeKey(searchParams.get('range'))
-    const analytics = await buildDeepPerformanceAnalytics(prisma, studentId, range)
-
     return NextResponse.json(
-      {
-        org: { id: ctx.org.id, name: ctx.org.name },
-        student: membership.user,
-        range,
-        analytics: analytics.payload,
-      },
+      { org: { id: ctx.org.id, name: ctx.org.name }, ...data },
       { headers: { 'Cache-Control': 'private, no-store' } }
     )
   } catch (err) {

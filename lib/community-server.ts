@@ -51,7 +51,16 @@ export function resolveAuthor(
 export async function threadResults(ids: string[], viewerId?: string, viewerRole?: string | null) {
   if (!ids.length) return []
   const [threads, totals, mine, bookmarks, follows] = await Promise.all([
-    prisma.communityThread.findMany({ where: { id: { in: ids }, deleted: false }, include: threadInclude }),
+    prisma.communityThread.findMany({
+      where: {
+        id: { in: ids },
+        deleted: false,
+        ...(viewerRole === 'admin' || viewerRole === 'super_admin'
+          ? {}
+          : { OR: [{ category: { isHidden: false } }, ...(viewerId ? [{ authorId: viewerId }] : [])] }),
+      },
+      include: threadInclude,
+    }),
     prisma.communityVote.groupBy({ by: ['targetId'], where: { targetType: 'thread', targetId: { in: ids } }, _sum: { value: true } }),
     viewerId ? prisma.communityVote.findMany({ where: { userId: viewerId, targetType: 'thread', targetId: { in: ids } }, select: { targetId: true, value: true } }) : [],
     viewerId ? prisma.communityBookmark.findMany({ where: { userId: viewerId, threadId: { in: ids } }, select: { threadId: true } }) : [],

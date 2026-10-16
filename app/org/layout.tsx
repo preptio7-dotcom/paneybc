@@ -22,13 +22,28 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [hasOrg, setHasOrg] = useState<boolean | null>(null)
 
+  // Public invite acceptance routes must not be gated by institute membership checks or sub-nav
+  const isInviteRoute = pathname?.startsWith('/org/invite')
+
   useEffect(() => {
+    if (isInviteRoute) return
     fetch('/api/org/dashboard', { cache: 'no-store' })
       .then((r) => {
         setHasOrg(r.ok)
       })
       .catch(() => setHasOrg(false))
-  }, [])
+  }, [isInviteRoute])
+
+  if (isInviteRoute) {
+    return (
+      <>
+        <Navigation />
+        <div className="min-h-screen bg-background-light pt-20 pb-16">
+          {children}
+        </div>
+      </>
+    )
+  }
 
   if (hasOrg === null) {
     return (

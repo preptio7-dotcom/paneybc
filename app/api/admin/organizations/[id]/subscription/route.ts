@@ -67,10 +67,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       },
     })
 
-    // Sync maxSeats on org to match subscription seats
+    // Sync maxSeats, planTier, and isActive on org
     await prisma.organization.update({
       where: { id },
-      data: { maxSeats: seats, planTier },
+      data: {
+        maxSeats: seats,
+        planTier,
+        ...(isActive ? { isActive: true } : {}),
+      },
     })
 
     return NextResponse.json({ subscription })

@@ -7,16 +7,29 @@ const smtpHost = process.env.SMTP_HOST
 const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined
 const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
 
+// Pooled transport: one authenticated SMTP connection is reused for many
+// messages. Without pooling, every sendMail logs in again, and providers such
+// as Gmail answer with "454 Too many login attempts" after a few dozen sends.
+const SMTP_POOL_OPTIONS = {
+  pool: true,
+  maxConnections: 1,
+  maxMessages: 50,
+  rateDelta: 60_000,
+  rateLimit: 20,
+}
+
 const transporter = smtpHost
   ? nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort || (smtpSecure ? 465 : 587),
       secure: smtpSecure,
       auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+      ...SMTP_POOL_OPTIONS,
     })
   : nodemailer.createTransport({
       service: 'gmail',
       auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+      ...SMTP_POOL_OPTIONS,
     })
 
 export async function sendOTPEmail(email: string, code: string) {
@@ -539,5 +552,32 @@ export async function sendSecurityAlertEmail(email: string, name?: string) {
     `,
   }
 
+  return transporter.sendMail(mailOptions)
+}
+
+export async function sendOrgInviteEmail(
+  email: string,
+  payload: { orgName: string; role: string; acceptUrl: string; expiresInDays: number }
+) {
+  const esc = (v: string) =>
+    v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const mailOptions = {
+    from: 'Preptio <support@preptio.com>',
+    to: email,
+    subject: `You're invited to join ${payload.orgName} on Preptio`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px; color: #1e293b;">
+        <h2 style="color: #16a34a; margin-top: 0;">You're invited</h2>
+        <p><strong>${esc(payload.orgName)}</strong> has invited you to join Preptio as ${esc(payload.role)}.</p>
+        <p>If you accept, the institute will be able to see your practice results from the day you join. You can review what is shared and decline on the next page.</p>
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${esc(payload.acceptUrl)}" style="background: #16a34a; color: #fff; padding: 12px 22px; border-radius: 8px; text-decoration: none; font-weight: bold;">Review invitation</a>
+        </div>
+        <p style="font-size: 14px; color: #64748b;">This invitation expires in ${payload.expiresInDays} days. Sign in with this email address to accept it.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center;">Preptio &copy; ${new Date().getFullYear()}</p>
+      </div>
+    `,
+  }
   return transporter.sendMail(mailOptions)
 }

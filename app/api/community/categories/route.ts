@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   try {
     const categories = await prisma.communityCategory.findMany({
+      where: { isHidden: false },
       orderBy: { displayOrder: 'asc' },
       select: {
         id: true,

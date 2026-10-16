@@ -75,6 +75,13 @@ export async function PATCH(
       }
     }
 
+    if (body.isHidden !== undefined) {
+      if (typeof body.isHidden !== 'boolean') {
+        return NextResponse.json({ error: 'isHidden must be true or false.' }, { status: 400 })
+      }
+      updateData.isHidden = body.isHidden
+    }
+
     const updated = await prisma.communityCategory.update({
       where: { id },
       data: updateData,

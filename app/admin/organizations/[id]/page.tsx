@@ -9,13 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import {
+  AlertCircle,
   ArrowLeft,
   Building2,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  CreditCard,
   Crown,
   Loader2,
   Mail,
   Plus,
+  RefreshCw,
   Save,
+  ShieldCheck,
+  Sparkles,
   Trash2,
   Users,
   X,
@@ -33,10 +41,13 @@ type OrgDetail = {
   contactEmail: string | null
   memberCount: number
   subscription: {
+    id: string
     planTier: OrgPlanTier
     seats: number
     isActive: boolean
+    validFrom: string
     validUntil: string | null
+    notes: string | null
   } | null
   createdAt: string
   updatedAt: string
@@ -74,13 +85,22 @@ export default function OrgDetailPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isSavingSub, setIsSavingSub] = useState(false)
 
-  // Editable fields
+  // Editable organization fields
   const [editName, setEditName] = useState('')
   const [editEmail, setEditEmail] = useState('')
   const [editSeats, setEditSeats] = useState(30)
   const [editPlan, setEditPlan] = useState<OrgPlanTier>('starter')
   const [editActive, setEditActive] = useState(true)
+
+  // Editable subscription fields
+  const [subActive, setSubActive] = useState(true)
+  const [subPlan, setSubPlan] = useState<OrgPlanTier>('starter')
+  const [subSeats, setSubSeats] = useState(30)
+  const [subValidFrom, setSubValidFrom] = useState('')
+  const [subValidUntil, setSubValidUntil] = useState('')
+  const [subNotes, setSubNotes] = useState('')
 
   // Add member
   const [showAddMember, setShowAddMember] = useState(false)
@@ -102,6 +122,33 @@ export default function OrgDetailPage() {
       setEditSeats(o.maxSeats)
       setEditPlan(o.planTier)
       setEditActive(o.isActive)
+
+      if (o.subscription) {
+        setSubActive(o.subscription.isActive)
+        setSubPlan(o.subscription.planTier || o.planTier)
+        setSubSeats(o.subscription.seats || o.maxSeats)
+        setSubValidFrom(
+          o.subscription.validFrom
+            ? new Date(o.subscription.validFrom).toISOString().slice(0, 10)
+            : new Date().toISOString().slice(0, 10)
+        )
+        setSubValidUntil(
+          o.subscription.validUntil
+            ? new Date(o.subscription.validUntil).toISOString().slice(0, 10)
+            : ''
+        )
+        setSubNotes(o.subscription.notes || '')
+      } else {
+        // Defaults if no subscription row exists yet
+        setSubActive(o.isActive)
+        setSubPlan(o.planTier)
+        setSubSeats(o.maxSeats)
+        setSubValidFrom(new Date().toISOString().slice(0, 10))
+        const defaultExp = new Date()
+        defaultExp.setFullYear(defaultExp.getFullYear() + 1)
+        setSubValidUntil(defaultExp.toISOString().slice(0, 10))
+        setSubNotes('')
+      }
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
@@ -123,6 +170,18 @@ export default function OrgDetailPage() {
     void loadOrg()
     void loadMembers()
   }, [loadOrg, loadMembers])
+
+  // Helper to quickly apply duration presets to validUntil
+  const applyDurationMonths = (months: number | null) => {
+    if (months === null) {
+      setSubValidUntil('')
+      return
+    }
+    const baseDate = subValidFrom ? new Date(subValidFrom) : new Date()
+    const target = new Date(baseDate)
+    target.setMonth(target.getMonth() + months)
+    setSubValidUntil(target.toISOString().slice(0, 10))
+  }
 
   const handleSave = async () => {
     if (!editName.trim()) {
@@ -150,6 +209,32 @@ export default function OrgDetailPage() {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleSaveSubscription = async () => {
+    try {
+      setIsSavingSub(true)
+      const res = await fetch(`/api/admin/organizations/${id}/subscription`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planTier: subPlan,
+          seats: subSeats,
+          isActive: subActive,
+          validFrom: subValidFrom ? new Date(subValidFrom).toISOString() : new Date().toISOString(),
+          validUntil: subValidUntil ? new Date(subValidUntil).toISOString() : null,
+          notes: subNotes.trim() || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update subscription')
+      toast({ title: 'Subscription Saved', description: 'Organization subscription and validity updated.' })
+      void loadOrg()
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsSavingSub(false)
     }
   }
 
@@ -364,6 +449,256 @@ export default function OrgDetailPage() {
                   <Trash2 size={14} className="mr-1.5" />
                   Delete Organization
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Subscription & Expiry Control Card */}
+          <Card className="border-border-light shadow-sm">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3">
+              <div className="space-y-1">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CreditCard className="text-primary-green" size={20} />
+                  Subscription & Expiry Control
+                </CardTitle>
+                <p className="text-xs text-text-light">
+                  Controls the organization&apos;s active subscription in the database, seat validity, and expiration date.
+                </p>
+              </div>
+
+              {/* Status Badge */}
+              <div className="flex items-center gap-2">
+                {!org.subscription ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-amber-300 bg-amber-50 text-amber-800">
+                    <AlertCircle size={13} /> No DB Record
+                  </span>
+                ) : !subActive ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-red-200 bg-red-50 text-red-700">
+                    <AlertCircle size={13} /> Inactive
+                  </span>
+                ) : subValidUntil && new Date(subValidUntil).getTime() < Date.now() ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-amber-300 bg-amber-50 text-amber-800">
+                    <Clock size={13} /> Expired ({Math.abs(Math.ceil((new Date(subValidUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d ago)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-300 bg-emerald-50 text-emerald-800">
+                    <CheckCircle2 size={13} />
+                    Active {subValidUntil ? `(${Math.ceil((new Date(subValidUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24))}d left)` : '· Lifetime'}
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-5">
+              {/* Active Toggle Switch */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-border-light bg-slate-50/70 p-4">
+                <div className="space-y-0.5">
+                  <label className="text-sm font-semibold text-text-dark flex items-center gap-2">
+                    <ShieldCheck size={16} className={subActive ? 'text-primary-green' : 'text-slate-400'} />
+                    Subscription Active Status
+                  </label>
+                  <p className="text-xs text-text-light">
+                    When active and within validity, the institute portal dashboard unlocks seats and allows student practice.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setSubActive(!subActive)}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                      subActive ? 'bg-primary-green' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${
+                        subActive ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className="text-sm font-medium text-text-dark min-w-[65px]">
+                    {subActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Validity Dates & Presets */}
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-text-dark flex items-center gap-2">
+                  <Calendar size={16} className="text-primary-green" />
+                  Subscription Duration & Expiry
+                </label>
+
+                {/* Quick Presets Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-text-light mr-1">Quick Presets:</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs hover:border-primary-green hover:text-primary-green"
+                    onClick={() => applyDurationMonths(1)}
+                  >
+                    +1 Month
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs hover:border-primary-green hover:text-primary-green"
+                    onClick={() => applyDurationMonths(3)}
+                  >
+                    +3 Months
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs hover:border-primary-green hover:text-primary-green"
+                    onClick={() => applyDurationMonths(6)}
+                  >
+                    +6 Months
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs hover:border-primary-green hover:text-primary-green font-semibold"
+                    onClick={() => applyDurationMonths(12)}
+                  >
+                    +1 Year
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs hover:border-primary-green hover:text-primary-green"
+                    onClick={() => applyDurationMonths(24)}
+                  >
+                    +2 Years
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs hover:border-primary-green hover:text-primary-green"
+                    onClick={() => applyDurationMonths(null)}
+                  >
+                    Lifetime (No Expiry)
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Valid From (Start Date)</label>
+                    <Input
+                      type="date"
+                      value={subValidFrom}
+                      onChange={(e) => setSubValidFrom(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-slate-600">Valid Until (Expiry Date)</label>
+                      {subValidUntil && (
+                        <button
+                          type="button"
+                          onClick={() => setSubValidUntil('')}
+                          className="text-[11px] text-primary-green hover:underline"
+                        >
+                          Clear (No Expiry)
+                        </button>
+                      )}
+                    </div>
+                    <Input
+                      type="date"
+                      value={subValidUntil}
+                      onChange={(e) => setSubValidUntil(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Expiry calculation preview */}
+                <p className="text-xs text-text-light flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-md border border-slate-200">
+                  <Clock size={13} className="text-slate-500 shrink-0" />
+                  {subValidUntil ? (
+                    new Date(subValidUntil).getTime() < Date.now() ? (
+                      <span className="text-red-600 font-medium">
+                        Subscription has expired on {new Date(subValidUntil).toLocaleDateString()}.
+                      </span>
+                    ) : (
+                      <span>
+                        Subscription is valid until <strong>{new Date(subValidUntil).toLocaleDateString()}</strong> (
+                        {Math.ceil((new Date(subValidUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days remaining).
+                      </span>
+                    )
+                  ) : (
+                    <span>No expiration date set. Subscription remains active indefinitely.</span>
+                  )}
+                </p>
+              </div>
+
+              {/* Seats, Plan Tier, and Internal Notes */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-600">Plan Tier</label>
+                  <select
+                    value={subPlan}
+                    onChange={(e) => setSubPlan(e.target.value as OrgPlanTier)}
+                    className="flex h-10 w-full rounded-md border border-border-light bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green/30"
+                  >
+                    <option value="starter">Starter</option>
+                    <option value="professional">Professional</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-600">Subscribed Seats Limit</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={subSeats}
+                    onChange={(e) => setSubSeats(parseInt(e.target.value) || 1)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">Admin Notes / Billing Reference</label>
+                <Input
+                  value={subNotes}
+                  onChange={(e) => setSubNotes(e.target.value)}
+                  placeholder="e.g. Annual contract paid via invoice #1024, contact person: Ali"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Button onClick={handleSaveSubscription} disabled={isSavingSub} size="sm">
+                  {isSavingSub ? (
+                    <Loader2 size={14} className="mr-1.5 animate-spin" />
+                  ) : (
+                    <Save size={14} className="mr-1.5" />
+                  )}
+                  Save Subscription
+                </Button>
+
+                {!org.subscription && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSubActive(true)
+                      applyDurationMonths(12)
+                      void handleSaveSubscription()
+                    }}
+                    disabled={isSavingSub}
+                    className="border-primary-green text-primary-green hover:bg-green-50"
+                  >
+                    <Sparkles size={14} className="mr-1.5" />
+                    One-Click Activate (1 Year)
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
