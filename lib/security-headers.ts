@@ -5,7 +5,6 @@ const BASE_SCRIPT_SOURCES = [
   "'self'",
   "'unsafe-inline'",
   "'unsafe-eval'",
-  'https://www.googletagservices.com',
   'https://www.googletagmanager.com',
   'https://www.google-analytics.com',
   'https://region1.google-analytics.com',

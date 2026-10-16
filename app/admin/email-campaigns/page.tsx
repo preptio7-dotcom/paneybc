@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Sparkles, Users, Mail, CheckCircle2, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Template = {
   _id: string
@@ -23,9 +25,11 @@ type Schedule = {
   name: string
   segment: string
   sendAt: string
-  status: 'scheduled' | 'sent' | 'cancelled'
+  status: 'scheduled' | 'sent' | 'cancelled' | 'failed'
   sentAt?: string
   sentCount?: number
+  lastError?: string | null
+  specificEmails?: string | null
   templateId?: Template
   newWithinDays?: number
   activeWithinDays?: number
@@ -34,20 +38,199 @@ type Schedule = {
 }
 
 const TEMPLATE_CATEGORIES = [
+  { value: 'general', label: 'General Announcement' },
   { value: 'onboarding', label: 'Onboarding' },
   { value: 'engagement', label: 'Engagement' },
   { value: 'reengagement', label: 'Re-engagement' },
   { value: 'exam_prep', label: 'Exam Prep' },
-  { value: 'general', label: 'General' },
 ]
 
 const SEGMENTS = [
+  { value: 'all_users', label: 'All Registered Users' },
+  { value: 'specific_users', label: 'Specific Users / Custom Emails' },
   { value: 'new_users', label: 'New Users' },
   { value: 'active_users', label: 'Active Users' },
   { value: 'inactive_users', label: 'Inactive Users' },
   { value: 'exam_prep', label: 'Exam Prep Window' },
-  { value: 'all_users', label: 'All Users' },
 ]
+
+const DEFAULT_COMMUNITY_TEMPLATE = {
+  name: 'Preptio Community Announcement',
+  category: 'general',
+  subject: 'Introducing Preptio Community: Discuss, Ask & Learn Together! 🚀',
+  body: `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100% !important; min-width: 100%; border-collapse: collapse; margin: 0; padding: 0; background-color: #f1f5f9;">
+  <tr>
+    <td align="center" style="padding: 12px 6px 28px 6px;">
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100% !important; max-width: 660px; margin: 0 auto; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+        <!-- Header Banner -->
+        <tr>
+          <td style="background: linear-gradient(135deg, #047857 0%, #059669 45%, #10b981 100%); padding: 40px 24px 36px 24px; text-align: center; color: #ffffff;">
+            <!-- Brand Badge -->
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 16px auto;">
+              <tr>
+                <td style="background-color: rgba(255, 255, 255, 0.22); border: 1px solid rgba(255, 255, 255, 0.35); padding: 6px 16px; border-radius: 9999px;">
+                  <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #ffffff;">✨ New Feature Launch</span>
+                </td>
+              </tr>
+            </table>
+
+            <h1 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 900; line-height: 1.25; color: #ffffff; letter-spacing: -0.02em;">
+              Welcome to Preptio Community! 🚀
+            </h1>
+            <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #ecfdf5; font-weight: 500; max-width: 480px; margin-left: auto; margin-right: auto;">
+              Discuss tough exam questions, share study notes, and collaborate with CA students across Pakistan.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Main Body Content -->
+        <tr>
+          <td style="padding: 32px 24px; color: #334155; font-size: 15px; line-height: 1.65; background-color: #ffffff;">
+            <p style="margin-top: 0; font-size: 16px; font-weight: 600; color: #0f172a;">
+              Hello Preptio Scholar, 👋
+            </p>
+            <p style="margin-bottom: 24px; color: #475569;">
+              We are excited to introduce the brand new <strong style="color: #047857;">Preptio Student Community</strong> — your central space to ask questions, solve past paper doubts, and prepare smarter alongside peers and mentors.
+            </p>
+
+            <!-- Feature Showcase Cards -->
+            <div style="margin: 28px 0;">
+              <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; border-spacing: 0 12px;">
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            💬
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Ask Questions & Mark Solved</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Post questions on complex topics and mark the verified correct answer.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            🎭
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Anonymous Posting Option</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Hesitant to post? Toggle Anonymous mode anytime to ask questions with peace of mind.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            📸
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Diagrams & Worksheets Upload</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Snap and upload screenshots of financial statements or past papers directly into discussions.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
+                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="36" valign="top" style="padding-right: 12px;">
+                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
+                            🏷️
+                          </div>
+                        </td>
+                        <td valign="top">
+                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Organized by Subjects & Tags</strong>
+                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Filter discussions by Accounting, Law, Tax, Audit, and more to find quick answers.</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Call to Action Button -->
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 32px auto 20px auto;">
+              <tr>
+                <td align="center" style="border-radius: 12px; background-color: #059669; box-shadow: 0 6px 16px -2px rgba(5, 150, 105, 0.4);">
+                  <a href="https://preptio.com/community" target="_blank" style="display: inline-block; font-size: 16px; font-weight: 700; color: #ffffff; text-decoration: none; padding: 16px 36px; border-radius: 12px; border: 1px solid #047857;">
+                    Explore Community Discussions →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Quick Pro Tip -->
+            <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 0 10px 10px 0; padding: 14px 16px; margin: 24px 0 12px 0;">
+              <p style="margin: 0; font-size: 13.5px; color: #166534; line-height: 1.5;">
+                💡 <strong>Pro Tip:</strong> Bookmark helpful discussions to revisit later from your student dashboard, and follow threads to receive alerts when answers are posted.
+              </p>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px 20px; text-align: center; color: #64748b; font-size: 12.5px; line-height: 1.6;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #334155;">
+              Preptio — The Smarter Way to Prepare for CA Exams
+            </p>
+            <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+              You received this announcement because you have an active account on Preptio.
+              <br />
+              <a href="https://preptio.com/community" style="color: #059669; text-decoration: underline;">Visit Community</a> •
+              <a href="https://preptio.com/dashboard" style="color: #059669; text-decoration: underline;">Student Dashboard</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`,
+  status: 'active' as const,
+}
+
+function toLocalDatetimeString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function localDatetimeToIso(localStr: string): string {
+  const value = localStr.length === 16 ? `${localStr}:00` : localStr
+  const localDate = new Date(value)
+  if (Number.isNaN(localDate.getTime())) {
+    throw new Error('Invalid send time')
+  }
+  return localDate.toISOString()
+}
+
+function formatSendAt(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
 
 export default function EmailCampaignsPage() {
   const [templates, setTemplates] = useState<Template[]>([])
@@ -67,8 +250,9 @@ export default function EmailCampaignsPage() {
   const [scheduleForm, setScheduleForm] = useState({
     name: '',
     templateId: '',
-    segment: 'new_users',
-    sendAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    segment: 'all_users',
+    sendAt: toLocalDatetimeString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    specificEmails: '',
     newWithinDays: 1,
     activeWithinDays: 7,
     inactiveDays: 14,
@@ -77,20 +261,25 @@ export default function EmailCampaignsPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const [templateRes, scheduleRes] = await Promise.all([
-      fetch('/api/admin/email-campaigns/templates'),
-      fetch('/api/admin/email-campaigns/schedules'),
-    ])
+    try {
+      const [templateRes, scheduleRes] = await Promise.all([
+        fetch('/api/admin/email-campaigns/templates'),
+        fetch('/api/admin/email-campaigns/schedules'),
+      ])
 
-    if (templateRes.ok) {
-      const data = await templateRes.json()
-      setTemplates(data.templates || [])
+      if (templateRes.ok) {
+        const data = await templateRes.json()
+        setTemplates(data.templates || [])
+      }
+      if (scheduleRes.ok) {
+        const data = await scheduleRes.json()
+        setSchedules(data.schedules || [])
+      }
+    } catch {
+      toast.error('Failed to load campaign data')
+    } finally {
+      setLoading(false)
     }
-    if (scheduleRes.ok) {
-      const data = await scheduleRes.json()
-      setSchedules(data.schedules || [])
-    }
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -98,19 +287,31 @@ export default function EmailCampaignsPage() {
   }, [])
 
   const handleTemplateSubmit = async () => {
-    if (!templateForm.name || !templateForm.subject || !templateForm.body) return
-    setSavingTemplate(true)
-    const response = await fetch('/api/admin/email-campaigns/templates', {
-      method: editingTemplateId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editingTemplateId ? { id: editingTemplateId, ...templateForm } : templateForm),
-    })
-    if (response.ok) {
-      setTemplateForm({ name: '', category: 'general', subject: '', body: '', status: 'draft' })
-      setEditingTemplateId(null)
-      await loadData()
+    if (!templateForm.name || !templateForm.subject || !templateForm.body) {
+      toast.error('Please fill in Template Name, Subject, and Body.')
+      return
     }
-    setSavingTemplate(false)
+    setSavingTemplate(true)
+    try {
+      const response = await fetch('/api/admin/email-campaigns/templates', {
+        method: editingTemplateId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingTemplateId ? { id: editingTemplateId, ...templateForm } : templateForm),
+      })
+      if (response.ok) {
+        toast.success(editingTemplateId ? 'Template updated' : 'Template created')
+        setTemplateForm({ name: '', category: 'general', subject: '', body: '', status: 'draft' })
+        setEditingTemplateId(null)
+        await loadData()
+      } else {
+        const d = await response.json()
+        toast.error(d.error || 'Failed to save template')
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to save template')
+    } finally {
+      setSavingTemplate(false)
+    }
   }
 
   const handleTemplateEdit = (template: Template) => {
@@ -122,45 +323,105 @@ export default function EmailCampaignsPage() {
       body: template.body,
       status: template.status || 'draft',
     })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const loadCommunityTemplate = () => {
+    setTemplateForm({
+      name: DEFAULT_COMMUNITY_TEMPLATE.name,
+      category: DEFAULT_COMMUNITY_TEMPLATE.category,
+      subject: DEFAULT_COMMUNITY_TEMPLATE.subject,
+      body: DEFAULT_COMMUNITY_TEMPLATE.body,
+      status: DEFAULT_COMMUNITY_TEMPLATE.status,
+    })
+    setEditingTemplateId(null)
+    toast.success('Loaded Preptio Community Announcement Template!')
   }
 
   const handleTemplateDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this template?')) return
     await fetch('/api/admin/email-campaigns/templates', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
+    toast.success('Template deleted')
     await loadData()
-  }
-
-  const handleScheduleSubmit = async () => {
-    if (!scheduleForm.name || !scheduleForm.templateId || !scheduleForm.sendAt) return
-    setSavingSchedule(true)
-    const response = await fetch('/api/admin/email-campaigns/schedules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(scheduleForm),
-    })
-    if (response.ok) {
-      setScheduleForm((prev) => ({
-        ...prev,
-        name: '',
-        sendAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-      }))
-      await loadData()
-    }
-    setSavingSchedule(false)
   }
 
   const runSchedules = async (scheduleId?: string) => {
     setRunningSchedules(true)
-    await fetch('/api/admin/email-campaigns/run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(scheduleId ? { scheduleId } : {}),
-    })
-    await loadData()
-    setRunningSchedules(false)
+    try {
+      const res = await fetch('/api/admin/email-campaigns/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scheduleId ? { scheduleId, sendNow: true } : {}),
+      })
+      const data = await res.json()
+      if (res.ok && (data.sent ?? 0) > 0) {
+        toast.success(`Sent campaign to ${data.sent} recipient(s)`)
+        await loadData()
+      } else if (res.ok) {
+        toast.error(data.message || 'No emails were sent')
+        await loadData()
+      } else {
+        toast.error(data.error || 'Failed to trigger campaign send')
+        await loadData()
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to run campaign')
+    } finally {
+      setRunningSchedules(false)
+    }
+  }
+
+  const handleScheduleSubmit = async (options?: { sendImmediately?: boolean }) => {
+    if (!scheduleForm.name || !scheduleForm.templateId || !scheduleForm.sendAt) {
+      toast.error('Please enter Schedule Name, select a Template, and set Send Time.')
+      return
+    }
+    if (scheduleForm.segment === 'specific_users' && !scheduleForm.specificEmails.trim()) {
+      toast.error('Please enter at least one recipient email address.')
+      return
+    }
+
+    setSavingSchedule(true)
+    try {
+      const sendAt = options?.sendImmediately
+        ? new Date().toISOString()
+        : localDatetimeToIso(scheduleForm.sendAt)
+      const response = await fetch('/api/admin/email-campaigns/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...scheduleForm,
+          sendAt,
+        }),
+      })
+      const created = await response.json()
+      if (!response.ok) {
+        toast.error(created.error || 'Failed to create schedule')
+        return
+      }
+
+      if (options?.sendImmediately && created.schedule?._id) {
+        await runSchedules(created.schedule._id)
+      } else {
+        toast.success('Campaign scheduled successfully')
+      }
+
+      setScheduleForm((prev) => ({
+        ...prev,
+        name: '',
+        specificEmails: '',
+        sendAt: toLocalDatetimeString(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+      }))
+      await loadData()
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to create schedule')
+    } finally {
+      setSavingSchedule(false)
+    }
   }
 
   const cancelSchedule = async (id: string) => {
@@ -169,43 +430,75 @@ export default function EmailCampaignsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: 'cancelled' }),
     })
+    toast.success('Schedule cancelled')
     await loadData()
   }
 
   const deleteSchedule = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this schedule?')) return
     await fetch('/api/admin/email-campaigns/schedules', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
+    toast.success('Schedule deleted')
     await loadData()
   }
 
+  const isSpecificUsers = scheduleForm.segment === 'specific_users'
   const isNewUsers = scheduleForm.segment === 'new_users'
   const isActiveUsers = scheduleForm.segment === 'active_users'
   const isInactiveUsers = scheduleForm.segment === 'inactive_users'
   const isExamPrep = scheduleForm.segment === 'exam_prep'
 
+  const parsedEmailsCount = useMemo(() => {
+    if (!scheduleForm.specificEmails) return 0
+    return scheduleForm.specificEmails
+      .split(/[\n,;]+/)
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 3 && e.includes('@') && !e.includes(' ')).length
+  }, [scheduleForm.specificEmails])
+
   const scheduleSummary = useMemo(() => {
     const template = templates.find((item) => item._id === scheduleForm.templateId)
     if (!template) return ''
-    return `${template.name} to ${SEGMENTS.find((item) => item.value === scheduleForm.segment)?.label || ''}`
-  }, [templates, scheduleForm.templateId, scheduleForm.segment])
+    const segmentLabel = SEGMENTS.find((item) => item.value === scheduleForm.segment)?.label || ''
+    if (isSpecificUsers) {
+      return `"${template.name}" to ${parsedEmailsCount} specific recipient(s)`
+    }
+    return `"${template.name}" to ${segmentLabel}`
+  }, [templates, scheduleForm.templateId, scheduleForm.segment, isSpecificUsers, parsedEmailsCount])
 
   return (
     <main className="min-h-screen bg-background-light">
       <AdminHeader />
       <div className="pt-[72px] lg:pt-[80px] pb-12 px-4 md:px-6 max-w-6xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h1 className="font-heading text-3xl font-bold text-text-dark">Email Drip Campaigns</h1>
-          <Button onClick={() => runSchedules()} disabled={runningSchedules || loading}>
+          <div>
+            <h1 className="font-heading text-3xl font-bold text-text-dark">Email Campaigns</h1>
+            <p className="text-sm text-text-light mt-1">
+              Broadcast announcements and drip emails to all users or specific recipients.
+            </p>
+          </div>
+          <Button onClick={() => runSchedules()} disabled={runningSchedules || loading} className="bg-emerald-600 hover:bg-emerald-700">
             {runningSchedules ? 'Running...' : 'Run Due Schedules'}
           </Button>
         </div>
 
-        <Card className="border border-border bg-white">
-          <CardHeader>
-            <CardTitle>Templates</CardTitle>
+        {/* Templates Card */}
+        <Card className="border border-border bg-white shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-xl">Email Templates</CardTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={loadCommunityTemplate}
+              className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 flex items-center gap-1.5"
+            >
+              <Sparkles size={14} />
+              Load Community Launch Template
+            </Button>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -213,6 +506,7 @@ export default function EmailCampaignsPage() {
                 <Label htmlFor="templateName">Template Name</Label>
                 <Input
                   id="templateName"
+                  placeholder="e.g. Community Feature Launch"
                   value={templateForm.name}
                   onChange={(event) => setTemplateForm((prev) => ({ ...prev, name: event.target.value }))}
                 />
@@ -234,17 +528,23 @@ export default function EmailCampaignsPage() {
                 <Label htmlFor="templateSubject">Email Subject</Label>
                 <Input
                   id="templateSubject"
+                  placeholder="e.g. Introducing Preptio Community: Discuss, Ask & Learn Together!"
                   value={templateForm.subject}
                   onChange={(event) => setTemplateForm((prev) => ({ ...prev, subject: event.target.value }))}
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="templateBody">Email Body (HTML allowed)</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="templateBody">Email Body (HTML allowed)</Label>
+                  <span className="text-xs text-text-light">Full HTML, styled tags, and links supported</span>
+                </div>
                 <Textarea
                   id="templateBody"
+                  placeholder="Enter HTML email content..."
                   value={templateForm.body}
                   onChange={(event) => setTemplateForm((prev) => ({ ...prev, body: event.target.value }))}
-                  rows={6}
+                  rows={8}
+                  className="font-mono text-xs"
                 />
               </div>
               <div className="space-y-2">
@@ -261,7 +561,7 @@ export default function EmailCampaignsPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button onClick={handleTemplateSubmit} disabled={savingTemplate}>
+              <Button onClick={handleTemplateSubmit} disabled={savingTemplate} className="bg-emerald-600 hover:bg-emerald-700">
                 {savingTemplate ? 'Saving...' : editingTemplateId ? 'Update Template' : 'Create Template'}
               </Button>
               {editingTemplateId && (
@@ -274,14 +574,14 @@ export default function EmailCampaignsPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {templates.map((template, idx) => (
                 <Card key={template._id ?? `${template.name ?? 'template'}-${template.subject ?? idx}`} className="border border-border bg-slate-50">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-text-dark">{template.name}</p>
-                        <p className="text-xs text-text-light">{template.category} - {template.status}</p>
+                        <p className="text-xs text-text-light capitalize">{template.category} • {template.status}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => handleTemplateEdit(template)}>
@@ -292,7 +592,7 @@ export default function EmailCampaignsPage() {
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-text-light">Subject: {template.subject}</p>
+                    <p className="text-sm text-text-light truncate"><strong>Subject:</strong> {template.subject}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -300,16 +600,18 @@ export default function EmailCampaignsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border bg-white">
+        {/* Scheduling & Sending Card */}
+        <Card className="border border-border bg-white shadow-sm">
           <CardHeader>
-            <CardTitle>Scheduling</CardTitle>
+            <CardTitle className="text-xl">Schedule / Send Campaign</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="scheduleName">Schedule Name</Label>
+                <Label htmlFor="scheduleName">Campaign Name</Label>
                 <Input
                   id="scheduleName"
+                  placeholder="e.g. Community Feature Broadcast"
                   value={scheduleForm.name}
                   onChange={(event) => setScheduleForm((prev) => ({ ...prev, name: event.target.value }))}
                 />
@@ -325,18 +627,18 @@ export default function EmailCampaignsPage() {
                   <option value="">Select template</option>
                   {templates.map((template, idx) => (
                     <option key={template._id ?? `${template.name ?? 'template'}-${idx}`} value={template._id}>
-                      {template.name}
+                      {template.name} ({template.status})
                     </option>
                   ))}
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scheduleSegment">Segment</Label>
+                <Label htmlFor="scheduleSegment">Recipient Audience</Label>
                 <select
                   id="scheduleSegment"
                   value={scheduleForm.segment}
                   onChange={(event) => setScheduleForm((prev) => ({ ...prev, segment: event.target.value }))}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
                 >
                   {SEGMENTS.map((segment) => (
                     <option key={segment.value} value={segment.value}>{segment.label}</option>
@@ -344,14 +646,44 @@ export default function EmailCampaignsPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scheduleSendAt">Send At</Label>
+                <Label htmlFor="scheduleSendAt">Send At (your local time)</Label>
                 <Input
                   id="scheduleSendAt"
                   type="datetime-local"
                   value={scheduleForm.sendAt}
                   onChange={(event) => setScheduleForm((prev) => ({ ...prev, sendAt: event.target.value }))}
                 />
+                <p className="text-xs text-text-light">
+                  Times are saved in UTC and shown back in your timezone. Send Now delivers immediately and does not wait for this time.
+                </p>
               </div>
+
+              {/* Specific Users / Custom Emails input */}
+              {isSpecificUsers && (
+                <div className="space-y-2 md:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="specificEmails" className="font-semibold text-emerald-900 flex items-center gap-1.5">
+                      <Mail size={15} />
+                      Specific Recipient Emails
+                    </Label>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      {parsedEmailsCount} valid email{parsedEmailsCount !== 1 ? 's' : ''} detected
+                    </span>
+                  </div>
+                  <Textarea
+                    id="specificEmails"
+                    placeholder="Enter emails separated by comma or new lines, e.g.:&#10;user1@example.com, user2@example.com&#10;user3@example.com"
+                    value={scheduleForm.specificEmails}
+                    onChange={(event) => setScheduleForm((prev) => ({ ...prev, specificEmails: event.target.value }))}
+                    rows={4}
+                    className="bg-white font-mono text-xs"
+                  />
+                  <p className="text-xs text-emerald-800">
+                    Only these specified user email addresses will receive this campaign. Perfect for test runs or targeted announcements.
+                  </p>
+                </div>
+              )}
+
               {isNewUsers && (
                 <div className="space-y-2">
                   <Label htmlFor="newWithinDays">New within days</Label>
@@ -401,59 +733,110 @@ export default function EmailCampaignsPage() {
                 </div>
               )}
             </div>
-            {scheduleSummary && (
-              <p className="text-sm text-text-light">Summary: {scheduleSummary}</p>
-            )}
-            <Button onClick={handleScheduleSubmit} disabled={savingSchedule}>
-              {savingSchedule ? 'Scheduling...' : 'Create Schedule'}
-            </Button>
 
-            <div className="space-y-3">
-              {schedules.map((schedule, idx) => (
-                <Card key={schedule._id ?? `${schedule.name ?? 'schedule'}-${schedule.sendAt ?? idx}`} className="border border-border bg-slate-50">
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-text-dark">{schedule.name}</p>
-                        <p className="text-xs text-text-light">
-                          Template: {schedule.templateId?.name || 'Unknown'} - Segment: {SEGMENTS.find((s) => s.value === schedule.segment)?.label || schedule.segment}
-                        </p>
-                        <p className="text-xs text-text-light">
-                          Send at: {new Date(schedule.sendAt).toLocaleString()}
-                        </p>
+            {scheduleSummary && (
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-700 flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                <span><strong>Target:</strong> {scheduleSummary}</span>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => handleScheduleSubmit()} disabled={savingSchedule} className="bg-emerald-600 hover:bg-emerald-700">
+                {savingSchedule ? 'Scheduling...' : 'Create Campaign Schedule'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={savingSchedule || runningSchedules}
+                onClick={() => handleScheduleSubmit({ sendImmediately: true })}
+              >
+                Create & Send Now
+              </Button>
+            </div>
+
+            {/* List of Schedules */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="font-semibold text-text-dark text-base">Campaign Schedules & History</h3>
+              {schedules.length === 0 ? (
+                <p className="text-sm text-text-light py-4 text-center">No campaigns scheduled yet.</p>
+              ) : (
+                schedules.map((schedule, idx) => (
+                  <Card key={schedule._id ?? `${schedule.name ?? 'schedule'}-${schedule.sendAt ?? idx}`} className="border border-border bg-slate-50">
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-text-dark">{schedule.name}</p>
+                          <p className="text-xs text-text-light">
+                            Template: <strong>{schedule.templateId?.name || 'Unknown'}</strong> • Audience:{' '}
+                            <span className="font-medium text-emerald-800">
+                              {schedule.segment === 'specific_users'
+                                ? 'Specific Users'
+                                : SEGMENTS.find((s) => s.value === schedule.segment)?.label || schedule.segment}
+                            </span>
+                          </p>
+                          <p className="text-xs text-text-light">
+                            Send at: {formatSendAt(schedule.sendAt)}
+                          </p>
+                          {schedule.specificEmails && (
+                            <p className="text-xs text-slate-500 font-mono truncate max-w-md">
+                              Recipients: {schedule.specificEmails}
+                            </p>
+                          )}
+                          {schedule.lastError && (
+                            <p className="text-xs text-red-600 flex items-center gap-1 mt-1">
+                              <AlertCircle size={12} />
+                              {schedule.lastError}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => runSchedules(schedule._id)}
+                            disabled={runningSchedules || schedule.status !== 'scheduled'}
+                          >
+                            Send Now
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => cancelSchedule(schedule._id)}
+                            disabled={schedule.status !== 'scheduled'}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteSchedule(schedule._id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => runSchedules(schedule._id)}
-                          disabled={runningSchedules || schedule.status !== 'scheduled'}
+                      <p className="text-xs text-text-light">
+                        Status:{' '}
+                        <span
+                          className={`font-semibold ${
+                            schedule.status === 'sent'
+                              ? 'text-emerald-700'
+                              : schedule.status === 'failed'
+                              ? 'text-red-600'
+                              : schedule.status === 'scheduled'
+                              ? 'text-blue-700'
+                              : 'text-slate-500'
+                          }`}
                         >
-                          Send Now
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => cancelSchedule(schedule._id)}
-                          disabled={schedule.status !== 'scheduled'}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteSchedule(schedule._id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-text-light">
-                      Status: {schedule.status} {schedule.sentCount ? `• Sent: ${schedule.sentCount}` : ''}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+                          {schedule.status.toUpperCase()}
+                        </span>{' '}
+                        {schedule.sentCount !== undefined ? `• Sent to: ${schedule.sentCount} user(s)` : ''}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -461,4 +844,3 @@ export default function EmailCampaignsPage() {
     </main>
   )
 }
-

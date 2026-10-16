@@ -55,12 +55,20 @@ enum EmailSegment {
   inactive_users
   exam_prep
   all_users
+  specific_users
 }
 
 enum EmailScheduleStatus {
   scheduled
+  in_progress
   sent
   cancelled
+}
+
+enum EmailRecipientStatus {
+  pending
+  sent
+  failed
 }
 
 enum JoinUsStatus {
@@ -512,9 +520,32 @@ model EmailSchedule {
   activeWithinDays Int               @default(7)
   inactiveDays    Int                @default(14)
   examDaysBefore  Int                @default(30)
+  specificEmails  String?
   lastError       String?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
+
+  recipients      EmailCampaignRecipient[]
+}
+
+model EmailCampaignRecipient {
+  id         String               @id @default(cuid())
+  scheduleId String               @map("schedule_id")
+  email      String
+  name       String?
+  status     EmailRecipientStatus @default(pending)
+  attempts   Int                  @default(0)
+  lastError  String?              @map("last_error")
+  sentAt     DateTime?            @map("sent_at")
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
+
+  schedule EmailSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, email])
+  @@index([scheduleId, status])
+  @@index([status, sentAt])
+  @@map("email_campaign_recipients")
 }
 
 model Flashcard {
@@ -909,6 +940,7 @@ model CommunityCategory {
   slug         String   @unique
   description  String?
   displayOrder Int      @default(0) @map("display_order")
+  isHidden     Boolean  @default(false) @map("is_hidden")
   createdById  String?  @map("created_by_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -926,6 +958,7 @@ model CommunityThread {
   authorId   String   @map("author_id")
   title      String
   body       String
+  isAnonymous Boolean @default(false) @map("is_anonymous")
   createdAt  DateTime @default(now()) @map("created_at")
   editedAt   DateTime? @map("edited_at")
   locked     Boolean  @default(false)
@@ -955,6 +988,7 @@ model CommunityComment {
   parentCommentId String?  @map("parent_comment_id")
   authorId        String   @map("author_id")
   body            String
+  isAnonymous     Boolean  @default(false) @map("is_anonymous")
   createdAt       DateTime @default(now()) @map("created_at")
   editedAt        DateTime? @map("edited_at")
   deleted         Boolean  @default(false)
@@ -969,6 +1003,15 @@ model CommunityComment {
   @@index([threadId, createdAt])
   @@index([parentCommentId, createdAt])
   @@map("community_comments")
+}
+
+model CommunityImage {
+  id        String   @id @default(cuid())
+  mimeType  String   @map("mime_type")
+  data      Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("community_images")
 }
 
 enum CommunityPostType {
@@ -1346,6 +1389,7 @@ model Organization {
 
   memberships  OrganizationMembership[]
   subscription OrganizationSubscription?
+  invites      OrganizationInvite[]
 
   @@index([isActive])
   @@index([createdAt])
@@ -1358,6 +1402,7 @@ model OrganizationMembership {
   userId   String  @map("user_id")
   role     OrgRole @default(member)
   joinedAt DateTime @default(now()) @map("joined_at")
+  consentedAt DateTime? @map("consented_at")
 
   org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1385,4 +1430,24 @@ model OrganizationSubscription {
 
   @@index([isActive])
   @@map("organization_subscriptions")
+}
+
+model OrganizationInvite {
+  id         String    @id @default(cuid())
+  orgId      String    @map("org_id")
+  email      String
+  role       OrgRole   @default(member)
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  acceptedAt DateTime? @map("accepted_at")
+  createdBy  String?   @map("created_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, email])
+  @@index([orgId])
+  @@index([expiresAt])
+  @@map("organization_invites")
 }

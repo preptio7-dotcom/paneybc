@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronRight, LockKeyhole, MessageSquare, Reply } from 'lucide-react'
+import { Camera, ChevronDown, ChevronRight, EyeOff, Loader2, LockKeyhole, MessageSquare, Reply, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { toast } from 'sonner'
 import { DeleteDialog, EditCommentDialog } from './content-dialogs'
@@ -9,25 +9,86 @@ import { PostMenu, VoteControls } from './post-controls'
 import { useDraft } from './use-draft'
 import { communityRequest, jsonPost, jsonUpdate, timeAgo, type Thread, type Comment, type Target } from './types'
 
-function CommentForm({ draftKey, label, onSubmit, onCancel }: { draftKey: string; label: string; onSubmit: (body: string) => Promise<void>; onCancel?: () => void }) {
+function CommentForm({ draftKey, label, onSubmit, onCancel, userRole }: { draftKey: string; label: string; onSubmit: (body: string, isAnonymous: boolean) => Promise<void>; onCancel?: () => void; userRole?: string }) {
   const [body, setBody] = useDraft(draftKey, '')
+  const [isAnonymous, setIsAnonymous] = useState(false)
   const [pending, setPending] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState('')
   const busy = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file (PNG, JPEG, WebP, GIF, HEIC).')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image must be under 10MB.')
+      return
+    }
+    setUploadingImage(true)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/community/upload-image', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok || (!data.success && !data.url)) {
+        throw new Error(data.error || 'Failed to upload image.')
+      }
+      const imageSnippet = `\n\n${data.markdown}\n\n`
+      setBody((body || '').trimEnd() + imageSnippet)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image.')
+    } finally {
+      setUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   return <form className="my-3" onSubmit={async e => {
     e.preventDefault()
     if (busy.current) return
     busy.current = true; setPending(true); setError('')
-    try { await onSubmit(body); setBody(''); onCancel?.() }
+    try { await onSubmit(body, isAnonymous); setBody(''); setIsAnonymous(false); onCancel?.() }
     catch (err) { setError(err instanceof Error ? err.message : 'Unable to post. Your draft has been kept.') }
     finally { busy.current = false; setPending(false) }
   }}>
-    <label htmlFor={draftKey} className="mb-2 block text-sm font-semibold">{label}</label>
+    <div className="mb-2 flex items-center justify-between">
+      <label htmlFor={draftKey} className="text-sm font-semibold">{label}</label>
+      <div className="flex items-center gap-1.5">
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={pending || uploadingImage} />
+        <button
+          type="button"
+          disabled={pending || uploadingImage}
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/70 px-2.5 py-1 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100/80 disabled:opacity-50"
+          title="Upload screenshot from device or take photo with camera"
+        >
+          {uploadingImage ? <Loader2 className="animate-spin" size={13} /> : <Camera size={13} />}
+          {uploadingImage ? 'Uploading…' : 'Add image'}
+        </button>
+      </div>
+    </div>
     <textarea id={draftKey} value={body} onChange={e => setBody(e.target.value)} minLength={2} maxLength={8000} required rows={3} className="community-input resize-y" placeholder="Share an explanation or ask a follow-up…" disabled={pending} />
     {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
-    <div className="mt-2 flex items-center justify-between gap-2">
-      <span className="text-xs text-slate-500">Markdown supported · Draft saved in this browser tab</span>
-      <div className="flex shrink-0 gap-1">{onCancel && <button type="button" onClick={onCancel} className="community-action">Cancel</button>}<button type="submit" className="community-primary" disabled={pending || body.trim().length < 2}>{pending ? 'Posting…' : 'Comment'}</button>
+    <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Admins can still see your identity">
+          <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${isAnonymous ? 'bg-emerald-600' : 'bg-slate-200'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform duration-200 ${isAnonymous ? 'translate-x-4' : 'translate-x-0'}`} />
+            <input type="checkbox" className="sr-only" checked={isAnonymous} disabled={pending} onChange={e => setIsAnonymous(e.target.checked)} />
+          </div>
+          <EyeOff size={12} className={isAnonymous ? 'text-emerald-700' : 'text-slate-400'} />
+          <span className="text-xs text-slate-500">Anonymous</span>
+        </label>
+        {!isAnonymous && <span className="text-xs text-slate-500">Markdown & images supported</span>}
+        {isAnonymous && <span className="text-xs text-amber-700">Admins see your identity</span>}
+      </div>
+      <div className="flex shrink-0 gap-1">{onCancel && <button type="button" onClick={onCancel} className="community-action">Cancel</button>}<button type="submit" className="community-primary" disabled={pending || uploadingImage || body.trim().length < 2}>{pending ? 'Posting…' : 'Comment'}</button>
       </div>
     </div>
   </form>
@@ -37,18 +98,33 @@ function CommentBranch({ comment, childrenByParent, authorId, depth = 0, locked,
   comment: Comment; childrenByParent: Map<string | null, Comment[]>; authorId: string; depth?: number; locked: boolean
   requireAuth: () => void; onReport: (target: Target) => void; onVote: (id: string, result: { score: number; viewerVote: number }) => void
   acceptedId: string | null; canAccept: boolean; onAccept: (id: string) => void; onEdit: (comment: Comment) => void; onDelete: (comment: Comment) => void
-  submit: (body: string, parentId: string | null) => Promise<void>
+  submit: (body: string, parentId: string | null, isAnonymous?: boolean) => Promise<void>
 }) {
   const { user } = useAuth()
+  const isMod = user?.role === 'admin' || user?.role === 'super_admin'
   const [collapsed, setCollapsed] = useState(false)
   const [replying, setReplying] = useState(false)
   const children = childrenByParent.get(comment.id) || []
+  const displayAuthor = comment.isAnonymous ? { name: 'Anonymous', avatar: null } : comment.author
+  const revealAuthor = comment.isAnonymous && isMod ? comment.realAuthor : null
   return <article id={`comment-${comment.id}`} className={`min-w-0 ${depth > 0 && depth < 4 ? 'border-l border-slate-200 pl-3 sm:pl-4' : depth >= 4 ? 'border-t border-slate-100 pt-2' : ''}`}>
     <div className="flex min-w-0 items-center gap-2 text-xs">
       <button type="button" className="community-icon -ml-2" aria-label={collapsed ? 'Expand comment' : 'Collapse comment'} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>{collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</button>
-      {!comment.deleted && <img src={comment.author?.avatar || '/avatars/boy_1.png'} alt="" className="h-6 w-6 rounded-full bg-slate-100" />}
-      <span className="min-w-0 truncate font-semibold">{comment.deleted ? '[removed]' : comment.author?.name || 'Member'}</span>
-      {comment.author?.id === authorId && <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-800">OP</span>}
+      {!comment.deleted && <img src={displayAuthor?.avatar || '/avatars/boy_1.png'} alt="" className={`h-6 w-6 rounded-full bg-slate-100 ${comment.isAnonymous ? 'opacity-40 grayscale' : ''}`} />}
+      <span className="min-w-0 truncate font-semibold">
+        {comment.deleted ? '[removed]' : displayAuthor?.name || 'Member'}
+        {comment.isAnonymous && !comment.deleted && <EyeOff size={11} className="inline ml-1 text-slate-400" aria-label="Anonymous" />}
+      </span>
+      {!comment.isAnonymous && comment.author?.id === authorId && <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-800">OP</span>}
+      {revealAuthor && (
+        <span
+          className="flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200/80"
+          title={`Anonymous commenter email: ${revealAuthor.email || 'N/A'} (Name: ${revealAuthor.name})`}
+        >
+          <ShieldAlert size={10} className="shrink-0 text-amber-700" />
+          <span className="max-w-[180px] truncate">{revealAuthor.email || revealAuthor.name}</span>
+        </span>
+      )}
       <time dateTime={comment.createdAt} title={new Date(comment.createdAt).toLocaleString()} className="shrink-0 text-slate-500">{timeAgo(comment.createdAt)}</time>
     </div>
     {!comment.deleted && acceptedId === comment.id && <p className="my-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">Accepted answer · selected by the question author</p>}
@@ -60,12 +136,16 @@ function CommentBranch({ comment, childrenByParent, authorId, depth = 0, locked,
         {!locked && <button type="button" className="community-action" onClick={() => user ? setReplying(!replying) : requireAuth()}>
           <Reply size={15} />Reply</button>}
         {canAccept && !locked && <button className="community-action text-emerald-800" onClick={() => onAccept(comment.id)}>{acceptedId === comment.id ? 'Reopen question' : 'Accept answer'}</button>}
-        <PostMenu onReport={() => onReport({ targetType: 'comment', targetId: comment.id })} actions={user?.id === comment.author?.id ? [
-          { label: 'Edit comment', run: () => onEdit(comment), disabled: locked },
-          { label: 'Delete comment', run: () => onDelete(comment) },
-        ] : []} />
+        <PostMenu onReport={() => onReport({ targetType: 'comment', targetId: comment.id })} actions={[
+          ...(comment.isOwner || (user?.id && (user.id === comment.author?.id || (comment.realAuthor && user.id === comment.realAuthor.id))) ? [
+            { label: 'Edit comment', run: () => onEdit(comment), disabled: locked },
+            { label: 'Delete comment', run: () => onDelete(comment) },
+          ] : isMod ? [
+            { label: 'Delete comment', run: () => onDelete(comment) },
+          ] : [])
+        ]} />
       </div>}
-      {replying && !locked && user && <CommentForm draftKey={`community:${user.id}:reply:${comment.id}`} label={`Reply to ${comment.author?.name || 'member'}`} onSubmit={body => submit(body, comment.id)} onCancel={() => setReplying(false)} />}
+      {replying && !locked && user && <CommentForm draftKey={`community:${user.id}:reply:${comment.id}`} label={`Reply to ${displayAuthor?.name || 'member'}`} onSubmit={(body, isAnon) => submit(body, comment.id, isAnon)} onCancel={() => setReplying(false)} />}
       {children.length > 0 && <div className={`mt-2 space-y-2 ${depth < 3 ? 'ml-2 sm:ml-4' : ''}`}>{children.map(child => <CommentBranch key={child.id} comment={child} childrenByParent={childrenByParent} authorId={authorId} depth={depth + 1} locked={locked} requireAuth={requireAuth} onReport={onReport} onVote={onVote} submit={submit} acceptedId={acceptedId} canAccept={canAccept} onAccept={onAccept} onEdit={onEdit} onDelete={onDelete} />)}</div>}
     </>}
   </article>
@@ -132,8 +212,8 @@ export function Comments({ threadId, authorId, locked, requireAuth, onReport, on
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Unable to accept answer.') }
     finally { acceptBusy.current = false }
   }
-  async function submit(body: string, parentCommentId: string | null) {
-    const data = await communityRequest<{ comment: Comment }>(`/api/community/threads/${encodeURIComponent(threadId)}/comments`, jsonPost({ body, parentCommentId }))
+  async function submit(body: string, parentCommentId: string | null, isAnonymous = false) {
+    const data = await communityRequest<{ comment: Comment }>(`/api/community/threads/${encodeURIComponent(threadId)}/comments`, jsonPost({ body, parentCommentId, isAnonymous }))
     setComments(old => merge(old, [data.comment])); setTotal(total + 1); onCountRef.current(total + 1)
   }
   return <section ref={sectionRef} aria-label="Discussion comments" className="border-t border-slate-100 pt-4">
@@ -143,7 +223,7 @@ export function Comments({ threadId, authorId, locked, requireAuth, onReport, on
       <label><span className="sr-only">Sort comments</span><select className="community-input !w-auto !py-1 text-xs" value={sort} onChange={e => setSort(e.target.value)}><option value="oldest">Oldest first</option><option value="new">Newest first</option><option value="top">Top comments</option></select></label>
     </div>
     {serverLocked || locked ? <p className="mb-4 flex items-center gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-      <LockKeyhole size={16} />This discussion is locked. You can still read the conversation.</p> : user ? <CommentForm draftKey={`community:${user.id}:comment:${threadId}`} label="Join the conversation" onSubmit={body => submit(body, null)} /> : <button type="button" className="mb-4 w-full rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40 p-4 text-sm text-emerald-800" onClick={requireAuth}>Log in or sign up to join the conversation</button>}
+      <LockKeyhole size={16} />This discussion is locked. You can still read the conversation.</p> : user ? <CommentForm draftKey={`community:${user.id}:comment:${threadId}`} label="Join the conversation" onSubmit={(body, isAnon) => submit(body, null, isAnon)} /> : <button type="button" className="mb-4 w-full rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40 p-4 text-sm text-emerald-800" onClick={requireAuth}>Log in or sign up to join the conversation</button>}
     {error && <div role="alert" className="my-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}<button type="button" className="community-action ml-2" onClick={() => void load(page + 1)}>Retry</button>
     </div>}
     <div className="space-y-4">{(childrenByParent.get(null) || []).map(comment => <CommentBranch key={comment.id} comment={comment} childrenByParent={childrenByParent} authorId={authorId} locked={serverLocked || locked} requireAuth={requireAuth} onReport={onReport} onVote={(id, value) => setComments(old => old.map(c => c.id === id ? { ...c, ...value } : c))} submit={submit} acceptedId={thread.acceptedCommentId} canAccept={user?.id === authorId && thread.postType === 'question'} onAccept={id => void accept(id)} onEdit={setEditing} onDelete={setDeleting} />)}</div>

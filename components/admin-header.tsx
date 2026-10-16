@@ -13,11 +13,13 @@ import {
   CreditCard,
   FileText,
   FlaskConical,
+  Hash,
   HelpCircle,
   History,
   Layers,
   Lock,
   LogOut,
+  Mail,
   Menu,
   MessageSquare,
   Palette,
@@ -56,12 +58,17 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
+    label: 'Communication',
+    items: [{ label: 'Email Campaigns', href: '/admin/email-campaigns', icon: Mail }],
+  },
+  {
     label: 'Content Management',
     items: [
       { label: 'Blog', href: '/admin/blog', icon: PenSquare },
       { label: 'Blog Analytics', href: '/admin/blog/analytics', icon: BarChart2 },
       { label: 'Questions', href: '/admin/questions', icon: BookOpen },
       { label: 'Subjects', href: '/admin/subjects', icon: Layers },
+      { label: 'Community Subjects', href: '/admin/community-subjects', icon: Hash },
       { label: 'Upload', href: '/admin/upload', icon: Upload },
       { label: 'Financial Statements', href: '/admin/financial-statements', icon: FileText },
       { label: 'FAQ', href: '/admin/faq', icon: HelpCircle },
@@ -120,6 +127,7 @@ const NAV_GROUPS: NavGroup[] = [
 const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin$/, title: 'Admin Dashboard' },
   { match: /^\/admin\/community-reports$/, title: 'Community Moderation Reports' },
+  { match: /^\/admin\/community-subjects$/, title: 'Community Subjects & Tags' },
   { match: /^\/admin\/blog\/new$/, title: 'Create Blog Post' },
   { match: /^\/admin\/blog\/edit\/.+/, title: 'Edit Blog Post' },
   { match: /^\/admin\/blog$/, title: 'Blog Posts' },
@@ -131,6 +139,7 @@ const ADMIN_TITLE_OVERRIDES: Array<{ match: RegExp; title: string }> = [
   { match: /^\/admin\/subscriptions$/, title: 'Subscription Requests' },
   { match: /^\/admin\/payment-methods$/, title: 'Payment Methods' },
   { match: /^\/admin\/organizations$/, title: 'Organizations' },
+  { match: /^\/admin\/email-campaigns$/, title: 'Email Campaigns' },
 ]
 
 function isActiveRoute(pathname: string, href: string) {

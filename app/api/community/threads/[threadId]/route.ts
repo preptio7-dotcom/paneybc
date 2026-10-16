@@ -9,7 +9,8 @@ import { communityActor, CommunityError, lockThread, mutationError, mutationLimi
 export async function GET(request: NextRequest, context: { params: Promise<{ threadId: string }> }) {
   try {
     const { threadId } = await context.params
-    const [thread] = await threadResults([threadId], getCurrentUser(request)?.userId)
+    const viewer = getCurrentUser(request)
+    const [thread] = await (viewer?.role ? threadResults([threadId], viewer.userId, viewer.role) : threadResults([threadId], viewer?.userId))
     if (!thread) return NextResponse.json({ error: 'This discussion was removed or is no longer available.' }, { status: 404 })
     return NextResponse.json({ thread }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
@@ -59,7 +60,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ t
       if (!await tx.communityCategory.findUnique({ where: { id: categoryId } })) throw new CommunityError('Subject not found.', 404)
       await tx.communityThread.update({ where: { id: threadId }, data: { title, body, categoryId, postType: input.postType, editedAt: new Date(), ...(input.postType !== 'question' ? { acceptedCommentId: null, solvedAt: null } : {}) } })
     })
-    const [thread] = await threadResults([threadId], actor.id)
+    const [thread] = await threadResults([threadId], actor.id, actor.role)
     return NextResponse.json({ thread })
   } catch (error) { return mutationError(error) }
 }
@@ -72,7 +73,8 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     const { threadId } = await context.params
     await prisma.$transaction(async tx => {
       const thread = await lockThread(tx, threadId)
-      if (thread.authorId !== actor.id) throw new CommunityError('Only the author can delete this discussion.', 403)
+      const isMod = actor.role === 'admin' || actor.role === 'super_admin'
+      if (thread.authorId !== actor.id && !isMod) throw new CommunityError('Only the author or a moderator can delete this discussion.', 403)
       await tx.communityThread.update({ where: { id: threadId }, data: { deleted: true, acceptedCommentId: null, solvedAt: null } })
     })
     return NextResponse.json({ deleted: true })

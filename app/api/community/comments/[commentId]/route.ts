@@ -17,8 +17,8 @@ async function update(request: NextRequest, context: { params: Promise<{ comment
       if (!initial) throw new CommunityError('Comment not found.', 404)
       const thread = await lockThread(tx, initial.threadId)
       const comment = await tx.communityComment.findFirst({ where: { id: commentId, deleted: false } })
-      if (!comment) throw new CommunityError('Comment not found.', 404)
-      if (comment.authorId !== actor.id) throw new CommunityError('Only the author can change this comment.', 403)
+      const isMod = actor.role === 'admin' || actor.role === 'super_admin'
+      if (comment.authorId !== actor.id && !(deleted && isMod)) throw new CommunityError('Only the author or a moderator can delete this comment.', 403)
       if (!deleted && thread.locked) throw new CommunityError('This discussion is locked.', 409)
       const updated = await tx.communityComment.update({ where: { id: commentId }, data: deleted ? { deleted: true } : { body, editedAt: new Date() } })
       if (deleted) await clearAcceptedAnswer(tx, commentId)

@@ -16,21 +16,30 @@ function normalizePublicBaseUrl(value: string) {
 }
 
 function readR2Env() {
+  const accountId = process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID || ''
   const endpoint =
     process.env.R2_ENDPOINT ||
-    (process.env.R2_ACCOUNT_ID
-      ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
-      : '')
-  const accessKeyId = process.env.R2_ACCESS_KEY || process.env.R2_ACCESS_KEY_ID || ''
-  const secretAccessKey = process.env.R2_SECRET_KEY || process.env.R2_SECRET_ACCESS_KEY || ''
-  const bucketName = process.env.R2_BUCKET_NAME || process.env.R2_BUCKET || ''
-  const rawPublicUrlBase = (
+    (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '')
+  const accessKeyId =
+    process.env.R2_ACCESS_KEY ||
+    process.env.R2_ACCESS_KEY_ID ||
+    process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ||
+    ''
+  const secretAccessKey =
+    process.env.R2_SECRET_KEY ||
+    process.env.R2_SECRET_ACCESS_KEY ||
+    process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ||
+    ''
+  const bucketName =
+    process.env.R2_BUCKET_NAME ||
+    process.env.R2_BUCKET ||
+    process.env.CLOUDFLARE_R2_BUCKET ||
+    ''
+  const rawPublicUrlBase =
     process.env.R2_PUBLIC_URL ||
     process.env.R2_PUBLIC_BASE_URL ||
-    (process.env.R2_ACCOUNT_ID && bucketName
-      ? `https://${bucketName}.${process.env.R2_ACCOUNT_ID}.r2.dev`
-      : '')
-  )
+    process.env.CLOUDFLARE_R2_PUBLIC_URL ||
+    (accountId && bucketName ? `https://${bucketName}.${accountId}.r2.dev` : '')
 
   return {
     endpoint: endpoint.replace(/\/$/, ''),
@@ -72,7 +81,7 @@ export function createR2Client() {
 
 export async function uploadBufferToR2(params: {
   key: string
-  body: Buffer
+  body: Buffer | Uint8Array
   contentType: string
   cacheControl?: string
 }) {

@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 

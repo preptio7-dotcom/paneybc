@@ -16,5 +16,12 @@ export function useDraft<T>(key: string, initial: T) {
     if (draft.key !== key) return
     try { sessionStorage.setItem(key, JSON.stringify(draft.value)) } catch { /* Best effort */ }
   }, [key, draft])
-  return [draft.key === key ? draft.value : defaults.current, (value: T) => setDraft({ key, value })] as const
+  const setValue = (action: T | ((prev: T) => T)) => {
+    setDraft(current => {
+      const base = current.key === key ? current.value : defaults.current
+      const nextValue = typeof action === 'function' ? (action as (p: T) => T)(base) : action
+      return { key, value: nextValue }
+    })
+  }
+  return [draft.key === key ? draft.value : defaults.current, setValue] as const
 }
