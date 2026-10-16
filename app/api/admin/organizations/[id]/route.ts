@@ -58,7 +58,42 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       include: { subscription: true, _count: { select: { memberships: true } } },
     })
 
-    return NextResponse.json({ org: { ...org, memberCount: org._count.memberships } })
+    // If subscription doesn't exist yet and org is active, or if subscription details were passed:
+    if (!org.subscription && org.isActive) {
+      const defaultExpiry = new Date()
+      defaultExpiry.setFullYear(defaultExpiry.getFullYear() + 1)
+      await prisma.organizationSubscription.create({
+        data: {
+          orgId: id,
+          planTier: org.planTier,
+          seats: org.maxSeats,
+          isActive: true,
+          validFrom: new Date(),
+          validUntil: defaultExpiry,
+          createdBy: actor.userId,
+          notes: 'Auto-initialized on organization activation',
+        },
+      })
+    } else if (org.subscription) {
+      // Keep planTier and seats aligned
+      await prisma.organizationSubscription.update({
+        where: { orgId: id },
+        data: {
+          planTier: org.planTier,
+          seats: org.maxSeats,
+          ...(typeof body.isActive === 'boolean' ? { isActive: body.isActive } : {}),
+        },
+      })
+    }
+
+    const updatedOrg = await prisma.organization.findUnique({
+      where: { id },
+      include: { subscription: true, _count: { select: { memberships: true } } },
+    })
+
+    return NextResponse.json({
+      org: updatedOrg ? { ...updatedOrg, memberCount: updatedOrg._count.memberships } : org,
+    })
   } catch (err: any) {
     if (err?.code === 'P2002')
       return NextResponse.json({ error: 'Name is already taken by another organization' }, { status: 409 })

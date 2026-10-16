@@ -75,8 +75,41 @@ export async function POST(request: NextRequest) {
     if (existing)
       return NextResponse.json({ error: 'An organization with that name already exists' }, { status: 409 })
 
+    const subscriptionDurationMonths =
+      typeof body.subscriptionDurationMonths === 'number'
+        ? body.subscriptionDurationMonths
+        : body.subscriptionDurationMonths
+        ? parseInt(body.subscriptionDurationMonths)
+        : 12 // Default 12 months (1 year)
+
+    let validUntil: Date | null = null
+    if (body.validUntil) {
+      validUntil = new Date(body.validUntil)
+    } else if (subscriptionDurationMonths > 0) {
+      validUntil = new Date()
+      validUntil.setMonth(validUntil.getMonth() + subscriptionDurationMonths)
+    }
+
     const org = await prisma.organization.create({
-      data: { name, slug, contactEmail, planTier, maxSeats, isActive: true },
+      data: {
+        name,
+        slug,
+        contactEmail,
+        planTier,
+        maxSeats,
+        isActive: body.isActive !== false,
+        subscription: {
+          create: {
+            planTier,
+            seats: maxSeats,
+            isActive: body.subscriptionActive !== false,
+            validFrom: body.validFrom ? new Date(body.validFrom) : new Date(),
+            validUntil,
+            notes: body.notes || 'Created via admin panel',
+            createdBy: actor.userId,
+          },
+        },
+      },
       include: { subscription: true, _count: { select: { memberships: true } } },
     })
 
