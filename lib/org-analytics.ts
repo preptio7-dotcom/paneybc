@@ -157,7 +157,7 @@ export async function buildInstituteStudentAnalytics(
     select: {
       joinedAt: true,
       consentedAt: true,
-      user: { select: { id: true, name: true, email: true, studentRole: true } },
+      user: { select: { id: true, name: true, email: true, studentRole: true, practiceStreakCurrent: true, practiceStreakBest: true } },
     },
   })
   if (!membership) return { error: 'NOT_MEMBER' as const }
@@ -166,40 +166,125 @@ export async function buildInstituteStudentAnalytics(
   const range = parseAnalyticsRangeKey(rangeInput)
   const since = laterOf(rangeFrom(range), membership.joinedAt)
 
+  // Subject-level aggregation
   const grouped = await prisma.testResult.groupBy({
     by: ['subject'],
     where: { userId, createdAt: { gte: since } },
     _sum: { totalQuestions: true, correctAnswers: true },
   })
 
-  const subjects = await prisma.subject.findMany({ select: { code: true, name: true } })
-  const subjectName = new Map(subjects.map((s) => [s.code, s.name]))
+  // All subjects with chapter lists
+  const subjects = await prisma.subject.findMany({ select: { code: true, name: true, chapters: true } })
+  const subjectMeta = new Map(subjects.map((s) => [s.code, s]))
 
   let totalQuestioned = 0
   let totalCorrect = 0
+
   const subjectRows = grouped
     .map((row) => {
       const attempted = row._sum.totalQuestions ?? 0
       const correct = row._sum.correctAnswers ?? 0
       totalQuestioned += attempted
       totalCorrect += correct
+      const meta = subjectMeta.get(row.subject)
+      const chapters = Array.isArray(meta?.chapters) ? (meta!.chapters as unknown[]) : []
       return {
         code: row.subject,
-        name: subjectName.get(row.subject) || row.subject,
-        questionsAttempted: attempted,
+        name: meta?.name || row.subject,
+        attempted,
         accuracy: attempted > 0 ? Math.round((correct / attempted) * 100) : 0,
+        totalQuestions: chapters.length,
       }
     })
     .sort((a, b) => a.code.localeCompare(b.code))
 
+  const overallAccuracy = totalQuestioned > 0 ? Math.round((totalCorrect / totalQuestioned) * 100) : 0
+  const streakCurrent = membership.user.practiceStreakCurrent ?? 0
+  const streakBest = membership.user.practiceStreakBest ?? 0
+
+  // Build heatmap: only subjects the student has attempted, using Subject.chapters list
+  // We use TestResult grouped by [subject, chapter] where possible
+  type ChapterRow = { subject: string; chapter: string | null; _sum: { totalQuestions: number | null; correctAnswers: number | null } }
+  let chapterGrouped: ChapterRow[] = []
+  try {
+    chapterGrouped = await (prisma.testResult as any).groupBy({
+      by: ['subject', 'chapter'],
+      where: { userId, createdAt: { gte: since }, NOT: { chapter: null } },
+      _sum: { totalQuestions: true, correctAnswers: true },
+    })
+  } catch {
+    // chapter field may not exist on older builds — heatmap will show 0 attempted
+  }
+
+  const chapterResultMap = new Map<string, { attempted: number; correct: number }>()
+  for (const row of chapterGrouped) {
+    if (!row.chapter) continue
+    chapterResultMap.set(`${row.subject}::${row.chapter}`, {
+      attempted: row._sum.totalQuestions ?? 0,
+      correct: row._sum.correctAnswers ?? 0,
+    })
+  }
+
+  function chapterStatus(attempted: number, acc: number | null): 'not_attempted' | 'needs_work' | 'improving' | 'strong' {
+    if (attempted === 0 || acc === null) return 'not_attempted'
+    if (acc >= 75) return 'strong'
+    if (acc >= 50) return 'improving'
+    return 'needs_work'
+  }
+
+  const heatmapTabs = subjects
+    .filter((s) => grouped.some((g) => g.subject === s.code))
+    .map((s) => {
+      const chs = Array.isArray(s.chapters) ? (s.chapters as string[]) : []
+      return {
+        code: s.code,
+        chapters: chs.map((ch) => {
+          const stats = chapterResultMap.get(`${s.code}::${ch}`)
+          const attempted = stats?.attempted ?? 0
+          const correct = stats?.correct ?? 0
+          const acc = attempted > 0 ? Math.round((correct / attempted) * 100) : null
+          return { key: `${s.code}::${ch}`, label: ch, attempted, accuracy: acc, status: chapterStatus(attempted, acc) }
+        }),
+      }
+    })
+
+  // Exam readiness: 80% weighted accuracy + up to 20 pts from streak
+  const streakBonus = Math.min(streakCurrent * 2, 20)
+  const examReadinessScore = Math.min(Math.round(overallAccuracy * 0.8 + streakBonus), 100)
+
+  function readinessLabel(score: number) {
+    if (score >= 80) return { title: 'Exam Ready', message: 'Strong performance across subjects.' }
+    if (score >= 60) return { title: 'On Track', message: 'Good progress — focus on weaker chapters.' }
+    if (score >= 40) return { title: 'Needs Improvement', message: 'Increase practice and review errors.' }
+    return { title: 'Just Starting', message: 'Consistent practice will build momentum quickly.' }
+  }
+
   return {
-    student: membership.user,
+    student: {
+      id: membership.user.id,
+      name: membership.user.name,
+      email: membership.user.email,
+      studentRole: membership.user.studentRole,
+    },
     visibleFrom: membership.joinedAt,
     range,
     analytics: {
-      totalQuestioned,
-      accuracy: totalQuestioned > 0 ? Math.round((totalCorrect / totalQuestioned) * 100) : 0,
+      topStats: {
+        totalQuestionsPracticed: totalQuestioned,
+        overallAccuracy,
+        streak: { current: streakCurrent, best: streakBest },
+        examReadiness: { score: examReadinessScore },
+      },
+      readiness: {
+        interpretation: readinessLabel(examReadinessScore),
+        factors: [
+          { key: 'accuracy', label: 'Overall Accuracy', points: Math.round(overallAccuracy * 0.8), maxPoints: 80 },
+          { key: 'streak', label: 'Practice Streak', points: streakBonus, maxPoints: 20 },
+        ],
+      },
       subjects: subjectRows,
+      heatmap: { tabs: heatmapTabs },
     },
   }
 }
+

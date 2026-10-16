@@ -59,6 +59,7 @@ export default function SignupPage() {
   const [referralCode, setReferralCode] = useState('')
   const [referralError, setReferralError] = useState<string | null>(null)
   const [isSelfStudy, setIsSelfStudy] = useState(false)
+  const [lockedEmail, setLockedEmail] = useState<string | null>(null)
 
   useEffect(() => {
     if (loading) return
@@ -74,6 +75,12 @@ export default function SignupPage() {
         const ref = urlParams.get('ref')
         if (ref) {
           setReferralCode(ref.toUpperCase().trim())
+        }
+        const emailParam = urlParams.get('email')
+        if (emailParam) {
+          const decoded = decodeURIComponent(emailParam).trim().toLowerCase()
+          setLockedEmail(decoded)
+          setFormData((prev) => ({ ...prev, email: decoded }))
         }
       } catch {
         // Safe ignore
@@ -475,6 +482,11 @@ export default function SignupPage() {
                       <div className="space-y-2">
                         <label htmlFor="email" className="text-sm font-medium text-gray-700">
                           Email Address *
+                          {lockedEmail && (
+                            <span className="ml-2 text-xs font-normal text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                              pre-filled from invite
+                            </span>
+                          )}
                         </label>
                         <Input
                           id="email"
@@ -482,9 +494,10 @@ export default function SignupPage() {
                           type="email"
                           placeholder="you@example.com"
                           value={formData.email}
-                          onChange={handleChange}
+                          onChange={lockedEmail ? undefined : handleChange}
+                          readOnly={!!lockedEmail}
                           disabled={isLoading}
-                          className="border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938]"
+                          className={`border-gray-200 focus:border-[#0F7938] focus:ring-[#0F7938] ${lockedEmail ? 'bg-gray-50 cursor-not-allowed text-gray-500' : ''}`}
                           required
                         />
                       </div>

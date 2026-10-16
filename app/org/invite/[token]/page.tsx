@@ -41,7 +41,11 @@ export default function AcceptInvitePage() {
     })
     const data = await res.json().catch(() => ({}))
     if (res.status === 401) {
-      router.push(authHref('login', `/org/invite/${token}`))
+      // Redirect to signup with email pre-filled & locked, and return back here after auth
+      const inviteEmail = preview?.state === 'valid' ? preview.email : ''
+      const params = new URLSearchParams({ returnTo: `/org/invite/${token}` })
+      if (inviteEmail) params.set('email', inviteEmail)
+      router.push(`/auth/signup?${params}`)
       return
     }
     if (!res.ok) {
@@ -49,7 +53,7 @@ export default function AcceptInvitePage() {
       setSubmitting(false)
       return
     }
-    router.push('/org')
+    router.push('/dashboard')
   }
 
   if (error) {
