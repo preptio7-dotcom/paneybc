@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     '/',
     '/about',
+    '/community',
     '/subjects',
     '/subjects/BAEIVII',
     '/subjects/BAEIV2E',
@@ -36,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority:
       route === '/'
         ? 1
-        : route === '/subjects' || route === '/blog'
+        : route === '/subjects' || route === '/blog' || route === '/community'
           ? 0.9
           : route === '/about'
             ? 0.8
