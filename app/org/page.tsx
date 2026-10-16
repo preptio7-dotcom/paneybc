@@ -15,7 +15,6 @@ type OrgPlanTier = 'starter' | 'professional' | 'enterprise'
 type OrgDashboard = {
   orgId: string
   role: string
-  subscriptionStatus?: 'active' | 'expired' | 'inactive' | 'none'
   org: {
     id: string
     name: string
@@ -150,19 +149,12 @@ export default function OrgOverviewPage() {
               <div>
                 <p className="text-sm text-text-light">Status</p>
                 <p className="text-lg font-bold text-text-dark">
-                  {data.subscriptionStatus === 'active' || (data.org.isActive && data.org.subscription?.isActive && (!data.org.subscription.validUntil || new Date(data.org.subscription.validUntil).getTime() > Date.now())) ? (
+                  {data.org.isActive ? (
                     <span className="text-green-600">Active</span>
-                  ) : data.subscriptionStatus === 'expired' || (data.org.subscription?.validUntil && new Date(data.org.subscription.validUntil).getTime() <= Date.now()) ? (
-                    <span className="text-amber-600">Expired</span>
                   ) : (
                     <span className="text-red-500">Inactive</span>
                   )}
                 </p>
-                {data.org.subscription?.validUntil && (
-                  <p className="text-xs text-text-light mt-0.5">
-                    Until {new Date(data.org.subscription.validUntil).toLocaleDateString()}
-                  </p>
-                )}
               </div>
             </div>
           </CardContent>
@@ -222,15 +214,6 @@ export default function OrgOverviewPage() {
         </Card>
       )}
 
-      {/* Quick info for non-admin members */}
-      {data.role === 'member' && (
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
-          <strong>You&apos;re a member of this organization.</strong> Your practice data and analytics
-          are shared with your institute admin. Keep practicing to help your institute shine! 🎯
-        </div>
-      )}
-
-      {/* Admin hint */}
       {(data.role === 'admin' || data.role === 'owner') && (
         <div className="rounded-lg border border-green-100 bg-green-50 p-4 text-sm text-green-800">
           <strong>You&apos;re an organization admin.</strong> Use the <strong>Members</strong> tab to manage your

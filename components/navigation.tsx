@@ -156,6 +156,7 @@ export function Navigation() {
   const showBetaLinks = betaNavItems.length > 0
   const useFrostedNavbar = isScrolled || isMenuOpen
   const profileHref = user?.role === 'student' ? '/dashboard/settings' : '/admin/users'
+  const isOrgAdmin = user?.org?.role === 'admin' || user?.org?.role === 'owner'
 
   return (
     <>
@@ -282,13 +283,13 @@ export function Navigation() {
               >
                 {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
               </Link>
-              {user.org && (user.org.role === 'admin' || user.org.role === 'owner') && (
+              {isOrgAdmin && (
                 <Link
                   href="/org"
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors shrink-0"
                 >
                   <span className="text-xs">🏛️</span>
-                  <span>{user.org.name}</span>
+                  <span className="max-w-[140px] truncate">{user.org?.name}</span>
                 </Link>
               )}
               <div className="relative">
@@ -364,13 +365,25 @@ export function Navigation() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden p-2 hover:bg-background-light rounded-lg transition-colors"
-        >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="md:hidden flex items-center gap-1.5 shrink-0">
+          {isOrgAdmin && (
+            <Link
+              href="/org"
+              className="flex items-center gap-1 max-w-[42vw] px-2 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
+              aria-label={`${user?.org?.name || 'Organization'} portal`}
+            >
+              <span>🏛️</span>
+              <span className="truncate">{user?.org?.name || 'Institute'}</span>
+            </Link>
+          )}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-2 hover:bg-background-light rounded-lg transition-colors"
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -528,6 +541,16 @@ export function Navigation() {
                   >
                     {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
                   </Link>
+                  {isOrgAdmin && (
+                    <Link
+                      href="/org"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-800"
+                    >
+                      <span>🏛️</span>
+                      <span className="truncate">{user.org?.name} portal</span>
+                    </Link>
+                  )}
                   <Link
                     href={profileHref}
                     onClick={() => setIsMenuOpen(false)}

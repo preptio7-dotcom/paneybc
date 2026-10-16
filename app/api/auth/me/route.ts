@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { clearAuthCookie } from '@/lib/auth-cookie'
 import { resolveAvatarForUser } from '@/lib/avatar-pack-service'
+import { getOrgAdminMembership, toPublicOrgSummary } from '@/lib/org-access'
 
 export const runtime = 'nodejs'
 
@@ -31,16 +32,7 @@ export async function GET(request: NextRequest) {
 
     const resolvedAvatar = await resolveAvatarForUser(user)
 
-    // Check if user is an organization admin/owner
-    const orgMembership = await prisma.organizationMembership.findFirst({
-      where: {
-        userId: user.id,
-        org: { isActive: true },
-      },
-      include: {
-        org: { select: { id: true, name: true, slug: true } },
-      },
-    })
+    const orgMembership = await getOrgAdminMembership(user.id)
 
     return NextResponse.json(
       {
@@ -56,14 +48,7 @@ export async function GET(request: NextRequest) {
           popupDismissed: user.popupDismissed,
           referralCode: user.referralCode,
           referralLink: user.referralLink,
-          org: orgMembership
-            ? {
-                id: orgMembership.org.id,
-                name: orgMembership.org.name,
-                slug: orgMembership.org.slug,
-                role: orgMembership.role,
-              }
-            : null,
+          org: toPublicOrgSummary(orgMembership),
         },
       },
       { status: 200 }

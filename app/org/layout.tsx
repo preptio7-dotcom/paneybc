@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Navigation } from '@/components/navigation'
 import {
   Building2,
@@ -20,30 +20,20 @@ const ORG_NAV = [
 
 export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [hasOrg, setHasOrg] = useState<boolean | null>(null)
 
-  // Public invite acceptance routes must not be gated by institute membership checks or sub-nav
-  const isInviteRoute = pathname?.startsWith('/org/invite')
-
   useEffect(() => {
-    if (isInviteRoute) return
     fetch('/api/org/dashboard', { cache: 'no-store' })
       .then((r) => {
         setHasOrg(r.ok)
+        if (!r.ok) router.replace('/dashboard')
       })
-      .catch(() => setHasOrg(false))
-  }, [isInviteRoute])
-
-  if (isInviteRoute) {
-    return (
-      <>
-        <Navigation />
-        <div className="min-h-screen bg-background-light pt-20 pb-16">
-          {children}
-        </div>
-      </>
-    )
-  }
+      .catch(() => {
+        setHasOrg(false)
+        router.replace('/dashboard')
+      })
+  }, [router])
 
   if (hasOrg === null) {
     return (
@@ -63,10 +53,9 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen flex items-center justify-center bg-background-light pt-16">
           <div className="text-center space-y-4 max-w-md px-6">
             <Building2 size={48} className="mx-auto text-slate-300" />
-            <h2 className="text-2xl font-bold text-text-dark">No Organization</h2>
+            <h2 className="text-2xl font-bold text-text-dark">Access restricted</h2>
             <p className="text-text-light">
-              You are not a member of any organization yet. If your institute has signed up,
-              ask the administrator to add your account.
+              The institute portal is only available to organization admins. Students should use the dashboard.
             </p>
             <Link
               href="/dashboard"

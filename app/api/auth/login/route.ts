@@ -23,6 +23,7 @@ import {
 import { sendSecurityAlertEmail } from '@/lib/email'
 import { resolveAvatarForUser } from '@/lib/avatar-pack-service'
 import { getJwtSecret } from '@/lib/jwt-secret'
+import { getOrgAdminMembership, toPublicOrgSummary } from '@/lib/org-access'
 
 const LOGIN_ENDPOINT = '/api/auth/login'
 
@@ -247,6 +248,7 @@ export async function POST(request: NextRequest) {
     )
 
     const resolvedAvatar = await resolveAvatarForUser(user)
+    const orgMembership = await getOrgAdminMembership(user.id)
 
     const response = NextResponse.json(
       {
@@ -262,6 +264,7 @@ export async function POST(request: NextRequest) {
           popupDismissed: user.popupDismissed,
           referralCode: user.referralCode,
           referralLink: user.referralLink,
+          org: toPublicOrgSummary(orgMembership),
         },
       },
       { status: 200 }

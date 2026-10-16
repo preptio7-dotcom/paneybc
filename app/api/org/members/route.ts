@@ -2,24 +2,23 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { gateOrg } from '@/lib/org-access'
-import { createOrRefreshInvites } from '@/lib/org-invites'
+import { requireOrgAdmin, getEffectiveSeats, wouldExceedSeats } from '@/lib/org-access'
 import type { OrgRole } from '@prisma/client'
 
 /**
  * GET /api/org/members
- * Roster for any active member. Email is shown only to owners/admins.
- * consentedAt shows whether the member has agreed to share results.
+ *
+ * Returns the member list for the org of the logged-in admin/owner.
  */
 export async function GET(request: NextRequest) {
   try {
-    const gate = await gateOrg(request)
-    if (!gate.ok) return NextResponse.json({ error: gate.error, code: gate.code }, { status: gate.status })
-    const { ctx } = gate
+    const ctx = await requireOrgAdmin(request)
+    if (!ctx) return NextResponse.json({ error: 'Only organization admins can view members' }, { status: 403 })
 
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, parseInt(searchParams.get('limit') || '50'))
+
     const isPrivileged = ctx.role === 'owner' || ctx.role === 'admin'
 
     const [memberships, total] = await Promise.all([
@@ -30,6 +29,7 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
+              // Email only visible to org admins/owners
               email: isPrivileged,
               studentRole: true,
               practiceStreakCurrent: true,
@@ -44,7 +44,12 @@ export async function GET(request: NextRequest) {
       prisma.organizationMembership.count({ where: { orgId: ctx.orgId } }),
     ])
 
-    return NextResponse.json({ members: memberships, total, pages: Math.ceil(total / limit), page })
+    return NextResponse.json({
+      members: memberships,
+      total,
+      pages: Math.ceil(total / limit),
+      page,
+    })
   } catch (err) {
     console.error('[org/members] GET error:', err)
     return NextResponse.json({ error: 'Failed to load members' }, { status: 500 })
@@ -53,75 +58,74 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/org/members
- * No longer adds members directly. Sends an invitation instead, so the
- * student must sign in and consent before the institute can see anything.
- * Body: { email, role? }
+ *
+ * Adds a member to the org. Only org admins/owners can call this.
  */
 export async function POST(request: NextRequest) {
   try {
-    const gate = await gateOrg(request, { adminOnly: true })
-    if (!gate.ok) return NextResponse.json({ error: gate.error, code: gate.code }, { status: gate.status })
-    const { ctx } = gate
+    const ctx = await requireOrgAdmin(request)
+    if (!ctx) return NextResponse.json({ error: 'Only org admins can add members' }, { status: 403 })
 
-    const body = await request.json().catch(() => ({}))
+    const body = await request.json()
+    const email = (body.email as string)?.trim()
     const role: OrgRole = (body.role as OrgRole) || 'member'
-    if (!['member', 'admin', 'owner'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-    }
-    if (role === 'owner' && ctx.role !== 'owner') {
-      return NextResponse.json({ error: 'Only an owner can grant the owner role' }, { status: 403 })
-    }
 
-    const results = await createOrRefreshInvites({
-      org: ctx.org,
-      actorUserId: ctx.userId,
-      role,
-      emails: [body.email],
+    if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+
+    // Seat check
+    const over = await wouldExceedSeats(ctx.org, 1)
+    if (over)
+      return NextResponse.json(
+        { error: `Seat limit of ${getEffectiveSeats(ctx.org)} reached` },
+        { status: 422 }
+      )
+
+    const user = await prisma.user.findFirst({
+      where: { email },
+      select: { id: true, name: true, email: true },
     })
-    const [result] = results
-    if (!result || result.status === 'invalid_email') {
-      return NextResponse.json({ error: 'A valid email is required' }, { status: 400 })
-    }
-    if (result.status === 'already_member') {
-      return NextResponse.json({ error: 'This person is already a member' }, { status: 409 })
-    }
+    if (!user) return NextResponse.json({ error: 'User not found. They must sign up first.' }, { status: 404 })
 
-    return NextResponse.json({ invite: result }, { status: 201 })
+    const membership = await prisma.organizationMembership.upsert({
+      where: { orgId_userId: { orgId: ctx.orgId, userId: user.id } },
+      create: { orgId: ctx.orgId, userId: user.id, role },
+      update: { role },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    })
+
+    return NextResponse.json({ membership }, { status: 201 })
   } catch (err) {
     console.error('[org/members] POST error:', err)
-    return NextResponse.json({ error: 'Failed to send invitation' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to add member' }, { status: 500 })
   }
 }
 
-/** DELETE /api/org/members?userId=... — remove a member. Scoped to this org. */
+/**
+ * DELETE /api/org/members?userId=...
+ *
+ * Removes a member from the org. Only org admins/owners can call this.
+ */
 export async function DELETE(request: NextRequest) {
   try {
-    const gate = await gateOrg(request, { adminOnly: true })
-    if (!gate.ok) return NextResponse.json({ error: gate.error, code: gate.code }, { status: gate.status })
-    const { ctx } = gate
+    const ctx = await requireOrgAdmin(request)
+    if (!ctx) return NextResponse.json({ error: 'Only org admins can remove members' }, { status: 403 })
 
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 })
-    if (userId === ctx.userId) {
-      return NextResponse.json({ error: 'You cannot remove yourself' }, { status: 400 })
-    }
 
-    const target = await prisma.organizationMembership.findUnique({
-      where: { orgId_userId: { orgId: ctx.orgId, userId } },
-      select: { role: true },
-    })
-    if (!target) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
-    if (target.role === 'owner' && ctx.role !== 'owner') {
-      return NextResponse.json({ error: 'Only an owner can remove an owner' }, { status: 403 })
-    }
+    // Prevent removing yourself
+    if (userId === ctx.userId)
+      return NextResponse.json({ error: 'You cannot remove yourself' }, { status: 400 })
 
     await prisma.organizationMembership.delete({
       where: { orgId_userId: { orgId: ctx.orgId, userId } },
     })
+
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    if (err?.code === 'P2025') return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+    if (err?.code === 'P2025')
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 })
     console.error('[org/members] DELETE error:', err)
     return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 })
   }
