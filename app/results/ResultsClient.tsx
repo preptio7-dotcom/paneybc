@@ -8,6 +8,7 @@ import { AnswerBreakdown } from '@/components/answer-breakdown'
 import { ResultsActions } from '@/components/results-actions'
 import { FeedbackPromptCard } from '@/components/feedback-prompt-card'
 import { AdSlot } from '@/components/ad-slot'
+import { HouseAdBanner } from '@/components/home-ad-banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
@@ -279,6 +280,8 @@ export default function ResultsPage() {
           onTryDifferentSubject={() => router.push('/subjects')}
           onReturnToDashboard={() => router.push('/dashboard')}
         />
+
+        <HouseAdBanner placement="general" variant="card" className="mt-10 mb-6 w-full" />
       </div>
     </main>
   )

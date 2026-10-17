@@ -256,7 +256,7 @@ export default function NotesPage() {
           </Button>
         </div>
 
-        <HouseAdBanner placement="notes" className="w-full my-4" />
+        <HouseAdBanner placement="notes" className="w-full my-6" />
 
         {activeTab === 'notes' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -486,6 +486,7 @@ export default function NotesPage() {
             </Card>
           </div>
         )}
+        <HouseAdBanner placement="general" className="w-full my-6" />
       </div>
     </div>
   )

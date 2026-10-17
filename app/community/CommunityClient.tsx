@@ -157,6 +157,7 @@ export default function CommunityClient() {
               {(location.page > 1 || hasMore) && <nav aria-label="Feed pages" className="mt-5 flex items-center justify-between"><button type="button" className="community-action border border-slate-200 bg-white" disabled={location.page === 1} onClick={() => navigate({ ...location, page: location.page - 1 })}><ArrowLeft size={15} />Previous</button><span className="text-xs text-slate-500">Page {location.page}</span><button type="button" className="community-action border border-slate-200 bg-white" disabled={!hasMore} onClick={() => navigate({ ...location, page: location.page + 1 })}>Next<ArrowRight size={15} /></button></nav>}
             </>}
           </div>
+          <HouseAdBanner placement="general" variant="card" className="mt-5 w-full" />
         </div>
         <aside aria-label="Community information" className="space-y-4 lg:sticky lg:top-24">
           <HouseAdBanner placement="community" variant="card" className="w-full" />

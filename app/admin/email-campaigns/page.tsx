@@ -809,6 +809,13 @@ export default function EmailCampaignsPage() {
                           </Button>
                           <Button
                             size="sm"
+                            variant="outline"
+                            asChild
+                          >
+                            <a href={`/admin/email-campaigns/${schedule._id}`}>View recipients</a>
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="destructive"
                             onClick={() => deleteSchedule(schedule._id)}
                           >

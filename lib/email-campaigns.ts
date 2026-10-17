@@ -126,7 +126,7 @@ export async function processEmailSchedules(options: { scheduleId?: string; send
   const now = new Date()
   const dailyLimit = getDailyEmailLimit()
 
-  const dueFilter = options.scheduleId
+  const dueFilter: any = options.scheduleId
     ? { id: options.scheduleId, status: { in: ['scheduled', 'in_progress'] as const } }
     : {
         OR: [

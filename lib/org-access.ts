@@ -41,6 +41,47 @@ export type OrgMembershipContext = {
   org: OrgWithSubscription
 }
 
+export type SubscriptionStatus = 'active' | 'expired' | 'inactive' | 'none'
+
+export type OrgGateOptions = {
+  /** Only owners and admins may pass. */
+  adminOnly?: boolean
+  /** Let an org with a lapsed subscription through (dashboard only). */
+  allowLapsed?: boolean
+}
+
+export type OrgGateResult =
+  | { ok: true; ctx: OrgMembershipContext }
+  | {
+      ok: false
+      status: 401 | 402 | 403
+      code: 'UNAUTHENTICATED' | 'NO_ORG' | 'NOT_ADMIN' | 'SUBSCRIPTION_EXPIRED' | 'SUBSCRIPTION_INACTIVE'
+      error: string
+    }
+
+// ─── Subscription status ─────────────────────────────────────────────────────
+
+/**
+ * Computes the effective subscription state from the stored row.
+ * - inactive: org disabled by platform, or subscription switched off
+ * - none: org has no subscription record at all (never paid / not set up)
+ * - expired: validUntil is in the past
+ * - active: usable
+ * A null validUntil means no expiry date was set (open-ended).
+ */
+export function getSubscriptionStatus(org: OrgWithSubscription, now: Date = new Date()): SubscriptionStatus {
+  if (!org.isActive) return 'inactive'
+  const sub = org.subscription
+  if (!sub) return 'none'
+  if (!sub.isActive) return 'inactive'
+  if (sub.validUntil && sub.validUntil.getTime() <= now.getTime()) return 'expired'
+  return 'active'
+}
+
+export function isSubscriptionUsable(status: SubscriptionStatus): boolean {
+  return status === 'active'
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -130,6 +171,55 @@ export async function requireOrgAdmin(
   if (!ctx) return null
   if (!isOrgAdminRole(ctx.role)) return null
   return ctx
+}
+
+/**
+ * Single entry point for institute routes. Checks identity, membership,
+ * role and subscription in that order and returns a typed result so each
+ * route can respond with the right status and message.
+ */
+export async function gateOrg(
+  request: NextRequest,
+  options: OrgGateOptions = {}
+): Promise<OrgGateResult> {
+  const tokenUser = getCurrentUser(request)
+  if (!tokenUser?.userId) {
+    return { ok: false, status: 401, code: 'UNAUTHENTICATED', error: 'Sign in required' }
+  }
+
+  const ctx = await getOrgForUser(request)
+  if (!ctx) {
+    return { ok: false, status: 403, code: 'NO_ORG', error: 'Not a member of this organization' }
+  }
+
+  if (options.adminOnly && !isOrgAdminRole(ctx.role)) {
+    return {
+      ok: false,
+      status: 403,
+      code: 'NOT_ADMIN',
+      error: 'Only organization owners and admins can do this',
+    }
+  }
+
+  const subscriptionStatus = getSubscriptionStatus(ctx.org)
+  if (!isSubscriptionUsable(subscriptionStatus) && !options.allowLapsed) {
+    if (subscriptionStatus === 'expired') {
+      return {
+        ok: false,
+        status: 402,
+        code: 'SUBSCRIPTION_EXPIRED',
+        error: 'This institute subscription has expired. Renew to restore access.',
+      }
+    }
+    return {
+      ok: false,
+      status: 402,
+      code: 'SUBSCRIPTION_INACTIVE',
+      error: 'This institute subscription is not active. Contact Preptio support.',
+    }
+  }
+
+  return { ok: true, ctx }
 }
 
 /**

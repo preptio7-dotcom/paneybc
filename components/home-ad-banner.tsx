@@ -111,6 +111,6 @@ export function HouseAdBanner({
 
 // Retain HomeAdBanner for backward compatibility
 export function HomeAdBanner() {
-  return <HouseAdBanner placement="dashboard" className="max-w-6xl mx-auto px-6 mt-8" />
+  return <HouseAdBanner placement="dashboard" className="max-w-6xl mx-auto px-6 mt-8 mb-8" />
 }
 

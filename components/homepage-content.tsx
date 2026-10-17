@@ -20,6 +20,10 @@ const HomeAdBanner = dynamic(
   () => import('@/components/home-ad-banner').then((module) => module.HomeAdBanner),
   { ssr: false, loading: () => null }
 )
+const HouseAdBanner = dynamic(
+  () => import('@/components/home-ad-banner').then((module) => module.HouseAdBanner),
+  { ssr: false, loading: () => null }
+)
 const FeaturesSection = dynamic(
   () => import('@/components/features-section').then((module) => module.FeaturesSection),
   { loading: () => null }
@@ -168,7 +172,7 @@ export function HomepageContent() {
       <LazyHomeSection minHeight={520}>
         <StatsSection themeVariant={sectionConfig.stats} reduceMotion={reduceMotion} />
       </LazyHomeSection>
-      <LazyHomeSection minHeight={180}>
+      <LazyHomeSection minHeight={180} className="py-8">
         <HomeAdBanner />
       </LazyHomeSection>
       <LazyHomeSection minHeight={620}>
@@ -180,8 +184,14 @@ export function HomepageContent() {
       <LazyHomeSection minHeight={520}>
         <HomeBlogSection />
       </LazyHomeSection>
+      <LazyHomeSection minHeight={180} className="py-8">
+        <HouseAdBanner placement="general" className="max-w-6xl mx-auto px-4 sm:px-6" />
+      </LazyHomeSection>
       <LazyHomeSection minHeight={560}>
         <HomeFaqSection themeVariant={sectionConfig.faq} reduceMotion={reduceMotion} />
+      </LazyHomeSection>
+      <LazyHomeSection minHeight={180} className="py-10">
+        <HouseAdBanner placement="dashboard" className="max-w-6xl mx-auto px-4 sm:px-6" />
       </LazyHomeSection>
       <LazyHomeSection minHeight={220}>
         <Footer />

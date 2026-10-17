@@ -25,6 +25,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { NotificationOptIn } from '@/components/notification-opt-in'
 import { AdSlot } from '@/components/ad-slot'
+import { HouseAdBanner } from '@/components/home-ad-banner'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { betaFeatureDefinitions } from '@/data/beta-features'
@@ -2104,6 +2105,11 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <HouseAdBanner
+        placement="dashboard"
+        className="max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-24 md:pb-12"
+      />
 
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden">
         <div className="px-4 py-3">

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LockKeyhole, MessageSquare, ArrowUpRight, Bookmark, Pin, CheckCircle2, EyeOff, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
@@ -36,6 +36,9 @@ export function ThreadCard({ thread, detail = false, href, openThread, onSubject
   const { user } = useAuth()
   const isMod = user?.role === 'admin' || user?.role === 'super_admin'
   const [expanded, setExpanded] = useState(false)
+  const [bodyExpanded, setBodyExpanded] = useState(false)
+  const [isPreviewTruncated, setIsPreviewTruncated] = useState(false)
+  const bodyRef = useRef<HTMLParagraphElement | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [pending, setPending] = useState(false)
   const endpoint = `/api/community/threads/${encodeURIComponent(thread.id)}`
@@ -55,6 +58,21 @@ export function ThreadCard({ thread, detail = false, href, openThread, onSubject
   const displayAuthor = thread.isAnonymous ? { name: 'Anonymous', avatar: null } : thread.author
   const revealAuthor = thread.isAnonymous && isMod ? thread.realAuthor : null
   const preview = getThreadPreview(thread.body)
+
+  // Only show the expand/collapse toggle when the two-line preview actually overflows.
+  useEffect(() => {
+    if (detail || bodyExpanded) return
+    const el = bodyRef.current
+    if (!el) return
+    const measure = () => {
+      if (bodyRef.current) {
+        setIsPreviewTruncated(bodyRef.current.scrollHeight - bodyRef.current.clientHeight > 4)
+      }
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [preview.cleanText, detail, bodyExpanded])
 
   return <article className={`min-w-0 rounded-2xl border bg-white ${detail ? 'border-slate-200 p-4 sm:p-6' : 'border-slate-200/90 p-4 transition-colors hover:border-emerald-200 sm:p-5'}`}>
     <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
@@ -87,9 +105,21 @@ export function ThreadCard({ thread, detail = false, href, openThread, onSubject
     ) : (
       <div className="space-y-2.5">
         {preview.cleanText && (
-          <p className="line-clamp-2 whitespace-pre-line break-words text-sm leading-relaxed text-slate-600">
+          <p
+            ref={bodyRef}
+            className={`${bodyExpanded ? '' : 'line-clamp-2'} whitespace-pre-line break-words text-sm leading-relaxed text-slate-600`}
+          >
             {preview.cleanText}
           </p>
+        )}
+        {preview.cleanText && isPreviewTruncated && (
+          <button
+            type="button"
+            onClick={() => setBodyExpanded(!bodyExpanded)}
+            className="block text-xs font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+          >
+            {bodyExpanded ? 'View less' : 'View more'}
+          </button>
         )}
         {preview.imageUrl && (
           <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-slate-50 max-w-sm max-h-52 flex items-center justify-center">
