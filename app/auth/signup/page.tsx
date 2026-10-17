@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,6 +31,7 @@ export default function SignupPage() {
   const { toast } = useToast()
   const { register, user, loading } = useAuth()
   const { loginHref } = useAuthLinks()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingOptions, setIsLoadingOptions] = useState(true)
   const [isInstituteDropdownOpen, setIsInstituteDropdownOpen] = useState(false)
@@ -60,13 +62,23 @@ export default function SignupPage() {
   const [referralError, setReferralError] = useState<string | null>(null)
   const [isSelfStudy, setIsSelfStudy] = useState(false)
   const [lockedEmail, setLockedEmail] = useState<string | null>(null)
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [invitePreview, setInvitePreview] = useState<{
+    orgName: string
+    sharing: { visibleFrom: string; includes: string[]; revocable: boolean }
+  } | null>(null)
+  const [showInviteConsent, setShowInviteConsent] = useState(false)
+  const [inviteConsent, setInviteConsent] = useState(false)
+  const [verificationToken, setVerificationToken] = useState<string | null>(null)
 
   useEffect(() => {
     if (loading) return
     if (!user) return
+    // Invite flow: the redirect is handled manually after the invite is accepted.
+    if (inviteToken) return
     const target = authDestination(window.location.search, user.role)
     window.location.replace(target)
-  }, [loading, user])
+  }, [loading, user, inviteToken])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -81,6 +93,22 @@ export default function SignupPage() {
           const decoded = decodeURIComponent(emailParam).trim().toLowerCase()
           setLockedEmail(decoded)
           setFormData((prev) => ({ ...prev, email: decoded }))
+        }
+        const inviteTokenParam = urlParams.get('inviteToken')
+        if (inviteTokenParam) {
+          setInviteToken(inviteTokenParam)
+          // Load the institute name + what will be shared for the consent step.
+          fetch(`/api/org/invites/accept?token=${encodeURIComponent(inviteTokenParam)}`, { cache: 'no-store' })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data?.state === 'valid') {
+                setInvitePreview({ orgName: data.orgName, sharing: data.sharing })
+              } else {
+                // Token no longer usable — fall back to a normal signup.
+                setInviteToken(null)
+              }
+            })
+            .catch(() => setInviteToken(null))
         }
       } catch {
         // Safe ignore
@@ -368,34 +396,17 @@ export default function SignupPage() {
         throw new Error(verifyData.error || 'Verification failed')
       }
 
-      setReferralError(null)
+      setVerificationToken(verifyData.verificationToken)
 
-      const registerData: any = {
-        degree: formData.degree,
-        level: formData.level,
-        enrollmentType: 'institute',
-        institute: isSelfStudy 
-          ? 'Self Study'
-          : formData.instituteSelectionMode === 'other'
-            ? formData.customInstitute.trim()
-            : formData.institute.trim(),
-        instituteSelectionMode: isSelfStudy ? 'other' : formData.instituteSelectionMode,
-        city: formData.city.trim(),
-        studentId: isSelfStudy ? 'N/A' : formData.studentId.trim(),
-        cenNumber: formData.cenNumber.trim(),
-        phone: formData.phone.trim(),
-        instituteRating: formData.instituteRating,
-        acceptedTerms: formData.acceptTerms,
-        verificationToken: verifyData.verificationToken,
-        website: formData.website,
-        startedAt: formStartedAt,
+      if (inviteToken) {
+        // Pause before creating the account so the user reviews + accepts the
+        // institute data-sharing consent first.
+        setShowInviteConsent(true)
+        setIsLoading(false)
+        return
       }
 
-      if (referralCode.trim()) {
-        registerData.referralCode = referralCode.trim().toUpperCase()
-      }
-
-      await register(formData.email.trim(), formData.password, formData.name.trim(), registerData)
+      await performRegister(verifyData.verificationToken)
 
       toast({
         title: 'Success',
@@ -414,6 +425,71 @@ export default function SignupPage() {
           variant: 'destructive',
         })
       }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const performRegister = async (code: string) => {
+    setReferralError(null)
+
+    const registerData: any = {
+      degree: formData.degree,
+      level: formData.level,
+      enrollmentType: 'institute',
+      institute: isSelfStudy
+        ? 'Self Study'
+        : formData.instituteSelectionMode === 'other'
+          ? formData.customInstitute.trim()
+          : formData.institute.trim(),
+      instituteSelectionMode: isSelfStudy ? 'other' : formData.instituteSelectionMode,
+      city: formData.city.trim(),
+      studentId: isSelfStudy ? 'N/A' : formData.studentId.trim(),
+      cenNumber: formData.cenNumber.trim(),
+      phone: formData.phone.trim(),
+      instituteRating: formData.instituteRating,
+      acceptedTerms: formData.acceptTerms,
+      verificationToken: code,
+      website: formData.website,
+      startedAt: formStartedAt,
+    }
+
+    if (referralCode.trim()) {
+      registerData.referralCode = referralCode.trim().toUpperCase()
+    }
+
+    await register(formData.email.trim(), formData.password, formData.name.trim(), registerData)
+  }
+
+  // After the user accepts the institute consent screen: create the account,
+  // record the invite acceptance, then land on the dashboard.
+  const acceptInviteAndRegister = async () => {
+    if (!verificationToken || !inviteToken) return
+    setIsLoading(true)
+    try {
+      // 1) Create the account now that consent has been given.
+      await performRegister(verificationToken)
+
+      // 2) Record the invite acceptance against the fresh session.
+      const res = await fetch('/api/org/invites/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: inviteToken, consent: true }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        // Non-fatal: the account exists, and the invite can still be accepted later.
+        console.warn('[signup] accept invite failed:', data.error)
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Account created. Taking you to your dashboard…',
+      })
+      router.push('/dashboard')
+    } catch (error: any) {
+      const msg = error.message || 'Could not finish setting up your account.'
+      toast({ title: 'Error', description: msg, variant: 'destructive' })
     } finally {
       setIsLoading(false)
     }
@@ -889,6 +965,82 @@ export default function SignupPage() {
           </Card>
         </div>
       </div>
+
+      {showInviteConsent && inviteToken && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 pt-[10vh]">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-5">
+            <div className="text-center space-y-1.5">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-primary-green mx-auto flex items-center justify-center font-bold text-xl mb-2">
+                🏢
+              </div>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                Join {invitePreview?.orgName || 'your institute'} on Preptio
+              </h2>
+              <p className="text-sm text-slate-600">
+                Before we create your account, please review and accept what your institute will see.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+              <h3 className="text-sm font-bold text-slate-900">
+                What {invitePreview?.orgName || 'your institute'} will see:
+              </h3>
+              <ul className="space-y-2 text-sm text-slate-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span>
+                    Practice results from the day you join onward. Earlier practice history stays
+                    strictly private.
+                  </span>
+                </li>
+                {(invitePreview?.sharing?.includes ?? []).map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-slate-500 pt-2 border-t border-slate-200/80">
+                Your personal account remains yours. If you ever leave this organization, it
+                immediately stops receiving your results.
+              </p>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3.5 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-[#0F7938] focus:ring-[#0F7938]/30"
+                checked={inviteConsent}
+                onChange={(e) => setInviteConsent(e.target.checked)}
+              />
+              <span>
+                I agree to join{' '}
+                <strong>{invitePreview?.orgName || 'my institute'}</strong> and share my future
+                test progress and analytics with its administrators.
+              </span>
+            </label>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => setShowInviteConsent(false)}
+                disabled={isLoading}
+                className="w-full sm:flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={acceptInviteAndRegister}
+                disabled={!inviteConsent || isLoading}
+                className="w-full sm:flex-1 rounded-xl bg-[#0F7938] hover:bg-[#0F7938]/90 py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Creating Account…' : 'Agree & Create Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

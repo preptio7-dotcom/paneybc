@@ -1,19 +1,54 @@
 import { prisma } from '@/lib/prisma'
 import { sendCampaignEmail } from '@/lib/email'
 
-export const DEFAULT_DAILY_EMAIL_LIMIT = 100
+/** Bulk campaign mail (routed to the campaign provider — e.g. Brevo's 300/day). */
+export const DEFAULT_CAMPAIGN_DAILY_EMAIL_LIMIT = 300
+/** Low-volume retention mail (activation drip + streak reminders) on the default SMTP host. */
+export const DEFAULT_RETENTION_DAILY_EMAIL_LIMIT = 100
 
-/** Pause between campaign sends, so mail goes out at a steady pace. */
+/**
+ * Pause between campaign sends. Bulk providers such as Brevo are built for
+ * volume, so the default is short enough that a full audience fits inside a
+ * single function invocation. Override with CAMPAIGN_SEND_DELAY_MS.
+ */
 export function getSendDelayMs(): number {
   const configured = Number(process.env.CAMPAIGN_SEND_DELAY_MS)
-  return Number.isFinite(configured) && configured >= 0 ? configured : 1500
+  return Number.isFinite(configured) && configured >= 0 ? configured : 250
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export function getDailyEmailLimit(): number {
+/** Daily cap for bulk campaign mail (all campaigns share one provider allowance). */
+export function getCampaignDailyEmailLimit(): number {
   const configured = Number(process.env.CAMPAIGN_DAILY_EMAIL_LIMIT)
-  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : DEFAULT_DAILY_EMAIL_LIMIT
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : DEFAULT_CAMPAIGN_DAILY_EMAIL_LIMIT
+}
+
+/** Daily cap for retention mail (activation drip + streak reminders). */
+export function getRetentionDailyEmailLimit(): number {
+  const configured = Number(process.env.RETENTION_DAILY_EMAIL_LIMIT)
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : DEFAULT_RETENTION_DAILY_EMAIL_LIMIT
+}
+
+/**
+ * The two notification kinds the streak job writes. Push and email are tracked
+ * separately so the retention quota can count emails only, while the
+ * (userId, kind, dayKey) uniqueness still caps a user at one nudge a day.
+ */
+export const STREAK_AT_RISK_PUSH_KIND = 'streak_at_risk'
+export const STREAK_AT_RISK_EMAIL_KIND = 'streak_at_risk_email'
+
+/**
+ * Counts retention emails already sent today (activation drip + streak email
+ * fallback). Campaigns are deliberately excluded: they use a separate provider
+ * with its own allowance.
+ */
+export async function countRetentionEmailsSentToday(since: Date): Promise<number> {
+  const [activationSent, streakEmailsSent] = await Promise.all([
+    prisma.activationEmailLog.count({ where: { status: 'sent', sentAt: { gte: since } } }),
+    prisma.pushNotificationLog.count({ where: { kind: STREAK_AT_RISK_EMAIL_KIND, sentAt: { gte: since } } }),
+  ])
+  return activationSent + streakEmailsSent
 }
 
 /** Start of the current UTC day. The daily quota resets here. */
@@ -102,6 +137,25 @@ export async function resolveRecipients(schedule: ScheduleRecord): Promise<Array
     return users.filter((u) => u.email)
   }
 
+  if (segment === 'never_practiced') {
+    // Users who signed up but have never completed a practice test. We resolve
+    // the set of users who *have* practised first, then exclude them.
+    const practicedRows = await prisma.testResult.findMany({
+      where: { userId: { not: null } },
+      distinct: ['userId'],
+      select: { userId: true },
+    })
+    const practicedIds = practicedRows.map((row) => row.userId).filter(Boolean) as string[]
+    const users = await prisma.user.findMany({
+      where: {
+        isBanned: false,
+        ...(practicedIds.length > 0 ? { id: { notIn: practicedIds } } : {}),
+      },
+      select: { email: true, name: true },
+    })
+    return users.filter((u) => u.email)
+  }
+
   if (segment === 'exam_prep') {
     const days = schedule.examDaysBefore || 30
     const future = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
@@ -118,13 +172,13 @@ export async function resolveRecipients(schedule: ScheduleRecord): Promise<Array
 /**
  * Runs due campaigns. The audience is snapshotted into email_campaign_recipients
  * the first time a campaign runs, so every recipient has a row with a status.
- * Sending stops at the daily cap (CAMPAIGN_DAILY_EMAIL_LIMIT, default 100) or
+ * Sending stops at the daily cap (CAMPAIGN_DAILY_EMAIL_LIMIT, default 300) or
  * when SMTP reports a rate limit. Unsent rows stay pending and are picked up
  * on the next run. A campaign is marked sent only when no pending rows remain.
  */
-export async function processEmailSchedules(options: { scheduleId?: string; sendNow?: boolean } = {}) {
+export async function processEmailSchedules(options: { scheduleId?: string; sendNow?: boolean; deadline?: number } = {}) {
   const now = new Date()
-  const dailyLimit = getDailyEmailLimit()
+  const dailyLimit = getCampaignDailyEmailLimit()
 
   const dueFilter: any = options.scheduleId
     ? { id: options.scheduleId, status: { in: ['scheduled', 'in_progress'] as const } }
@@ -149,6 +203,7 @@ export async function processEmailSchedules(options: { scheduleId?: string; send
     where: { status: 'sent', sentAt: { gte: startOfTodayUtc(now) } },
   })))
   let stoppedByRateLimit = false
+  let stoppedByDeadline = false
   let totalSent = 0
   let totalFailed = 0
   const summaries: Array<{ scheduleId: string; sentThisRun: number; remaining: number; status: string }> = []
@@ -199,6 +254,11 @@ export async function processEmailSchedules(options: { scheduleId?: string; send
       })
 
       for (const recipient of batch) {
+        // Leave the rest pending if we are running out of function time.
+        if (options.deadline && Date.now() > options.deadline) {
+          stoppedByDeadline = true
+          break
+        }
         try {
           await sendCampaignEmail(recipient.email, template.subject, template.body)
           await prisma.emailCampaignRecipient.update({
@@ -260,6 +320,7 @@ export async function processEmailSchedules(options: { scheduleId?: string; send
     dailyLimit,
     quotaLeftToday: quotaLeft,
     stoppedByRateLimit,
+    stoppedByDeadline,
     campaigns: summaries,
   }
 }

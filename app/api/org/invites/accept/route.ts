@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     email: preview.email,
     role: preview.role,
     expiresAt: preview.expiresAt,
+    // Used by the landing page to route new emails to signup vs login.
+    accountExists: preview.accountExists,
     // Shown on the consent screen so the student knows exactly what is shared.
     sharing: {
       visibleFrom: 'the day you join',

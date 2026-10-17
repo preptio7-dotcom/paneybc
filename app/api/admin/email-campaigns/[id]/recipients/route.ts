@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdminUser } from '@/lib/admin-auth'
-import { getDailyEmailLimit, startOfTodayUtc } from '@/lib/email-campaigns'
+import { getCampaignDailyEmailLimit, startOfTodayUtc } from '@/lib/email-campaigns'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     const counts = { pending: 0, sent: 0, failed: 0 }
     for (const g of grouped) counts[g.status as RecipientStatus] = g._count._all
 
-    const dailyLimit = getDailyEmailLimit()
+    const dailyLimit = getCampaignDailyEmailLimit()
     return NextResponse.json({
       schedule,
       counts: { ...counts, total: counts.pending + counts.sent + counts.failed },

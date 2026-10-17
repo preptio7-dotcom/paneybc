@@ -122,7 +122,15 @@ export async function createOrRefreshInvites(args: {
 }
 
 export type InvitePreview =
-  | { state: 'valid'; orgName: string; email: string; role: OrgRole; expiresAt: Date }
+  | {
+      state: 'valid'
+      orgName: string
+      email: string
+      role: OrgRole
+      expiresAt: Date
+      /** Whether the invited email already has a Preptio account. */
+      accountExists: boolean
+    }
   | { state: 'not_found' | 'accepted' | 'expired' | 'org_unavailable' }
 
 export async function previewInvite(token: string): Promise<InvitePreview> {
@@ -134,12 +142,21 @@ export async function previewInvite(token: string): Promise<InvitePreview> {
   if (invite.acceptedAt) return { state: 'accepted' }
   if (invite.expiresAt.getTime() <= Date.now()) return { state: 'expired' }
   if (!isSubscriptionUsable(getSubscriptionStatus(invite.org))) return { state: 'org_unavailable' }
+
+  // Lets the invite landing page route new emails to signup and existing
+  // emails to login before they ever see the consent screen.
+  const existingUser = await prisma.user.findFirst({
+    where: { email: { equals: invite.email, mode: 'insensitive' } },
+    select: { id: true },
+  })
+
   return {
     state: 'valid',
     orgName: invite.org.name,
     email: invite.email,
     role: invite.role,
     expiresAt: invite.expiresAt,
+    accountExists: Boolean(existingUser),
   }
 }
 

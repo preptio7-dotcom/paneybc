@@ -74,3 +74,43 @@ export async function sendReviewDuePush(params: { userId: string; dueCount: numb
 
   await Promise.all(sendPromises)
 }
+
+/**
+ * Nudges a user whose active streak is about to break (they practised
+ * yesterday but not yet today). Returns true when at least one device accepted
+ * the push, so the caller can decide whether to write a frequency-cap log.
+ */
+export async function sendStreakAtRiskPush(params: { userId: string; streak: number }): Promise<boolean> {
+  const client = getWebPush()
+  if (!client) return false
+
+  const subscriptions = await prisma.pushSubscription.findMany({ where: { userId: params.userId } })
+  if (subscriptions.length === 0) return false
+
+  const notificationPayload = JSON.stringify({
+    title: `🔥 Keep your ${params.streak}-day streak alive!`,
+    body: 'Practise a few questions before midnight to keep your streak going.',
+    icon: '/web-app-manifest-512x512.png',
+    badge: '/web-app-manifest-512x512.png',
+    url: '/practice',
+  })
+
+  let anySent = false
+  await Promise.all(
+    subscriptions.map((sub) =>
+      client
+        .sendNotification(sub.subscription as any, notificationPayload)
+        .then(() => {
+          anySent = true
+        })
+        .catch((err: any) => {
+          if (err.statusCode === 404 || err.statusCode === 410) {
+            return prisma.pushSubscription.delete({ where: { id: sub.id } })
+          }
+          console.error('Push error:', err)
+        })
+    )
+  )
+
+  return anySent
+}

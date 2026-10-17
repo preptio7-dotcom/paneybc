@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Sparkles, Users, Mail, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Sparkles, Users, Mail, CheckCircle2, AlertCircle, Eye, Smartphone, Monitor, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { buildCampaignEmailHtml } from '@/lib/email-shell'
+import { COMMUNITY_ANNOUNCEMENT_TEMPLATE, ACTIVATION_DAY_0 } from '@/lib/email-templates'
 
 type Template = {
   _id: string
@@ -51,165 +53,13 @@ const SEGMENTS = [
   { value: 'new_users', label: 'New Users' },
   { value: 'active_users', label: 'Active Users' },
   { value: 'inactive_users', label: 'Inactive Users' },
+  { value: 'never_practiced', label: 'Never Practised (signed up, no tests)' },
   { value: 'exam_prep', label: 'Exam Prep Window' },
 ]
 
-const DEFAULT_COMMUNITY_TEMPLATE = {
-  name: 'Preptio Community Announcement',
-  category: 'general',
-  subject: 'Introducing Preptio Community: Discuss, Ask & Learn Together! 🚀',
-  body: `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100% !important; min-width: 100%; border-collapse: collapse; margin: 0; padding: 0; background-color: #f1f5f9;">
-  <tr>
-    <td align="center" style="padding: 12px 6px 28px 6px;">
-      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100% !important; max-width: 660px; margin: 0 auto; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-        <!-- Header Banner -->
-        <tr>
-          <td style="background: linear-gradient(135deg, #047857 0%, #059669 45%, #10b981 100%); padding: 40px 24px 36px 24px; text-align: center; color: #ffffff;">
-            <!-- Brand Badge -->
-            <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 16px auto;">
-              <tr>
-                <td style="background-color: rgba(255, 255, 255, 0.22); border: 1px solid rgba(255, 255, 255, 0.35); padding: 6px 16px; border-radius: 9999px;">
-                  <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #ffffff;">✨ New Feature Launch</span>
-                </td>
-              </tr>
-            </table>
-
-            <h1 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 900; line-height: 1.25; color: #ffffff; letter-spacing: -0.02em;">
-              Welcome to Preptio Community! 🚀
-            </h1>
-            <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #ecfdf5; font-weight: 500; max-width: 480px; margin-left: auto; margin-right: auto;">
-              Discuss tough exam questions, share study notes, and collaborate with CA students across Pakistan.
-            </p>
-          </td>
-        </tr>
-
-        <!-- Main Body Content -->
-        <tr>
-          <td style="padding: 32px 24px; color: #334155; font-size: 15px; line-height: 1.65; background-color: #ffffff;">
-            <p style="margin-top: 0; font-size: 16px; font-weight: 600; color: #0f172a;">
-              Hello Preptio Scholar, 👋
-            </p>
-            <p style="margin-bottom: 24px; color: #475569;">
-              We are excited to introduce the brand new <strong style="color: #047857;">Preptio Student Community</strong> — your central space to ask questions, solve past paper doubts, and prepare smarter alongside peers and mentors.
-            </p>
-
-            <!-- Feature Showcase Cards -->
-            <div style="margin: 28px 0;">
-              <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; border-spacing: 0 12px;">
-                <tr>
-                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
-                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td width="36" valign="top" style="padding-right: 12px;">
-                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
-                            💬
-                          </div>
-                        </td>
-                        <td valign="top">
-                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Ask Questions & Mark Solved</strong>
-                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Post questions on complex topics and mark the verified correct answer.</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
-                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td width="36" valign="top" style="padding-right: 12px;">
-                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
-                            🎭
-                          </div>
-                        </td>
-                        <td valign="top">
-                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Anonymous Posting Option</strong>
-                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Hesitant to post? Toggle Anonymous mode anytime to ask questions with peace of mind.</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
-                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td width="36" valign="top" style="padding-right: 12px;">
-                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
-                            📸
-                          </div>
-                        </td>
-                        <td valign="top">
-                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Diagrams & Worksheets Upload</strong>
-                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Snap and upload screenshots of financial statements or past papers directly into discussions.</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px;">
-                    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td width="36" valign="top" style="padding-right: 12px;">
-                          <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; width: 34px; height: 34px; text-align: center; line-height: 34px; font-size: 18px;">
-                            🏷️
-                          </div>
-                        </td>
-                        <td valign="top">
-                          <strong style="color: #0f172a; font-size: 15px; display: block; margin-bottom: 3px;">Organized by Subjects & Tags</strong>
-                          <span style="color: #64748b; font-size: 13.5px; line-height: 1.5;">Filter discussions by Accounting, Law, Tax, Audit, and more to find quick answers.</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </div>
-
-            <!-- Call to Action Button -->
-            <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 32px auto 20px auto;">
-              <tr>
-                <td align="center" style="border-radius: 12px; background-color: #059669; box-shadow: 0 6px 16px -2px rgba(5, 150, 105, 0.4);">
-                  <a href="https://preptio.com/community" target="_blank" style="display: inline-block; font-size: 16px; font-weight: 700; color: #ffffff; text-decoration: none; padding: 16px 36px; border-radius: 12px; border: 1px solid #047857;">
-                    Explore Community Discussions →
-                  </a>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Quick Pro Tip -->
-            <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 0 10px 10px 0; padding: 14px 16px; margin: 24px 0 12px 0;">
-              <p style="margin: 0; font-size: 13.5px; color: #166534; line-height: 1.5;">
-                💡 <strong>Pro Tip:</strong> Bookmark helpful discussions to revisit later from your student dashboard, and follow threads to receive alerts when answers are posted.
-              </p>
-            </div>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px 20px; text-align: center; color: #64748b; font-size: 12.5px; line-height: 1.6;">
-            <p style="margin: 0 0 8px 0; font-weight: 600; color: #334155;">
-              Preptio — The Smarter Way to Prepare for CA Exams
-            </p>
-            <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-              You received this announcement because you have an active account on Preptio.
-              <br />
-              <a href="https://preptio.com/community" style="color: #059669; text-decoration: underline;">Visit Community</a> •
-              <a href="https://preptio.com/dashboard" style="color: #059669; text-decoration: underline;">Student Dashboard</a>
-            </p>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>`,
-  status: 'active' as const,
-}
+// Canonical, mobile-first template copy lives in lib/email-templates.ts.
+const DEFAULT_COMMUNITY_TEMPLATE = { ...COMMUNITY_ANNOUNCEMENT_TEMPLATE, status: 'active' as const }
+const DEFAULT_NEVER_PRACTICED_TEMPLATE = { ...ACTIVATION_DAY_0, status: 'active' as const }
 
 function toLocalDatetimeString(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -247,6 +97,13 @@ export default function EmailCampaignsPage() {
     body: '',
     status: 'draft',
   })
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile')
+  const [previewTemplate, setPreviewTemplate] = useState<{
+    name: string
+    subject: string
+    body: string
+  } | null>(null)
   const [scheduleForm, setScheduleForm] = useState({
     name: '',
     templateId: '',
@@ -336,6 +193,39 @@ export default function EmailCampaignsPage() {
     })
     setEditingTemplateId(null)
     toast.success('Loaded Preptio Community Announcement Template!')
+  }
+
+  const loadNeverPracticedTemplate = () => {
+    setTemplateForm({
+      name: DEFAULT_NEVER_PRACTICED_TEMPLATE.name,
+      category: DEFAULT_NEVER_PRACTICED_TEMPLATE.category,
+      subject: DEFAULT_NEVER_PRACTICED_TEMPLATE.subject,
+      body: DEFAULT_NEVER_PRACTICED_TEMPLATE.body,
+      status: DEFAULT_NEVER_PRACTICED_TEMPLATE.status,
+    })
+    setEditingTemplateId(null)
+    toast.success('Loaded the never-practised activation template!')
+  }
+
+  // Opens the responsive preview modal. With no argument it previews whatever is
+  // currently in the editor; pass a template to preview a saved one.
+  const openPreview = (template?: { name: string; subject: string; body: string }) => {
+    const source = template ?? {
+      name: templateForm.name,
+      subject: templateForm.subject,
+      body: templateForm.body,
+    }
+    if (!source.body || !source.body.trim()) {
+      toast.error('Add some email body content first, then preview.')
+      return
+    }
+    setPreviewTemplate({
+      name: source.name?.trim() || 'Untitled template',
+      subject: source.subject?.trim() || '(no subject)',
+      body: source.body,
+    })
+    setPreviewDevice('mobile')
+    setPreviewOpen(true)
   }
 
   const handleTemplateDelete = async (id: string) => {
@@ -489,16 +379,28 @@ export default function EmailCampaignsPage() {
         <Card className="border border-border bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-xl">Email Templates</CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={loadCommunityTemplate}
-              className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 flex items-center gap-1.5"
-            >
-              <Sparkles size={14} />
-              Load Community Launch Template
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={loadNeverPracticedTemplate}
+                className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 flex items-center gap-1.5"
+              >
+                <Users size={14} />
+                Load Never-Practised Template
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={loadCommunityTemplate}
+                className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 flex items-center gap-1.5"
+              >
+                <Sparkles size={14} />
+                Load Community Launch Template
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -534,9 +436,21 @@ export default function EmailCampaignsPage() {
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="templateBody">Email Body (HTML allowed)</Label>
-                  <span className="text-xs text-text-light">Full HTML, styled tags, and links supported</span>
+                  <div className="flex items-center gap-2">
+                    <span className="hidden text-xs text-text-light sm:inline">Full HTML, styled tags, and links supported</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openPreview()}
+                      className="flex items-center gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    >
+                      <Eye size={14} />
+                      Preview
+                    </Button>
+                  </div>
                 </div>
                 <Textarea
                   id="templateBody"
@@ -584,6 +498,15 @@ export default function EmailCampaignsPage() {
                         <p className="text-xs text-text-light capitalize">{template.category} • {template.status}</p>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openPreview({ name: template.name, subject: template.subject, body: template.body })}
+                          className="flex items-center gap-1"
+                        >
+                          <Eye size={13} />
+                          Preview
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => handleTemplateEdit(template)}>
                           Edit
                         </Button>
@@ -848,6 +771,73 @@ export default function EmailCampaignsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {previewOpen && previewTemplate && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/70 p-3 sm:p-6">
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-text-dark">{previewTemplate.name}</p>
+                <p className="truncate text-xs text-text-light">Subject: {previewTemplate.subject}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg border border-border p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDevice('mobile')}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      previewDevice === 'mobile' ? 'bg-emerald-600 text-white' : 'text-text-light hover:bg-slate-100'
+                    }`}
+                  >
+                    <Smartphone size={14} />
+                    Mobile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDevice('desktop')}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      previewDevice === 'desktop' ? 'bg-emerald-600 text-white' : 'text-text-light hover:bg-slate-100'
+                    }`}
+                  >
+                    <Monitor size={14} />
+                    Desktop
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(false)}
+                  className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100"
+                  aria-label="Close preview"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-1 justify-center overflow-auto bg-slate-100 p-4">
+              <div
+                className={`h-full shrink-0 overflow-hidden bg-white transition-all ${
+                  previewDevice === 'mobile'
+                    ? 'rounded-[2rem] border-[6px] border-slate-800 shadow-xl'
+                    : 'rounded-xl border border-slate-300 shadow-lg'
+                }`}
+                style={{ width: previewDevice === 'mobile' ? 390 : 720, maxWidth: '100%' }}
+              >
+                <iframe
+                  title="Email preview"
+                  srcDoc={buildCampaignEmailHtml(previewTemplate.body)}
+                  className="h-full w-full border-0 bg-white"
+                  sandbox=""
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-border px-4 py-2 text-center text-xs text-text-light">
+              Rendered through the same responsive shell used when sending — what you see is what recipients get.
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

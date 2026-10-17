@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
 import { requireOrgAdmin, getEffectiveSeats, getOrgMemberCount } from '@/lib/org-access'
 
 /**
@@ -10,6 +11,13 @@ import { requireOrgAdmin, getEffectiveSeats, getOrgMemberCount } from '@/lib/org
  */
 export async function GET(request: NextRequest) {
   try {
+    // Distinguish "not signed in" (401 → send to login) from
+    // "signed in but not an institute admin" (403 → custom 404).
+    const tokenUser = getCurrentUser(request)
+    if (!tokenUser?.userId) {
+      return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+    }
+
     const ctx = await requireOrgAdmin(request)
     if (!ctx) {
       return NextResponse.json({ error: 'Only organization admins can access this portal' }, { status: 403 })

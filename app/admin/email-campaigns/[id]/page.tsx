@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 type Row = {
   id: string
@@ -63,11 +65,25 @@ export default function CampaignRecipientsPage() {
     URL.revokeObjectURL(url)
   }
 
-  if (error) return <div className="p-6 text-red-600">{error}</div>
-  if (!data) return <div className="p-6">Loading…</div>
+  if (error)
+    return (
+      <div className="space-y-4 p-6">
+        <BackToCampaigns />
+        <div className="text-red-600">{error}</div>
+      </div>
+    )
+  if (!data)
+    return (
+      <div className="space-y-4 p-6">
+        <BackToCampaigns />
+        <div>Loading…</div>
+      </div>
+    )
 
   return (
     <div className="space-y-6 p-6">
+      <BackToCampaigns />
+
       <div>
         <h1 className="text-2xl font-bold">{data.schedule.name}</h1>
         <p className="text-sm text-slate-600">Campaign status: {data.schedule.status}</p>
@@ -166,5 +182,17 @@ function Stat({ label, value }: { label: string; value: number | string }) {
       <div className="text-xs uppercase text-slate-500">{label}</div>
       <div className="text-xl font-semibold">{value}</div>
     </div>
+  )
+}
+
+function BackToCampaigns() {
+  return (
+    <Link
+      href="/admin/email-campaigns"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-primary-green transition-colors"
+    >
+      <ArrowLeft size={16} />
+      Back to campaigns
+    </Link>
   )
 }

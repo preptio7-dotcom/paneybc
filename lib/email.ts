@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { resolveAppBaseUrl } from '@/lib/app-url'
+import { buildCampaignEmailHtml } from '@/lib/email-shell'
 
 const smtpUser = process.env.SMTP_USER
 const smtpPass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS
@@ -7,15 +8,40 @@ const smtpHost = process.env.SMTP_HOST
 const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined
 const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
 
-// Pooled transport: one authenticated SMTP connection is reused for many
-// messages. Without pooling, every sendMail logs in again, and providers such
-// as Gmail answer with "454 Too many login attempts" after a few dozen sends.
+// Bulk campaigns can be routed to a dedicated provider (e.g. Brevo) so its
+// daily allowance stays separate from the low-volume transactional mail. When
+// the BREVO_* variables are absent everything falls back to the default SMTP
+// host, so this is safe to leave unconfigured.
+const brevoUser = process.env.BREVO_SMTP_USER
+const brevoPass = process.env.BREVO_SMTP_PASSWORD || process.env.BREVO_SMTP_PASS
+const brevoHost = process.env.BREVO_SMTP_HOST || (brevoUser ? 'smtp-relay.brevo.com' : undefined)
+const brevoPort = process.env.BREVO_SMTP_PORT ? Number(process.env.BREVO_SMTP_PORT) : undefined
+const brevoSecure = String(process.env.BREVO_SMTP_SECURE || '').toLowerCase() === 'true'
+
+const retentionFrom = process.env.SMTP_FROM || 'Preptio <support@preptio.com>'
+const campaignFrom = process.env.BREVO_SMTP_FROM || process.env.SMTP_FROM || 'Preptio <support@preptio.com>'
+
+// Transactional / retention pool: deliberately conservative. One connection and
+// at most 20 messages a minute so providers such as Gmail do not answer with
+// "454 Too many login attempts" after a few dozen sends.
 const SMTP_POOL_OPTIONS = {
   pool: true,
   maxConnections: 1,
   maxMessages: 50,
   rateDelta: 60_000,
   rateLimit: 20,
+}
+
+// Campaign pool: bulk providers (Brevo) are built for volume, so we allow far
+// more messages a minute across a few connections. Together with the shorter
+// CAMPAIGN_SEND_DELAY_MS this lets a full audience finish inside a single
+// function invocation instead of being truncated by the runtime limit.
+const CAMPAIGN_POOL_OPTIONS = {
+  pool: true,
+  maxConnections: 3,
+  maxMessages: 300,
+  rateDelta: 60_000,
+  rateLimit: 300,
 }
 
 const transporter = smtpHost
@@ -31,6 +57,19 @@ const transporter = smtpHost
       auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
       ...SMTP_POOL_OPTIONS,
     })
+
+// Campaigns use the dedicated bulk transport when configured; otherwise they
+// reuse the default host so existing deployments keep working unchanged.
+const campaignTransporter =
+  brevoUser && brevoPass
+    ? nodemailer.createTransport({
+        host: brevoHost,
+        port: brevoPort || (brevoSecure ? 465 : 587),
+        secure: brevoSecure,
+        auth: { user: brevoUser, pass: brevoPass },
+        ...CAMPAIGN_POOL_OPTIONS,
+      })
+    : transporter
 
 export async function sendOTPEmail(email: string, code: string) {
   const mailOptions = {
@@ -176,21 +215,39 @@ export async function sendReviewDueEmail(email: string, name: string, count: num
 }
 
 export async function sendCampaignEmail(email: string, subject: string, body: string) {
+  if (!(brevoUser && brevoPass) && (!smtpUser || !smtpPass)) {
+    throw new Error(
+      'Email is not configured. Set BREVO_SMTP_USER/BREVO_SMTP_PASSWORD for campaigns, or SMTP_USER/SMTP_PASSWORD.'
+    )
+  }
+
+  const mailOptions = {
+    from: campaignFrom,
+    to: email,
+    subject,
+    // Rendered through the shared mobile-first shell so every campaign email
+    // looks right on phones (padding, headings and buttons all collapse).
+    html: buildCampaignEmailHtml(body),
+  }
+
+  return campaignTransporter.sendMail(mailOptions)
+}
+
+/**
+ * Low-volume transactional / retention mail (activation drip, streak
+ * reminders). Always uses the default SMTP host, never the bulk campaign
+ * provider, so the two streams keep separate daily allowances.
+ */
+export async function sendRetentionEmail(email: string, subject: string, body: string) {
   if (!smtpUser || !smtpPass) {
     throw new Error('Email is not configured. Set SMTP_USER and SMTP_PASS (or SMTP_PASSWORD).')
   }
 
   const mailOptions = {
-    from: 'Preptio <support@preptio.com>',
+    from: retentionFrom,
     to: email,
     subject,
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px; color: #1e293b;">
-        ${body}
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-        <p style="font-size: 12px; color: #94a3b8; text-align: center;">Preptio &copy; ${new Date().getFullYear()}</p>
-      </div>
-    `,
+    html: buildCampaignEmailHtml(body),
   }
 
   return transporter.sendMail(mailOptions)

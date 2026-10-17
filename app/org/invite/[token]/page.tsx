@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { authHref } from '@/lib/auth-redirect'
+import { useAuth } from '@/lib/auth-context'
 
 type Preview =
   | {
@@ -11,6 +11,8 @@ type Preview =
       email: string
       role: string
       expiresAt: string
+      /** Whether the invited email already has a Preptio account. */
+      accountExists: boolean
       sharing: { visibleFrom: string; includes: string[]; revocable: boolean }
     }
   | { state: 'not_found' | 'accepted' | 'expired' | 'org_unavailable' }
@@ -18,6 +20,7 @@ type Preview =
 export default function AcceptInvitePage() {
   const params = useParams<{ token: string }>()
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const token = params.token
   const [preview, setPreview] = useState<Preview | null>(null)
   const [consent, setConsent] = useState(false)
@@ -31,6 +34,26 @@ export default function AcceptInvitePage() {
       .catch(() => setError('Could not load this invitation.'))
   }, [token])
 
+  // Route signed-out visitors before they ever reach the consent screen:
+  //   • invited email has no account  → go straight to signup (email locked)
+  //   • invited email already exists  → go to login, then back here to accept
+  const signedIn = !authLoading && !!user
+  useEffect(() => {
+    if (!preview || preview.state !== 'valid') return
+    if (signedIn) return // signed-in users see the consent screen below
+    if (authLoading) return // wait for auth to settle
+
+    const query = new URLSearchParams()
+    if (preview.email) query.set('email', preview.email)
+    if (preview.accountExists) {
+      query.set('returnTo', `/org/invite/${token}`)
+      router.replace(`/auth/login?${query}`)
+    } else {
+      query.set('inviteToken', token)
+      router.replace(`/auth/signup?${query}`)
+    }
+  }, [preview, signedIn, authLoading, token, router])
+
   async function accept() {
     setSubmitting(true)
     setError(null)
@@ -41,11 +64,8 @@ export default function AcceptInvitePage() {
     })
     const data = await res.json().catch(() => ({}))
     if (res.status === 401) {
-      // Redirect to signup with email pre-filled & locked, and return back here after auth
-      const inviteEmail = preview?.state === 'valid' ? preview.email : ''
-      const params = new URLSearchParams({ returnTo: `/org/invite/${token}` })
-      if (inviteEmail) params.set('email', inviteEmail)
-      router.push(`/auth/signup?${params}`)
+      // Session expired mid-flow: go to login and come back here afterwards.
+      router.push(`/auth/login?${new URLSearchParams({ returnTo: `/org/invite/${token}` })}`)
       return
     }
     if (!res.ok) {
@@ -116,6 +136,19 @@ export default function AcceptInvitePage() {
           >
             Go to Dashboard
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Signed-out visitors are being routed to signup/login — show a loader rather
+  // than the consent button they can't use yet.
+  if (!signedIn) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="text-center space-y-3">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary-green border-r-transparent" />
+          <p className="text-sm text-slate-500">Taking you to the next step…</p>
         </div>
       </div>
     )

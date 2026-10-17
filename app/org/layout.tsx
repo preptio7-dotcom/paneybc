@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Navigation } from '@/components/navigation'
 import {
-  Building2,
   BarChart2,
   LayoutDashboard,
   Loader2,
@@ -18,24 +17,65 @@ const ORG_NAV = [
   { label: 'Analytics', href: '/org/analytics', icon: BarChart2 },
 ]
 
+function OrgNotFound() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background-light pt-16 px-4">
+      <div className="text-center space-y-4 max-w-md">
+        <p className="text-7xl font-black text-slate-200">404</p>
+        <h1 className="text-2xl font-bold text-text-dark">Page not found</h1>
+        <p className="text-text-light">
+          The institute portal isn’t available for your account. If you believe this is a
+          mistake, contact your institute administrator.
+        </p>
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary-green hover:underline"
+        >
+          ← Back to Dashboard
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [hasOrg, setHasOrg] = useState<boolean | null>(null)
+  const [status, setStatus] = useState<'loading' | 'admin' | 'forbidden'>('loading')
+
+  // The invite landing page must stay public. If it were gated here, logged-out
+  // invitees would be bounced to the login screen before the invite could load.
+  const isInviteRoute = pathname?.startsWith('/org/invite/') ?? false
 
   useEffect(() => {
+    if (isInviteRoute) return
     fetch('/api/org/dashboard', { cache: 'no-store' })
       .then((r) => {
-        setHasOrg(r.ok)
-        if (!r.ok) router.replace('/dashboard')
+        if (r.ok) {
+          setStatus('admin')
+          return
+        }
+        if (r.status === 401) {
+          // Not signed in: go to login and come back to the portal afterwards.
+          router.replace(`/auth/login?${new URLSearchParams({ returnTo: '/org' })}`)
+          return
+        }
+        // Signed in but not an org/platform admin: hide the portal behind a 404.
+        setStatus('forbidden')
       })
-      .catch(() => {
-        setHasOrg(false)
-        router.replace('/dashboard')
-      })
-  }, [router])
+      .catch(() => setStatus('forbidden'))
+  }, [router, isInviteRoute])
 
-  if (hasOrg === null) {
+  if (isInviteRoute) {
+    return (
+      <>
+        <Navigation />
+        <div className="min-h-screen bg-background-light pt-16">{children}</div>
+      </>
+    )
+  }
+
+  if (status === 'loading') {
     return (
       <>
         <Navigation />
@@ -46,25 +86,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (hasOrg === false) {
+  if (status === 'forbidden') {
     return (
       <>
         <Navigation />
-        <div className="min-h-screen flex items-center justify-center bg-background-light pt-16">
-          <div className="text-center space-y-4 max-w-md px-6">
-            <Building2 size={48} className="mx-auto text-slate-300" />
-            <h2 className="text-2xl font-bold text-text-dark">Access restricted</h2>
-            <p className="text-text-light">
-              The institute portal is only available to organization admins. Students should use the dashboard.
-            </p>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary-green hover:underline"
-            >
-              ← Back to Dashboard
-            </Link>
-          </div>
-        </div>
+        <OrgNotFound />
       </>
     )
   }
