@@ -12,12 +12,67 @@
  *    phones (media query shrinks padding, headings and makes buttons full width).
  *  - Templates only provide their inner content; the shell owns the page
  *    background, the card, the responsive padding and the footer.
+ *  - Two palettes: a light theme (default) and a dark theme. A template opts
+ *    into dark by starting its body with the `<!--pj-theme:dark-->` marker.
  */
 
 export const CAMPAIGN_EMAIL_WIDTH = 600
 
-export function buildCampaignEmailHtml(body: string, options?: { year?: number }): string {
+/** Marker a template body can start with to render on the dark palette. */
+export const DARK_THEME_MARKER = '<!--pj-theme:dark-->'
+
+const DARK_THEME_RE = /<!--\s*pj-theme:dark\s*-->/i
+const ANY_THEME_RE = /<!--\s*pj-theme:(dark|light)\s*-->/gi
+
+type Palette = {
+  colorScheme: string
+  pageBg: string
+  cardBg: string
+  cardBorder: string
+  cardShadow: string
+  text: string
+  link: string
+  footerBorder: string
+  footerTitle: string
+  footerText: string
+}
+
+const LIGHT: Palette = {
+  colorScheme: 'light only',
+  pageBg: '#eef2f7',
+  cardBg: '#ffffff',
+  cardBorder: '1px solid #e6ebf1',
+  cardShadow: '0 8px 24px -12px rgba(15,23,42,0.18)',
+  text: '#334155',
+  link: '#0f7938',
+  footerBorder: '#eef2f6',
+  footerTitle: '#0f172a',
+  footerText: '#94a3b8',
+}
+
+// Dark theme is intentionally seamless: the page and card share the same
+// background so there is no pale "outer body" frame on phones.
+const DARK: Palette = {
+  colorScheme: 'dark only',
+  pageBg: '#0b1120',
+  cardBg: '#0b1120',
+  cardBorder: '0',
+  cardShadow: 'none',
+  text: '#cbd5e1',
+  link: '#4ade80',
+  footerBorder: '#1b253a',
+  footerTitle: '#f8fafc',
+  footerText: '#7c8aa5',
+}
+
+export function buildCampaignEmailHtml(
+  body: string,
+  options?: { year?: number; theme?: 'light' | 'dark' }
+): string {
   const year = options?.year ?? new Date().getFullYear()
+  const isDark = options?.theme ? options.theme === 'dark' : DARK_THEME_RE.test(body)
+  const t = isDark ? DARK : LIGHT
+  const content = body.replace(ANY_THEME_RE, '')
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -25,15 +80,15 @@ export function buildCampaignEmailHtml(body: string, options?: { year?: number }
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="x-apple-disable-message-reformatting" />
-  <meta name="color-scheme" content="light only" />
-  <meta name="supported-color-schemes" content="light only" />
+  <meta name="color-scheme" content="${t.colorScheme}" />
+  <meta name="supported-color-schemes" content="${t.colorScheme}" />
   <title>Preptio</title>
   <style>
-    html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; background: #eef2f7; }
+    html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; background: ${t.pageBg}; }
     body { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { border: 0; outline: none; text-decoration: none; display: block; max-width: 100%; height: auto; }
-    a { color: #0f7938; }
+    a { color: ${t.link}; }
     .pj-card a { word-break: break-word; }
     @media only screen and (max-width: 600px) {
       .pj-outer { padding: 12px 8px !important; }
@@ -53,21 +108,21 @@ export function buildCampaignEmailHtml(body: string, options?: { year?: number }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#eef2f7;">
-  <div style="display:none;font-size:1px;color:#eef2f7;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Preptio</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:#eef2f7;">
+<body style="margin:0;padding:0;background:${t.pageBg};">
+  <div style="display:none;font-size:1px;color:${t.pageBg};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Preptio</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:${t.pageBg};">
     <tr>
       <td align="center" class="pj-outer" style="padding:28px 16px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="pj-card" style="width:100%;max-width:${CAMPAIGN_EMAIL_WIDTH}px;background:#ffffff;border-radius:18px;border:1px solid #e6ebf1;box-shadow:0 8px 24px -12px rgba(15,23,42,0.18);overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="pj-card" style="width:100%;max-width:${CAMPAIGN_EMAIL_WIDTH}px;background:${t.cardBg};border:${t.cardBorder};border-radius:18px;box-shadow:${t.cardShadow};overflow:hidden;">
           <tr>
-            <td class="pj-pad" style="padding:34px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.65;color:#334155;">
-${body}
+            <td class="pj-pad" style="padding:34px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.65;color:${t.text};">
+${content}
             </td>
           </tr>
           <tr>
-            <td class="pj-footer" style="padding:20px 24px 26px;border-top:1px solid #eef2f6;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-              <p style="margin:0 0 6px;font-size:13px;font-weight:800;letter-spacing:-0.01em;color:#0f172a;">Preptio</p>
-              <p style="margin:0;font-size:12px;line-height:1.6;color:#94a3b8;">
+            <td class="pj-footer" style="padding:20px 24px 26px;border-top:1px solid ${t.footerBorder};text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+              <p style="margin:0 0 6px;font-size:13px;font-weight:800;letter-spacing:-0.01em;color:${t.footerTitle};">Preptio</p>
+              <p style="margin:0;font-size:12px;line-height:1.6;color:${t.footerText};">
                 The smarter way to prepare for your CA exams.<br />
                 &copy; ${year} Preptio. All rights reserved.
               </p>

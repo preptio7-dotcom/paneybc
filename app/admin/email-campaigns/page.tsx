@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Sparkles, Users, Mail, CheckCircle2, AlertCircle, Eye, Smartphone, Monitor, X } from 'lucide-react'
+import { Sparkles, Users, Mail, CheckCircle2, AlertCircle, Eye, Smartphone, Monitor, X, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { buildCampaignEmailHtml } from '@/lib/email-shell'
 import { COMMUNITY_ANNOUNCEMENT_TEMPLATE, ACTIVATION_DAY_0 } from '@/lib/email-templates'
@@ -89,6 +89,7 @@ export default function EmailCampaignsPage() {
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [savingSchedule, setSavingSchedule] = useState(false)
   const [runningSchedules, setRunningSchedules] = useState(false)
+  const [syncingTemplates, setSyncingTemplates] = useState(false)
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
   const [templateForm, setTemplateForm] = useState({
     name: '',
@@ -205,6 +206,33 @@ export default function EmailCampaignsPage() {
     })
     setEditingTemplateId(null)
     toast.success('Loaded the never-practised activation template!')
+  }
+
+  // Overwrites the built-in templates (community, activation drip, streak
+  // reminder) in the database with the latest canonical designs.
+  const refreshCanonicalTemplates = async () => {
+    if (
+      !confirm(
+        'Refresh the built-in email designs (Community, Activation Day 0/1/3/7, Streak Reminder) to the latest versions? This overwrites any edits made to those specific templates.'
+      )
+    ) {
+      return
+    }
+    setSyncingTemplates(true)
+    try {
+      const res = await fetch('/api/admin/email-campaigns/templates/sync', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Designs refreshed — ${data.created ?? 0} created, ${data.updated ?? 0} updated`)
+        await loadData()
+      } else {
+        toast.error(data.error || 'Failed to refresh designs')
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to refresh designs')
+    } finally {
+      setSyncingTemplates(false)
+    }
   }
 
   // Opens the responsive preview modal. With no argument it previews whatever is
@@ -399,6 +427,17 @@ export default function EmailCampaignsPage() {
               >
                 <Sparkles size={14} />
                 Load Community Launch Template
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={refreshCanonicalTemplates}
+                disabled={syncingTemplates}
+                className="text-slate-700 border-slate-300 hover:bg-slate-50 flex items-center gap-1.5"
+              >
+                <RefreshCw size={14} className={syncingTemplates ? 'animate-spin' : undefined} />
+                {syncingTemplates ? 'Refreshing…' : 'Refresh Designs'}
               </Button>
             </div>
           </CardHeader>

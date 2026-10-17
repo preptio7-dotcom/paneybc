@@ -967,7 +967,7 @@ export default function SignupPage() {
       </div>
 
       {showInviteConsent && inviteToken && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 pt-[10vh]">
+        <div className="fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-slate-900/70 p-4 pt-[10vh] backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-5">
             <div className="text-center space-y-1.5">
               <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-primary-green mx-auto flex items-center justify-center font-bold text-xl mb-2">
