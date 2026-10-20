@@ -122,6 +122,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
       <head>
+      <link rel="manifest" href="/site.webmanifest" />
         <style
           dangerouslySetInnerHTML={{
             __html:
