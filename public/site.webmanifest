@@ -37,5 +37,20 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+  {
+    "src": "/screenshot-wide.png",
+    "sizes": "1280x720",
+    "type": "image/png",
+    "form_factor": "wide",
+    "label": "Preptio practice dashboard on desktop"
+  },
+  {
+    "src": "/screenshot-narrow.png",
+    "sizes": "750x1334",
+    "type": "image/png",
+    "label": "Preptio practice questions on mobile"
+  }
+]
 }
