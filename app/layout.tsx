@@ -63,6 +63,10 @@ export const metadata: Metadata = {
       { url: '/web-app-manifest-192x192.png', sizes: '192x192', type: 'image/png' },
       { url: '/web-app-manifest-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
+    apple: [
+      { url: '/icon-maskable-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-maskable-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
   },
   openGraph: {
     type: 'website',

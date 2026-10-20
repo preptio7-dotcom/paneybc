@@ -1,0 +1,26 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.4",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Preptio Daily Quiz",
+      "weight": "Bolder",
+      "size": "Medium",
+      "color": "Good"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Practice today's ICAP exam question and maintain your streak!",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Start Quiz",
+      "url": "https://preptio.com/dashboard?section=practice"
+    }
+  ]
+}
