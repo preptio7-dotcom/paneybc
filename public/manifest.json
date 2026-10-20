@@ -1,0 +1,211 @@
+{
+  "id": "https://www.preptio.com/?source=pwa",
+  "name": "Preptio - Free CA Foundation Exam Prep",
+  "short_name": "Preptio",
+  "description": "Pakistan's premier free CA Foundation exam preparation platform for ICAP students. 4,000+ ICAP-aligned MCQs, mock tests, performance analytics, and community.",
+  "start_url": "https://www.preptio.com/?source=pwa",
+  "scope": "https://www.preptio.com/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "theme_color": "#16a34a",
+  "background_color": "#ffffff",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": [
+    "education",
+    "productivity",
+    "utilities"
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://www.preptio.com/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://www.preptio.com/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://www.preptio.com/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://www.preptio.com/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://www.preptio.com/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Preptio CA Exam Prep Dashboard"
+    },
+    {
+      "src": "https://www.preptio.com/screenshot-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Preptio Mobile Practice Questions and Analytics"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Practice MCQs",
+      "short_name": "Practice",
+      "description": "Start practicing ICAP exam questions",
+      "url": "https://www.preptio.com/dashboard?section=practice&source=shortcut",
+      "icons": [
+        {
+          "src": "https://www.preptio.com/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Mock Exams",
+      "short_name": "Mocks",
+      "description": "Take full timed ICAP mock exams",
+      "url": "https://www.preptio.com/dashboard?section=mocks&source=shortcut",
+      "icons": [
+        {
+          "src": "https://www.preptio.com/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Student Community",
+      "short_name": "Community",
+      "description": "Discuss questions and strategies with fellow students",
+      "url": "https://www.preptio.com/community?source=shortcut",
+      "icons": [
+        {
+          "src": "https://www.preptio.com/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Analytics & Readiness",
+      "short_name": "Analytics",
+      "description": "Check your exam readiness and performance metrics",
+      "url": "https://www.preptio.com/dashboard?section=analytics&source=shortcut",
+      "icons": [
+        {
+          "src": "https://www.preptio.com/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/community",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+preptio",
+      "url": "/dashboard?action=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/dashboard",
+      "name": "Practice Quiz File",
+      "accept": {
+        "text/plain": [
+          ".txt"
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Daily Quiz Widget",
+      "short_name": "Daily Quiz",
+      "description": "Daily ICAP Question of the Day",
+      "tag": "daily-quiz",
+      "template": "daily-quiz-template",
+      "ms_ac_template": "https://www.preptio.com/widgets/daily-quiz.json",
+      "data": "https://www.preptio.com/api/widgets/daily-quiz",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "https://www.preptio.com/screenshot-wide.png",
+          "sizes": "1280x720",
+          "label": "Preptio Daily Quiz Widget"
+        }
+      ]
+    }
+  ],
+  "note_taking": {
+    "new_note_url": "https://www.preptio.com/dashboard?action=new-note"
+  },
+  "scope_extensions": [
+    {
+      "origin": "https://preptio.com"
+    },
+    {
+      "origin": "https://www.preptio.com"
+    }
+  ]
+}
