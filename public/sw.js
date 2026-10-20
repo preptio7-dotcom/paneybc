@@ -7,7 +7,9 @@ const PRECACHE_ASSETS = [
     OFFLINE_URL,
     '/favicon.svg',
     '/web-app-manifest-192x192.png',
+    '/icon-maskable-192x192.png',
     '/web-app-manifest-512x512.png',
+    '/icon-maskable-512x512.png',
 ]
 
 self.addEventListener('install', (event) => {
