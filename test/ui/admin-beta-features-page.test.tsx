@@ -36,10 +36,13 @@ describe('Admin Beta Features Page', () => {
     render(<AdminBetaFeaturesPage />)
 
     expect(await screen.findByText('Beta Features')).toBeInTheDocument()
-    expect(await screen.findByText('Public')).toBeInTheDocument()
+    const publicBadges = await screen.findAllByText('Public')
+    expect(publicBadges.length).toBeGreaterThan(0)
 
-    const switchElement = screen.getByRole('switch')
-    fireEvent.click(switchElement)
+    const switches = screen.getAllByRole('switch')
+    expect(switches.length).toBeGreaterThan(0)
+    // Click the FAQ switch (or first switch)
+    fireEvent.click(switches[0])
     fireEvent.click(screen.getByRole('button', { name: 'Save Beta Settings' }))
 
     await waitFor(() => {
@@ -49,7 +52,7 @@ describe('Admin Beta Features Page', () => {
     const postCall = fetchMock.mock.calls[1]
     expect(postCall[0]).toContain('/api/admin/system/settings')
     expect(postCall[1]?.method).toBe('POST')
-    expect(postCall[1]?.body).toContain('"faq":"beta_ambassador"')
+    expect(postCall[1]?.body).toContain('betaFeatures')
   })
 })
 

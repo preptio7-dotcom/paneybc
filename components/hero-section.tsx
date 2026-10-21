@@ -87,12 +87,28 @@ export function HeroSection({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
           {/* Left Content */}
           <div className="hero-copy-enter flex flex-col gap-6">
-            <span
-              className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[13px] font-semibold md:text-sm ${isDark ? 'bg-white/15 text-white' : 'bg-primary-green/10 text-primary-green'
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[13px] font-semibold md:text-sm ${
+                  isDark ? 'bg-white/15 text-white' : 'bg-primary-green/10 text-primary-green'
                 }`}
-            >
-              {'\u{1F393} Built Exclusively for ICAP CA Students'}
-            </span>
+              >
+                {'🎓 Built Exclusively for ICAP CA Students'}
+              </span>
+
+              <Link
+                href="/institutions"
+                className={`group inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] md:text-[13px] font-semibold border transition-all duration-200 ${
+                  isDark
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25'
+                    : 'bg-emerald-50 border-emerald-200/90 text-[#0F7938] hover:bg-emerald-100/80 hover:border-emerald-300 shadow-xs'
+                }`}
+              >
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>For Institutions & Educators</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
 
             <h1
               className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-balance ${isDark ? 'text-white' : 'text-text-dark'

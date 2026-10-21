@@ -13,6 +13,7 @@ import {
   CreditCard,
   FileText,
   FlaskConical,
+  GraduationCap,
   Hash,
   HelpCircle,
   History,
@@ -104,6 +105,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Platform',
     items: [
       { label: 'Organizations', href: '/admin/organizations', icon: Building2 },
+      { label: 'Institutions', href: '/admin/institutions', icon: GraduationCap },
       { label: 'Demo Settings', href: '/admin/demo-settings', icon: Settings },
       { label: 'Institutes', href: '/admin/institutes', icon: Building2 },
       { label: 'Beta', href: '/admin/beta-features', icon: FlaskConical },

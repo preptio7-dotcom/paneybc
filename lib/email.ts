@@ -638,3 +638,124 @@ export async function sendOrgInviteEmail(
   }
   return transporter.sendMail(mailOptions)
 }
+
+export type InstitutionalInquiryPayload = {
+  name: string
+  email: string
+  phone?: string | null
+  institute?: string | null
+  role?: string | null
+  studentCount?: string | number | null
+  subjects?: string | null
+  message?: string | null
+}
+
+export async function sendInstitutionalInquiryAlert(payload: InstitutionalInquiryPayload) {
+  const esc = (v?: string | number | null) =>
+    String(v || 'Not provided')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+
+  const mailOptions = {
+    from: 'Preptio <support@preptio.com>',
+    to: 'support@preptio.com',
+    replyTo: payload.email,
+    subject: `[Institutional Inquiry] ${payload.institute || payload.name} (${payload.studentCount || 'N/A'} students)`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 640px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 36px; color: #1e293b; background: #ffffff;">
+        <div style="border-bottom: 2px solid #0f7938; padding-bottom: 16px; margin-bottom: 24px;">
+          <h2 style="color: #0f7938; margin: 0 0 6px 0; font-size: 22px;">New Institutional & Educator Inquiry</h2>
+          <p style="margin: 0; color: #64748b; font-size: 14px;">Received via Preptio Institutional Portal</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #64748b; width: 160px; font-weight: 600;">Contact Name</td>
+            <td style="padding: 10px 0; color: #0f172a; font-weight: 500;">${esc(payload.name)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Work Email</td>
+            <td style="padding: 10px 0; color: #0f172a;"><a href="mailto:${esc(payload.email)}" style="color: #0f7938; text-decoration: none; font-weight: bold;">${esc(payload.email)}</a></td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Phone / WhatsApp</td>
+            <td style="padding: 10px 0; color: #0f172a;">${esc(payload.phone)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Institution / College</td>
+            <td style="padding: 10px 0; color: #0f172a; font-weight: 500;">${esc(payload.institute)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Designation / Role</td>
+            <td style="padding: 10px 0; color: #0f172a;">${esc(payload.role)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Estimated Students</td>
+            <td style="padding: 10px 0; color: #0f7938; font-weight: bold;">${esc(payload.studentCount)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Target Levels / Subjects</td>
+            <td style="padding: 10px 0; color: #0f172a;">${esc(payload.subjects)}</td>
+          </tr>
+        </table>
+        <div style="background: #f8fafc; border-left: 4px solid #0f7938; padding: 16px; border-radius: 6px; margin-bottom: 24px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #475569;">Requirements & Message:</h4>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #1e293b; white-space: pre-wrap;">${esc(payload.message)}</p>
+        </div>
+        <div style="font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center;">
+          Preptio Institutional System Notification &bull; support@preptio.com
+        </div>
+      </div>
+    `,
+  }
+  return transporter.sendMail(mailOptions)
+}
+
+export async function sendInstitutionalAcknowledgementEmail(payload: InstitutionalInquiryPayload) {
+  const esc = (v?: string | number | null) =>
+    String(v || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+
+  const mailOptions = {
+    from: 'Preptio <support@preptio.com>',
+    to: payload.email,
+    subject: "Thank you for contacting Preptio — We've received your institutional inquiry",
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 36px; color: #1e293b; background: #ffffff;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="color: #0f7938; margin: 0 0 6px 0; font-size: 24px;">Preptio for Institutions & Educators</h2>
+          <p style="margin: 0; color: #64748b; font-size: 14px;">We've received your inquiry</p>
+        </div>
+        <p style="font-size: 15px; line-height: 1.6;">Dear <strong>${esc(payload.name) || 'Educator'}</strong>,</p>
+        <p style="font-size: 15px; line-height: 1.6;">
+          Thank you for reaching out to Preptio. We have successfully received your inquiry for enrolling your students with our institutional platform.
+        </p>
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 18px; margin: 20px 0;">
+          <h4 style="margin: 0 0 6px 0; color: #166534; font-size: 14px;">What Happens Next?</h4>
+          <p style="margin: 0; color: #15803d; font-size: 14px; line-height: 1.5;">
+            Our team will review your batch size and specific exam requirements, and will contact you within <strong>24 to 48 hours</strong> with a customized proposal, volume pricing breakdown, and faculty walkthrough demo.
+          </p>
+        </div>
+        <h4 style="color: #0f172a; margin: 24px 0 10px 0; font-size: 14px;">Your Enrolled Scope of Service Includes:</h4>
+        <ul style="padding-left: 20px; margin: 0 0 24px 0; font-size: 14px; color: #334155; line-height: 1.7;">
+          <li><strong>Bulk Student Licensing</strong>: Effortless batch account activation and automated roster management.</li>
+          <li><strong>Faculty Analytics Cockpit</strong>: Real-time tracking of readiness scores, topic heatmaps, and exam performance.</li>
+          <li><strong>Windows Downloaded App Push Notifications</strong>: Direct native desktop notifications for mock exam announcements, homework deadlines, and score releases.</li>
+          <li><strong>Custom Mock Test Engine</strong>: Timed ICAP exam simulators with comprehensive answer rationale.</li>
+        </ul>
+        <p style="font-size: 14px; line-height: 1.6; color: #64748b;">
+          If you have immediate questions, existing class rosters, or urgent exam cycles, please feel free to reply directly to this email or contact us at <a href="mailto:support@preptio.com" style="color: #0f7938; font-weight: 600;">support@preptio.com</a>.
+        </p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+          Preptio &copy; ${new Date().getFullYear()} &bull; Empowering Professional Excellence
+        </p>
+      </div>
+    `,
+  }
+  return transporter.sendMail(mailOptions)
+}

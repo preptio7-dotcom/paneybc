@@ -90,6 +90,7 @@ export function Footer() {
               <Link href="/community" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Community</Link>
               <Link href="/blog" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Blog</Link>
               <Link href="/ambassador" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Ambassador</Link>
+              <Link href="/institutions" className="text-slate-400 hover:text-primary-green text-sm transition-colors">Institutions & Faculty</Link>
             </div>
           </div>
 

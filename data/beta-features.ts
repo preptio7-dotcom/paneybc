@@ -39,6 +39,12 @@ export const betaFeatureDefinitions: BetaFeatureDefinition[] = [
     href: '/#frequently-asked-questions',
   },
   {
+    key: 'institutionalEnrollment',
+    label: 'Institutional & Educator Program',
+    description: 'Institutional landing page (/institutions), bulk student licensing, educator quote form, and homepage badge.',
+    href: '/institutions',
+  },
+  {
     key: 'studentFeedback',
     label: 'Student Feedback',
     description: 'Student review carousel shown above the FAQ section on the home page.',

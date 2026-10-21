@@ -5,6 +5,7 @@ export const BETA_FEATURE_KEYS = [
   'performanceAnalytics',
   'aiRecommendations',
   'homepageFeatureShowcase',
+  'institutionalEnrollment',
 ] as const
 
 export type BetaFeatureKey = (typeof BETA_FEATURE_KEYS)[number]
@@ -18,6 +19,7 @@ export const DEFAULT_BETA_FEATURE_SETTINGS: BetaFeatureSettings = {
   performanceAnalytics: 'public',
   aiRecommendations: 'beta_ambassador',
   homepageFeatureShowcase: 'beta_ambassador',
+  institutionalEnrollment: 'beta_ambassador',
 }
 
 function asRecord(value: unknown) {
@@ -42,6 +44,9 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
     asRecord(asRecord(testSettings).recommendations).visibility
   const homepageFeatureShowcaseFallback =
     asRecord(asRecord(testSettings).homepageFeatureShowcase).visibility
+  const institutionalEnrollmentFallback =
+    asRecord(asRecord(testSettings).institutionalEnrollment).visibility ??
+    asRecord(asRecord(testSettings).institutions).visibility
 
   return {
     faq: normalizeBetaFeatureVisibility(source.faq ?? faqFallback ?? DEFAULT_BETA_FEATURE_SETTINGS.faq),
@@ -63,6 +68,11 @@ export function extractBetaFeatureSettings(testSettings: unknown): BetaFeatureSe
       source.homepageFeatureShowcase ??
         homepageFeatureShowcaseFallback ??
         DEFAULT_BETA_FEATURE_SETTINGS.homepageFeatureShowcase
+    ),
+    institutionalEnrollment: normalizeBetaFeatureVisibility(
+      source.institutionalEnrollment ??
+        institutionalEnrollmentFallback ??
+        DEFAULT_BETA_FEATURE_SETTINGS.institutionalEnrollment
     ),
   }
 }

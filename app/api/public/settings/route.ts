@@ -193,6 +193,7 @@ export async function GET(request: NextRequest) {
       performanceAnalytics: { visibility: betaFeatures.performanceAnalytics },
       aiRecommendations: { visibility: betaFeatures.aiRecommendations },
       homepageFeatureShowcase: { visibility: betaFeatures.homepageFeatureShowcase },
+      institutionalEnrollment: { visibility: betaFeatures.institutionalEnrollment },
     }
 
     return NextResponse.json(
@@ -259,6 +260,7 @@ export async function GET(request: NextRequest) {
           performanceAnalytics: { visibility: fallbackBetaFeatures.performanceAnalytics },
           aiRecommendations: { visibility: fallbackBetaFeatures.aiRecommendations },
           homepageFeatureShowcase: { visibility: fallbackBetaFeatures.homepageFeatureShowcase },
+          institutionalEnrollment: { visibility: fallbackBetaFeatures.institutionalEnrollment },
         },
       },
       {
