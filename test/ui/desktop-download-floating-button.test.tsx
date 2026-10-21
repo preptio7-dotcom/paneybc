@@ -38,7 +38,34 @@ describe('DesktopDownloadFloatingButton Component', () => {
     expect(screen.getByRole('button', { name: /microsoft store/i })).toBeInTheDocument()
   })
 
-  it('automatically hides if user is already running inside desktop app or standalone PWA', () => {
+  it('shows badge on mobile device with PWA standalone mode enabled', () => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
+      configurable: true,
+    })
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query) => ({
+        matches: query === '(display-mode: standalone)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    render(<DesktopDownloadFloatingButton />)
+    expect(screen.getByRole('button', { name: /download desktop app/i })).toBeInTheDocument()
+  })
+
+  it('automatically hides if user is already running inside Windows desktop app', () => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      configurable: true,
+    })
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockImplementation((query) => ({

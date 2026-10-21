@@ -22,20 +22,24 @@ export function DesktopDownloadFloatingButton() {
 
     const ua = navigator.userAgent || ''
 
-    // 1. Smart Detection: Check if already inside the downloaded desktop app or standalone PWA
+    // 1. Detect if user is on Windows PC/Laptop vs mobile device
+    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)
+    const isWin = /Windows/i.test(ua) && !isMobile
+    setIsWindowsPC(isWin)
+
+    // 2. Smart Detection: Check if already inside the downloaded Windows desktop app
+    // IMPORTANT: Mobile devices with PWA enabled MUST STILL show the badge so users can get the Windows app link for PC!
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     const isElectron = /Electron/i.test(ua) || (window as any).electron !== undefined
     const isWindowsAppWrapper = /PreptioApp|WWAHost/i.test(ua)
 
-    if (isStandalone || isElectron || isWindowsAppWrapper) {
+    // Only hide if the user is ALREADY running inside the Windows desktop app
+    const isInsideWindowsDesktopApp = (isWin && isStandalone) || isElectron || isWindowsAppWrapper
+
+    if (isInsideWindowsDesktopApp) {
       setIsInsideDesktopApp(true)
       return
     }
-
-    // 2. Detect if user is on Windows PC/Laptop vs mobile/other
-    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)
-    const isWin = /Windows/i.test(ua) && !isMobile
-    setIsWindowsPC(isWin)
 
     // Check if dismissed previously during session
     const dismissedSession = sessionStorage.getItem('preptio_desktop_download_pill_dismissed')
