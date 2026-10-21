@@ -137,69 +137,69 @@ export default function InstitutionsPage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950 via-slate-950 to-slate-950 text-white">
+      <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden bg-gradient-to-b from-emerald-50/70 via-white to-[#F8FAFB] text-slate-900 border-b border-slate-200/60">
         <div
           aria-hidden="true"
-          className="absolute inset-0 opacity-15 pointer-events-none"
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
-            backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
+            backgroundImage: 'radial-gradient(#0f7938 1px, transparent 1px)',
+            backgroundSize: '22px 22px',
           }}
         />
 
-        <div className="relative max-w-6xl mx-auto px-6 text-center space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs md:text-sm font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 backdrop-blur-md shadow-sm">
-            <Building2 className="w-4 h-4 text-emerald-400" />
+        <div className="relative max-w-6xl mx-auto px-6 text-center space-y-7">
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs md:text-sm font-semibold bg-emerald-50 border border-emerald-200 text-[#0F7938] shadow-xs">
+            <Building2 className="w-4 h-4 text-[#0F7938]" />
             <span>Preptio for Colleges, Academies & Independent Educators</span>
           </div>
 
-          <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-balance max-w-4xl mx-auto leading-tight">
+          <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-balance max-w-4xl mx-auto leading-tight text-slate-900">
             Empower Your Students with Preptio — Built for{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300">
+            <span className="text-[#0F7938]">
               Institutions & Faculty
             </span>
           </h1>
 
-          <p className="text-slate-300 text-lg md:text-xl max-w-3xl mx-auto font-normal leading-relaxed">
+          <p className="text-slate-600 text-lg md:text-xl max-w-3xl mx-auto font-normal leading-relaxed">
             Batch-enroll entire cohorts with bulk licensing, monitor real-time class readiness via the
             Faculty Cockpit, and broadcast native Windows push notifications directly to students.
             Open to institutional campuses and independent teachers with 15+ students.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <Button
               onClick={() => scrollToForm()}
               size="lg"
-              className="w-full sm:w-auto bg-[#0F7938] hover:bg-emerald-700 text-white font-semibold px-8 py-6 rounded-xl shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.02]"
+              className="w-full sm:w-auto bg-[#0F7938] hover:bg-emerald-800 text-white font-semibold px-8 py-6 rounded-xl shadow-md transition-all hover:scale-[1.02]"
             >
               Contact for Pricing
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
             <a
               href="#service-scope"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-xl border border-white/15 hover:bg-white/10 text-white font-medium text-sm transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-xs"
             >
               Explore Scope of Service
             </a>
           </div>
 
           {/* Social Proof Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 border-t border-white/10 max-w-4xl mx-auto text-left">
-            <div>
-              <p className="text-3xl font-bold text-white tracking-tight">100%</p>
-              <p className="text-xs md:text-sm text-slate-400 font-medium">ICAP Syllabus Match</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-10 border-t border-slate-200 max-w-4xl mx-auto text-left">
+            <div className="bg-white/80 p-4 rounded-xl border border-slate-200/80 shadow-xs">
+              <p className="text-3xl font-extrabold text-slate-900 tracking-tight">100%</p>
+              <p className="text-xs md:text-sm text-slate-500 font-medium">ICAP Syllabus Match</p>
             </div>
-            <div>
-              <p className="text-3xl font-bold text-emerald-400 tracking-tight">1-Click</p>
-              <p className="text-xs md:text-sm text-slate-400 font-medium">Bulk Roster Activation</p>
+            <div className="bg-white/80 p-4 rounded-xl border border-slate-200/80 shadow-xs">
+              <p className="text-3xl font-extrabold text-[#0F7938] tracking-tight">1-Click</p>
+              <p className="text-xs md:text-sm text-slate-500 font-medium">Bulk Roster Activation</p>
             </div>
-            <div>
-              <p className="text-3xl font-bold text-white tracking-tight">15+</p>
-              <p className="text-xs md:text-sm text-slate-400 font-medium">Min. Student Batch Size</p>
+            <div className="bg-white/80 p-4 rounded-xl border border-slate-200/80 shadow-xs">
+              <p className="text-3xl font-extrabold text-slate-900 tracking-tight">15+</p>
+              <p className="text-xs md:text-sm text-slate-500 font-medium">Min. Student Batch Size</p>
             </div>
-            <div>
-              <p className="text-3xl font-bold text-amber-400 tracking-tight">Windows</p>
-              <p className="text-xs md:text-sm text-slate-400 font-medium">Desktop Push Notifications</p>
+            <div className="bg-white/80 p-4 rounded-xl border border-slate-200/80 shadow-xs">
+              <p className="text-3xl font-extrabold text-amber-600 tracking-tight">Windows</p>
+              <p className="text-xs md:text-sm text-slate-500 font-medium">Desktop Push Notifications</p>
             </div>
           </div>
         </div>

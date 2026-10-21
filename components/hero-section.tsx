@@ -87,27 +87,35 @@ export function HeroSection({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
           {/* Left Content */}
           <div className="hero-copy-enter flex flex-col gap-6">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[13px] font-semibold md:text-sm ${
-                  isDark ? 'bg-white/15 text-white' : 'bg-primary-green/10 text-primary-green'
-                }`}
-              >
-                {'🎓 Built Exclusively for ICAP CA Students'}
-              </span>
-
+            {/* Prominent Institutional & Educator Banner Badge */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <Link
                 href="/institutions"
-                className={`group inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] md:text-[13px] font-semibold border transition-all duration-200 ${
+                className={`group inline-flex items-center gap-2 rounded-full p-1 pr-4 text-xs md:text-sm font-medium border transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.01] w-fit ${
                   isDark
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25'
-                    : 'bg-emerald-50 border-emerald-200/90 text-[#0F7938] hover:bg-emerald-100/80 hover:border-emerald-300 shadow-xs'
+                    ? 'bg-slate-900/90 border-emerald-500/40 text-emerald-300 hover:border-emerald-400'
+                    : 'bg-white border-emerald-500/30 text-slate-800 hover:border-emerald-500 ring-4 ring-emerald-50'
                 }`}
               >
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>For Institutions & Educators</span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                <span className="flex items-center gap-1.5 rounded-full bg-[#0F7938] text-white px-2.5 py-1 text-[11px] md:text-xs font-bold uppercase tracking-wider shadow-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-ping" />
+                  <span>Colleges &amp; Tutors</span>
+                </span>
+                <span className="font-semibold text-slate-800 group-hover:text-[#0F7938] transition-colors">
+                  Bulk Student Enrollment &amp; Campus Licenses
+                </span>
+                <span className="text-[#0F7938] font-bold inline-flex items-center gap-0.5 group-hover:translate-x-1 transition-transform ml-1">
+                  Explore <ArrowRight className="w-3.5 h-3.5" />
+                </span>
               </Link>
+
+              <span
+                className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[12px] md:text-[13px] font-semibold ${
+                  isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {'🎓 ICAP CA Dedicated'}
+              </span>
             </div>
 
             <h1

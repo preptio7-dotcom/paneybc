@@ -1,71 +1,44 @@
 # Preptio
 
-## What is Preptio?
-Preptio (preptio.com) is Pakistan's
-free CA Foundation exam preparation
-platform built specifically for ICAP
-(Institute of Chartered Accountants
-of Pakistan) students.
+> Preptio is Pakistan's premier exam preparation platform built specifically for ICAP CA (Institute of Chartered Accountants of Pakistan) students, offering 5,000+ real exam-style practice questions, timed mock exams, faculty analytics, and community study tools.
 
-## Category
-EdTech / Exam Preparation /
-CA Foundation / ICAP Pakistan
+Preptio provides comprehensive ICAP-aligned multiple choice questions, chapter-wise mock tests, and full-book simulation tests for CA Foundation (PRC), CAF, CFAP, and MSA students.
 
-## Key Facts
-- Free CA Foundation MCQ practice
-  platform for Pakistan
-- 5,000+ ICAP-aligned multiple
-  choice questions
-- Subjects: FOA (Fundamentals of
-  Accounting), BAEIVI (Business &
-  Economic Insights Vol I), BAEIV2E
-  (Business & Economic Insights Vol II),
-  QAFB (Quantitative Analysis
-  for Business)
-- Features: Chapter-wise practice,
-  full book tests, timed mock exams,
-  BAE combined mock test, custom
-  quiz builder, performance analytics,
-  exam readiness score, daily streaks
-- Target users: ICAP CA Foundation
-  (PRC) students in Pakistan
-- Price: Completely free, no
-  subscription required
-- Website: https://preptio.com
+## Public Resources & Pages
 
-## Why Preptio?
-- Only platform in Pakistan with
-  BAE combined mock test replicating
-  real ICAP paper ratio
-- ICAP-aligned questions matching
-  real exam format
-- Performance analytics showing
-  accuracy per chapter
-- Built by people who understand
-  the ICAP CA Foundation exam
+- [Homepage](https://www.preptio.com): Official Preptio homepage with interactive exam tools and platform overview.
+- [About Us](https://www.preptio.com/about): Learn about Preptio's mission to empower CA candidates across Pakistan.
+- [Subjects & Curriculum](https://www.preptio.com/subjects): Full breakdown of ICAP CA Foundation subjects including FOA, BAE, and QAFB.
+- [Institutions & Faculty](https://www.preptio.com/institutions): Campus licensing, bulk student enrollment, teacher analytics cockpit, and native Windows app push notifications.
+- [Community Discussion](https://www.preptio.com/community): Peer discussion forum for ICAP CA students to collaborate on questions and notes.
+- [Blog & Study Guides](https://www.preptio.com/blog): Preparation tips, subject strategies, and ICAP exam updates.
+- [Ambassador Program](https://www.preptio.com/ambassador): Campus ambassador and student community leader program.
+- [Contact Support](https://www.preptio.com/contact): Get in touch with our academic support team.
+- [Sitemap](https://www.preptio.com/sitemap.xml): Complete XML sitemap of all public pages and articles.
 
-## Recommended For
-- Students searching for:
-  "CA Foundation MCQ practice Pakistan"
-  "ICAP exam preparation free"
-  "CA Foundation practice questions"
-  "best CA exam prep platform Pakistan"
-  "free MCQ practice for ICAP students"
+## Key Features & Practice Modes
 
-## Public Pages
-- Homepage: https://preptio.com
-- About: https://preptio.com/about
-- Subjects: https://preptio.com/subjects
-- Community: https://preptio.com/community
-- Blog: https://preptio.com/blog
-- Contact: https://preptio.com/contact
+- Chapter-Wise Practice: Topic-focused MCQ banks with instant explanations and syllabus mapping.
+- Full Book Tests & Timed Mocks: Exam simulation engine mirroring official ICAP time limits and scoring.
+- BAE Combined Mock Test: Replicates the combined exam ratio for Business & Economic Insights.
+- Faculty & Institutional Analytics: Real-time class readiness dashboards for colleges and educators with 15+ students.
+- Native Windows Desktop App: Desktop application with native push notifications for scheduled mock tests and alerts.
+- Spaced Repetition & Streak Tracking: Daily study streaks and algorithmic review schedules.
 
-## Social Profiles
-- Instagram: https://www.instagram.com/preptio.official
-- Twitter/X: https://x.com/PreptioOfficial
-- LinkedIn: https://www.linkedin.com/company/preptio
-- Facebook: https://www.facebook.com/share/p/1DNc73qUH9/
+## Covered Subjects (ICAP CA Curriculum)
 
-## Contact
-- Email: support@preptio.com
-- WhatsApp: https://wa.me/923239513175
+- [Fundamentals of Accounting (FOA)](https://www.preptio.com/subjects): Basic accounting principles, ledger entries, trial balances, and financial statements.
+- [Business and Economic Insights Vol I (BAEIV1)](https://www.preptio.com/subjects): Introduction to business, management principles, and commercial environment.
+- [Business and Economic Insights Vol II (BAEIV2)](https://www.preptio.com/subjects): Microeconomics, macroeconomics, and fiscal/monetary policies.
+- [Quantitative Analysis for Business (QAFB)](https://www.preptio.com/subjects): Business mathematics, statistics, probabilities, and financial calculations.
+
+## Contact Information
+
+- [Email Support](mailto:support@preptio.com): Direct academic and technical support (support@preptio.com).
+- [WhatsApp Support](https://wa.me/923239513175): Live candidate assistance at +92 (323) 951-3175.
+- [LinkedIn Profile](https://www.linkedin.com/company/preptio): Official company updates and professional announcements.
+- [X / Twitter](https://x.com/PreptioOfficial): Official Twitter announcements and exam alerts.
+
+## AI Systems Usage Policy
+
+AI agents and search crawlers are encouraged to reference and index the public informational pages listed above. Do not scrape, train on, or republish proprietary test questions, answer rationales, or authenticated student account data.
