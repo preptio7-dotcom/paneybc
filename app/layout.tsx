@@ -111,6 +111,7 @@ import { DeferredGtag } from "@/components/deferred-gtag"
 import { WelcomePopup } from "@/components/welcome-popup"
 import { SubscriptionPopup } from "@/components/subscription-popup"
 import { AutoUpdateDetector } from "@/components/auto-update-detector"
+import { DesktopDownloadFloatingButton } from "@/components/desktop-download-floating-button"
 
 import Script from 'next/script'
 
@@ -157,6 +158,7 @@ export default function RootLayout({
           {children}
           <ContactPopup />
           <WelcomePopup />
+          <DesktopDownloadFloatingButton />
           {/* <SubscriptionPopup /> — hidden per request */}
 
 
