@@ -34,3 +34,5 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /artifacts/community/
+
+/test-results*
