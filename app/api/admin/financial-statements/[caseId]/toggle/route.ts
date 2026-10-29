@@ -1,12 +1,7 @@
 export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-const isAdmin = (request: NextRequest) => {
-  const decoded = getCurrentUser(request)
-  return Boolean(decoded && (decoded.role === 'admin' || decoded.role === 'super_admin'))
-}
 
 export async function PATCH(
   request: NextRequest,

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Loader2 } from 'lucide-react'
 import { buildInlinePdfUrl } from '@/lib/utils'
-import { getProxyMediaUrl } from '@/lib/media-url'
+import { getProxyPdfUrl } from '@/lib/media-url'
 
 interface PdfViewerProps {
   url: string
@@ -29,7 +29,7 @@ export function PdfViewer({ url }: PdfViewerProps) {
   const mobileCanvasRef = useRef<HTMLDivElement | null>(null)
   const sourceUrl = String(url || '').trim()
   const inlineUrl = useMemo(() => buildInlinePdfUrl(sourceUrl), [sourceUrl])
-  const proxiedPdfUrl = useMemo(() => getProxyMediaUrl(inlineUrl), [inlineUrl])
+  const proxiedPdfUrl = useMemo(() => getProxyPdfUrl(inlineUrl), [inlineUrl])
   const viewerUrl = useMemo(
     () => (proxiedPdfUrl ? buildViewerUrl(proxiedPdfUrl) : ''),
     [proxiedPdfUrl]
@@ -58,7 +58,7 @@ export function PdfViewer({ url }: PdfViewerProps) {
       setError(null)
 
       try {
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf')
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
           'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
           import.meta.url
@@ -164,7 +164,7 @@ export function PdfViewer({ url }: PdfViewerProps) {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => window.open(proxiedPdfUrl || inlineUrl || sourceUrl, '_blank')}
+        onClick={() => window.open(inlineUrl || sourceUrl || proxiedPdfUrl, '_blank')}
         className="gap-2"
       >
         <ExternalLink size={14} />

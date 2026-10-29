@@ -91,6 +91,9 @@ export async function GET(request: NextRequest) {
 
     const contentType = response.headers.get('content-type') || ''
     if (!contentType.toLowerCase().startsWith('image/')) {
+      if (contentType.toLowerCase().includes('pdf') || target.pathname.toLowerCase().endsWith('.pdf')) {
+        return NextResponse.redirect(new URL(`/api/pdf-proxy?url=${encodeURIComponent(url)}`, request.url), 307)
+      }
       return NextResponse.json({ error: 'Upstream content is not an image' }, { status: 415 })
     }
 

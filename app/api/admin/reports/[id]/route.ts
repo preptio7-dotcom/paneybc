@@ -1,13 +1,8 @@
 export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendQuestionReportReplyEmail } from '@/lib/email'
-
-const isAdmin = (req: NextRequest) => {
-  const user = getCurrentUser(req)
-  return Boolean(user && (user.role === 'admin' || user.role === 'super_admin'))
-}
 
 export async function POST(
   req: NextRequest,

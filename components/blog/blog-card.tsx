@@ -5,17 +5,7 @@ import Image from 'next/image'
 import { Clock3, Eye } from 'lucide-react'
 import type { BlogPostDto } from '@/lib/blog-types'
 import { getProxyMediaUrl } from '@/lib/media-url'
-
-function formatDate(value: string | null) {
-  if (!value) return 'Draft'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Draft'
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(date)
-}
+import { formatDate } from '@/lib/utils'
 
 function getBadgeStyles(color: string) {
   const safeColor = color || '#16a34a'

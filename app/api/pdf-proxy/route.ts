@@ -38,7 +38,13 @@ function isAllowedHost(hostname: string) {
     host.startsWith('169.254.')
 
   if (isPrivateHost) return false
-  return configuredHosts.has(host)
+  return (
+    configuredHosts.has(host) ||
+    (host.startsWith('pub-') && host.endsWith('.r2.dev')) ||
+    host.endsWith('.r2.dev') ||
+    host.endsWith('.r2.cloudflarestorage.com') ||
+    host.endsWith('res.cloudinary.com')
+  )
 }
 
 export async function GET(request: NextRequest) {
@@ -56,7 +62,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid url parameter' }, { status: 400 })
     }
 
-    if (url.protocol !== 'https:') {
+    if (url.protocol !== 'https:' && !(process.env.NODE_ENV === 'development' && url.protocol === 'http:')) {
       return NextResponse.json({ error: 'Only https URLs are allowed' }, { status: 400 })
     }
 
@@ -84,17 +90,91 @@ export async function GET(request: NextRequest) {
     }
 
     const contentType = upstream.headers.get('content-type') || ''
-    if (!contentType.toLowerCase().split(';')[0].trim().includes('pdf')) {
+    const isPdf =
+      contentType.toLowerCase().split(';')[0].trim().includes('pdf') ||
+      url.pathname.toLowerCase().endsWith('.pdf')
+
+    if (!isPdf) {
       return NextResponse.json({ error: 'Upstream content is not a PDF' }, { status: 415 })
     }
+
+    const finalContentType = contentType.toLowerCase().includes('pdf')
+      ? contentType
+      : 'application/pdf'
+
     const headers = new Headers()
-    headers.set('Content-Type', contentType)
+    headers.set('Content-Type', finalContentType)
     headers.set('Content-Disposition', 'inline')
     headers.set('Cache-Control', 'public, max-age=3600')
+    headers.set('Accept-Ranges', 'bytes')
+    headers.set('Access-Control-Allow-Origin', '*')
+    headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+    headers.set('Access-Control-Allow-Headers', '*')
 
     return new NextResponse(body, { status: 200, headers })
   } catch (error) {
     console.error('PDF proxy error:', error)
     return NextResponse.json({ error: 'Proxy error' }, { status: 500 })
   }
+}
+
+export async function HEAD(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const target = searchParams.get('url')
+    if (!target) {
+      return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 })
+    }
+
+    let url: URL
+    try {
+      url = new URL(target)
+    } catch {
+      return NextResponse.json({ error: 'Invalid url parameter' }, { status: 400 })
+    }
+
+    if (url.protocol !== 'https:' && !(process.env.NODE_ENV === 'development' && url.protocol === 'http:')) {
+      return NextResponse.json({ error: 'Only https URLs are allowed' }, { status: 400 })
+    }
+
+    if (!isAllowedHost(url.hostname)) {
+      return NextResponse.json({ error: 'Host not allowed' }, { status: 403 })
+    }
+
+    const upstream = await fetch(url, {
+      method: 'HEAD',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
+    })
+
+    const headers = new Headers()
+    const contentType = upstream.headers.get('content-type') || 'application/pdf'
+    headers.set(
+      'Content-Type',
+      contentType.toLowerCase().includes('pdf') ? contentType : 'application/pdf'
+    )
+    headers.set('Content-Disposition', 'inline')
+    if (upstream.headers.has('content-length')) {
+      headers.set('Content-Length', upstream.headers.get('content-length')!)
+    }
+    headers.set('Accept-Ranges', 'bytes')
+    headers.set('Access-Control-Allow-Origin', '*')
+    headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+    headers.set('Access-Control-Allow-Headers', '*')
+
+    return new NextResponse(null, { status: upstream.status, headers })
+  } catch (error) {
+    return NextResponse.json({ error: 'Proxy error' }, { status: 500 })
+  }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  })
 }
