@@ -1,8 +1,11 @@
+import { Suspense } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { BlogPostClient } from './BlogPostClient'
+import { BlogPostStatus, BlogPostVisibility } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import {
   PREPTIO_DEFAULT_OG_IMAGE_URL,
   buildPublicMetadata,
@@ -16,13 +19,27 @@ import {
   getPublishedPostDetailBySlug,
   getRelatedPosts,
 } from '@/lib/blog'
-import {
-  resolveBlogFeatureVisibility,
-  resolveServerBlogViewer,
-} from '@/lib/blog-server-viewer'
+import { resolveBlogFeatureVisibility } from '@/lib/blog-server-viewer'
 import { canViewBlogFeature } from '@/lib/blog-visibility'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: {
+        status: BlogPostStatus.published,
+        visibility: BlogPostVisibility.public,
+        publishedAt: { lte: new Date() },
+      },
+      select: { slug: true },
+    })
+    return posts.map((post) => ({ slug: post.slug }))
+  } catch (error) {
+    console.error('Failed to generate static params for blog posts:', error)
+    return []
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -67,20 +84,19 @@ export default async function BlogPostPage({
 }) {
   await ensureDefaultBlogData()
 
-  const viewer = await resolveServerBlogViewer()
   const blogVisibility = await resolveBlogFeatureVisibility()
-  if (!canViewBlogFeature(blogVisibility, viewer)) {
+  if (!canViewBlogFeature(blogVisibility, null)) {
     notFound()
   }
 
   const { slug } = await params
-  const post = await getPublishedPostDetailBySlug(slug, { viewer })
+  const post = await getPublishedPostDetailBySlug(slug, { viewer: null })
   if (!post) notFound()
 
   const [relatedPosts, popularPosts, categories] = await Promise.all([
-    getRelatedPosts(post.category.id, post.id, 3, { viewer }),
-    getPopularPublishedPosts(5, { viewer }),
-    getPublishedCategoriesWithCounts({ viewer }),
+    getRelatedPosts(post.category.id, post.id, 3, { viewer: null }),
+    getPopularPublishedPosts(5, { viewer: null }),
+    getPublishedCategoriesWithCounts({ viewer: null }),
   ])
 
   const canonicalUrl = preptioUrl(`/blog/${post.slug}`)
@@ -117,12 +133,14 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <BlogPostClient
-        post={post}
-        relatedPosts={relatedPosts}
-        popularPosts={popularPosts}
-        categories={categories}
-      />
+      <Suspense fallback={null}>
+        <BlogPostClient
+          post={post}
+          relatedPosts={relatedPosts}
+          popularPosts={popularPosts}
+          categories={categories}
+        />
+      </Suspense>
       <Footer />
     </main>
   )

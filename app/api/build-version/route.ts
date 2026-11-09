@@ -18,7 +18,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=0, must-revalidate',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
       }
     })
   } catch (error) {

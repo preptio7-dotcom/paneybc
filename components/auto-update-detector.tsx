@@ -41,9 +41,7 @@ export function AutoUpdateDetector() {
           return
         }
 
-        const response = await fetch('/api/build-version', {
-          headers: { 'Cache-Control': 'no-cache' }
-        })
+        const response = await fetch('/api/build-version')
         const { version } = await response.json()
         const storedVersion = sessionStorage.getItem('build-version')
 

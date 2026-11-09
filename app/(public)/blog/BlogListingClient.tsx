@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight, Eye, Flame, BookOpen } from 'lucide-react'
 import { BlogCard } from '@/components/blog/blog-card'
 import type { BlogCategoryDto, BlogPostDto } from '@/lib/blog-types'
@@ -69,10 +70,27 @@ export function BlogListingClient({
   initialCategory?: string
   initialTag?: string
 }) {
+  const searchParams = useSearchParams()
+  const categoryParam = searchParams.get('category') || initialCategory
+  const tagParam = searchParams.get('tag') || initialTag
+
   const [search, setSearch] = useState('')
-  const [activeCategory, setActiveCategory] = useState(initialCategory)
-  const [activeTag, setActiveTag] = useState(initialTag)
+  const [activeCategory, setActiveCategory] = useState(categoryParam)
+  const [activeTag, setActiveTag] = useState(tagParam)
   const [page, setPage] = useState(1)
+
+  useEffect(() => {
+    const cat = searchParams.get('category')
+    if (cat) {
+      setActiveCategory(cat)
+      setPage(1)
+    }
+    const tg = searchParams.get('tag')
+    if (tg) {
+      setActiveTag(tg)
+      setPage(1)
+    }
+  }, [searchParams])
   const eventIdRef = useRef<string | null>(null)
   const startedAtRef = useRef(0)
 

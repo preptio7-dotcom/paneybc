@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 import { Navigation } from '@/components/navigation'
 import { HomeWrapper } from '@/components/home-wrapper'

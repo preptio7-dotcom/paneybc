@@ -11,6 +11,11 @@ export function useSubscriptionStatus() {
   const [isLoading, setIsLoading] = useState(false)
 
   const refreshStatus = useCallback(async () => {
+    if (!user) {
+      setIsSubscribed(false)
+      return null
+    }
+
     try {
       setIsLoading(true)
       const response = await fetch('/api/subscription/status', {
@@ -28,7 +33,7 @@ export function useSubscriptionStatus() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [user])
 
   // Set initial state from user data
   useEffect(() => {
@@ -45,6 +50,11 @@ export function useSubscriptionStatus() {
 
   // Auto-refresh when page becomes visible (tab focus)
   useEffect(() => {
+    if (!user) {
+      setIsSubscribed(false)
+      return
+    }
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         refreshStatus()
@@ -56,7 +66,7 @@ export function useSubscriptionStatus() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [refreshStatus])
+  }, [user, refreshStatus])
 
   return { isSubscribed, refreshStatus, isLoading }
 }

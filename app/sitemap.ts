@@ -3,7 +3,7 @@ import { BlogPostStatus, BlogPostVisibility } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 const BASE_URL = 'https://preptio.com'
-export const revalidate = 300
+export const revalidate = 86400
 export const runtime = 'nodejs'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

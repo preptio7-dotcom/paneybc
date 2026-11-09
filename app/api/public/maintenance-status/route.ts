@@ -27,7 +27,7 @@ export async function GET() {
       {
         headers: {
           // CDN caches for 60s, serves stale for up to 2 min while revalidating
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
         },
       }
     )
