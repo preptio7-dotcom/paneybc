@@ -12,25 +12,34 @@ const globalForMiddleware = global as unknown as {
 const BLOCKED_MESSAGE =
   'Access Denied. Your IP address has been blocked due to suspicious activity. If you believe this is an error, contact support@preptio.com'
 
+// ─── In‑process maintenance cache (60 s TTL) ────────────────────────────────────────
+const maintenanceCache = { value: false as boolean, expiresAt: 0 };
+
 async function fetchMaintenanceMode(request: NextRequest) {
+  // Return cached result if still fresh
+  if (Date.now() < maintenanceCache.expiresAt) {
+    return maintenanceCache.value;
+  }
   try {
-    const statusUrl = new URL('/api/public/maintenance-status', request.url)
+    const statusUrl = new URL('/api/public/maintenance-status', request.url);
     const response = await fetch(statusUrl, {
       cache: 'no-store',
       headers: {
         'x-preptio-internal': '1',
       },
-    })
-
-    if (!response.ok) return false
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) return false
-
-    const payload = await response.json()
-    return Boolean(payload?.isMaintenanceMode)
+    });
+    if (!response.ok) return false;
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return false;
+    const payload = await response.json();
+    const result = Boolean(payload?.isMaintenanceMode);
+    // Cache for 60 seconds
+    maintenanceCache.value = result;
+    maintenanceCache.expiresAt = Date.now() + 60_000;
+    return result;
   } catch (error) {
-    console.error('Maintenance check failed', error)
-    return false
+    console.error('Maintenance check failed', error);
+    return false;
   }
 }
 
@@ -206,15 +215,11 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - practice (public practice page)
-     * - api/practice-mcqs (public API)
-     * - favicon.ico, sitemap.xml, robots.txt, sw.js (standard public files)
-     * - file extensions: .*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|css|js)
-     */
-    '/((?!_next/static|_next/image|practice|api/practice-mcqs|favicon.ico|sitemap.xml|robots.txt|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|css|js)).*)',
+    // Protected UI routes
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/sKy9108-3~620_admin/:path*',
+    // Protected API routes (excluding public APIs handled early in the code)
+    '/api/:path*',
   ],
 }
