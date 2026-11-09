@@ -29,10 +29,16 @@ export function PracticeClient({ initialQuestions }: { initialQuestions: Questio
     const [activeTab, setActiveTab] = useState('ALL')
     const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({})
 
+    // Shuffle once on client mount – deterministic per page load but unique per user.
+    const shuffled = useMemo(() => {
+        // Slice to avoid mutating the prop array.
+        return initialQuestions.slice().sort(() => 0.5 - Math.random())
+    }, [])
+
     const filteredQuestions = useMemo(() => {
-        if (activeTab === 'ALL') return initialQuestions
-        return initialQuestions.filter((q) => q.subject === activeTab)
-    }, [initialQuestions, activeTab])
+        if (activeTab === 'ALL') return shuffled
+        return shuffled.filter((q) => q.subject === activeTab)
+    }, [shuffled, activeTab])
 
     const tabs = ['ALL', 'BAEIVII', 'BAEIV2E', 'FOA', 'QAFB']
 

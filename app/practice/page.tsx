@@ -8,25 +8,26 @@ export const metadata: Metadata = {
     description: 'Practice 200+ free MCQs for CA Foundation — Business & Commercial Knowledge, Fundamentals of Accounting, Quantitative Aptitude, and Business Economics. No signup required.',
 }
 
+// Fetch a stable pool ordered by id (deterministic, cacheable).
+// Randomization happens client-side in PracticeClient so every user
+// sees a different order without busting the ISR cache.
 async function getMcqs() {
     const [baeivii, baeiv2e, foa, qafb] = await Promise.all([
-        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'BAEIVII' ORDER BY RANDOM() LIMIT 60`),
-        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'BAEIV2E' ORDER BY RANDOM() LIMIT 55`),
-        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'FOA' ORDER BY RANDOM() LIMIT 50`),
-        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'QAFB' ORDER BY RANDOM() LIMIT 40`)
+        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'BAEIVII' ORDER BY id LIMIT 60`),
+        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'BAEIV2E' ORDER BY id LIMIT 55`),
+        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'FOA' ORDER BY id LIMIT 50`),
+        prisma.$queryRawUnsafe(`SELECT id, question, options, subject, "correctAnswer" as correct_answer FROM "Question" WHERE subject = 'QAFB' ORDER BY id LIMIT 40`)
     ])
 
-    const questions = [
+    return [
         ...(baeivii as any[]),
         ...(baeiv2e as any[]),
         ...(foa as any[]),
         ...(qafb as any[])
     ]
-
-    return questions.sort(() => 0.5 - Math.random())
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export default async function PracticePage() {
     const mcqs = await getMcqs()
