@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const rangeKey = parseAnalyticsRangeKey(searchParams.get('range'))
     const analytics = await buildDeepPerformanceAnalytics(prisma, access.user.id, rangeKey)
 
-    return NextResponse.json(
+    const resp = NextResponse.json(
       {
         success: true,
         range: rangeKey,
@@ -33,10 +33,12 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'private, no-store',
+          // Cache privately for 5 minutes to reduce DB load per user
+          'Cache-Control': 'private, max-age=300, stale-while-revalidate=120',
         },
       }
     )
+    return resp
   } catch (error: any) {
     console.error('deep analytics error:', error)
     return NextResponse.json({ error: 'Failed to load analytics' }, { status: 500 })

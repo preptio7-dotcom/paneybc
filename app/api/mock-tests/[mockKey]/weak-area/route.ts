@@ -24,8 +24,8 @@ function isPrismaSchemaNotReadyError(error: unknown) {
   const message = String((error as any)?.message || '').toLowerCase()
   return (
     message.includes('does not exist') ||
-    message.includes('relation') && message.includes('missing') ||
-    message.includes('column') && message.includes('missing')
+    (message.includes('relation') && message.includes('missing')) ||
+    (message.includes('column') && message.includes('missing'))
   )
 }
 
@@ -118,8 +118,7 @@ async function buildBaeWeakArea(userId: string) {
   const vol2Accuracy = calculateAccuracy(totals.vol2Correct, totals.vol2Questions)
   const diff = Math.abs(vol1Accuracy - vol2Accuracy)
   const weakerVolume = vol1Accuracy === vol2Accuracy ? null : vol1Accuracy < vol2Accuracy ? 'VOL1' : 'VOL2'
-  const strongerVolume =
-    vol1Accuracy === vol2Accuracy ? null : vol1Accuracy > vol2Accuracy ? 'VOL1' : 'VOL2'
+  const strongerVolume = vol1Accuracy === vol2Accuracy ? null : vol1Accuracy > vol2Accuracy ? 'VOL1' : 'VOL2'
 
   const history = completedSessions
     .slice(-10)
@@ -185,16 +184,20 @@ export async function GET(
     }
 
     if (definition.testType === 'bae_mock') {
-      return NextResponse.json(await buildBaeWeakArea(currentUser.userId))
+      const resp = NextResponse.json(await buildBaeWeakArea(currentUser.userId))
+      resp.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=120')
+      return resp
     }
 
-    return NextResponse.json(
+    const resp = NextResponse.json(
       await buildSingleMockWeakAreaAnalysis(
         prisma,
         currentUser.userId,
         definition.testType as 'foa_mock' | 'qafb_mock'
       )
     )
+    resp.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=120')
+    return resp
   } catch (error: any) {
     if (isPrismaSchemaNotReadyError(error)) {
       const definition = getMockDefinitionByRouteKey(requestedMockKey)

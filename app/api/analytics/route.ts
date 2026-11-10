@@ -89,11 +89,14 @@ export async function GET(req: NextRequest) {
         const deviceDist = Array.from(deviceMap.entries())
             .map(([name, value]) => ({ name, value }))
 
-        return NextResponse.json({
+        const resp = NextResponse.json({
             visitsByDay,
             popularPages,
             deviceDist,
         })
+        // Private cache for admin analytics – short TTL to reduce load
+        resp.headers.set('Cache-Control', 'private, max-age=300, stale-while-revalidate=120')
+        return resp
     } catch (error: any) {
         console.error('Analytics GET error:', error)
         return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 })

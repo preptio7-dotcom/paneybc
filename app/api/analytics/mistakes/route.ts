@@ -59,11 +59,14 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => a.accuracy - b.accuracy)
       .slice(0, 5)
 
-    return NextResponse.json({
+    const resp = NextResponse.json({
       keywordMistakes,
       keywordAttempts,
       weakChapters,
     })
+    // Private cache for user-specific mistakes analytics – short TTL
+    resp.headers.set('Cache-Control', 'private, max-age=300, stale-while-revalidate=120')
+    return resp
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
